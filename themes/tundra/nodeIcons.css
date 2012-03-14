@@ -1,0 +1,29 @@
+/*
+ *  Sample custom twc node icon CSS
+ *
+ *		This css file must be imported by theme related css file. For example:
+ *		'tundra.css'
+*/
+.tundra .twcIcon {
+	background-image: url('images/nodeIcons.gif'); /* Node icons sprite image */
+	background-repeat: no-repeat;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	padding: 0;
+}
+
+.tundra .twcLeaf {
+	/* unchecked */
+	background-position: -0px;
+}
+
+.tundra .twcFolderClosed {
+	/* unchecked */
+	background-position: -16px;
+}
+
+.tundra .twcFolderOpened {
+	/* unchecked */
+	background-position: -32px;
+}

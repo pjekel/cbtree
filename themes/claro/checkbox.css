@@ -1,0 +1,70 @@
+/*
+ *  twc CheckBox Widgets CSS
+ *
+ *	Order of images in the sprite (from L to R):
+ *		checkbox	normal 	 - checked
+ *							 - unchecked
+ *							 - mixed
+ *					disabled - checked
+ *							 - unchecked
+ *							 - mixed
+ *					hover 	 - checked
+ *							 - unchecked
+ *							 - mixed
+*/
+.claro .twcCheckBox,
+.claro .twcCheckBoxIcon {
+	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
+	background-repeat: no-repeat;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	padding: 0;
+}
+
+.claro .twcCheckBox, 
+.claro .twcCheckBoxIcon {
+	/* unchecked */
+	background-position: -16px;
+}
+
+.claro .twcCheckBoxChecked, 
+.claro .twcCheckBoxIcon {
+	/* checked */
+	background-position: 0px;
+}
+
+.claro .twcCheckBoxDisabled {
+	/* disabled */
+	background-position: -48px;
+}
+
+.claro .twcCheckBoxCheckedDisabled {
+	/* disabled but checked */
+	background-position: -48px;
+}
+
+.claro .twcCheckBoxMixed {
+	/* checked & mixed */
+	background-position: -32px;
+}
+
+.claro .twcCheckBoxMixedDisabled {
+	/* checked & mixed */
+	background-position: -64px;
+}
+
+.claro .twcCheckBoxHover {
+	/* hovering over an unchecked enabled checkbox */
+	background-position: -112px;
+}
+
+.claro .twcCheckBoxCheckedHover {
+	/* hovering over a checked enabled checkbox */
+	background-position: -96px;
+}
+
+.claro .twcCheckBoxMixedHover {
+	/* checked & mixed */
+	background-position: -128px;
+}

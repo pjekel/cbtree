@@ -1,0 +1,71 @@
+/*
+ *  twc CheckBox Widgets CSS
+ *
+ *	Order of images in the sprite (from L to R):
+ *		checkbox	normal 	 - checked
+ *							 - unchecked
+ *							 - mixed
+ *					disabled - checked
+ *							 - unchecked
+ *							 - mixed
+ *					hover 	 - checked
+ *							 - unchecked
+ *							 - mixed
+*/
+.soria .twcCheckBox,
+.soria .twcCheckBoxIcon {
+	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
+	background-repeat: no-repeat;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	padding: 0;
+}
+
+.soria .twcCheckBox, 
+.soria .twcCheckBoxIcon {
+	/* unchecked */
+	background-position: -16px;
+}
+
+.soria .twcCheckBoxChecked, 
+.soria .twcCheckBoxIcon {
+	/* checked */
+	background-position: 0px;
+}
+
+.soria .twcCheckBoxDisabled {
+	/* disabled */
+	background-position: -48px;
+}
+
+.soria .twcCheckBoxCheckedDisabled {
+	/* disabled but checked */
+	background-position: -48px;
+}
+
+.soria .twcCheckBoxMixed {
+	/* checked & mixed */
+	background-position: -32px;
+}
+
+.soria .twcCheckBoxMixedDisabled {
+	/* checked & mixed */
+	background-position: -64px;
+}
+
+.soria .twcCheckBoxHover {
+	/* hovering over an unchecked enabled checkbox */
+	background-position: -112px;
+}
+
+.soria .twcCheckBoxCheckedHover {
+	/* hovering over a checked enabled checkbox */
+	background-position: -96px;
+}
+
+.soria .twcCheckBoxMixedHover {
+	/* checked & mixed */
+	background-position: -128px;
+}
+

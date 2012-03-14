@@ -1,0 +1,29 @@
+/*
+ *  Sample custom twc node icon CSS
+ *
+ *		This css file must be imported by theme related css file. For example:
+ *		'nihilo.css'
+*/
+.nihilo .twcIcon {
+	background-image: url('images/nodeIcons.gif'); /* Node icons sprite image */
+	background-repeat: no-repeat;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	padding: 0;
+}
+
+.nihilo .twcLeaf {
+	/* unchecked */
+	background-position: -0px;
+}
+
+.nihilo .twcFolderClosed {
+	/* unchecked */
+	background-position: -16px;
+}
+
+.nihilo .twcFolderOpened {
+	/* unchecked */
+	background-position: -32px;
+}

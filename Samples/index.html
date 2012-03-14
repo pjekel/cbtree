@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+    <head> 
+        <title>Dijit Tree with Checkboxes (TWC)</title>     
+<!--
+		NOTE:	When changing themes, the <body class=xxx> MUST change accordingly.
+		
+        <link rel="stylesheet" href="/js/dojotoolkit/dijit/themes/claro/claro.css" />
+        <link rel="stylesheet" href="/js/dojotoolkit/twc/themes/claro/claro.css" />
+
+        <link rel="stylesheet" href="/js/dojotoolkit/dijit/themes/soria/soria.css" />
+        <link rel="stylesheet" href="/js/dojotoolkit/twc/themes/soria/soria.css" />
+
+        <link rel="stylesheet" href="/js/dojotoolkit/dijit/themes/tundra/tundra.css" />
+        <link rel="stylesheet" href="/js/dojotoolkit/twc/themes/tundra/tundra.css" />
+
+        <link rel="stylesheet" href="/js/dojotoolkit/dijit/themes/nihilo/nihilo.css" />
+        <link rel="stylesheet" href="/js/dojotoolkit/twc/themes/nihilo/nihilo.css" />
+
+-->
+        <link rel="stylesheet" href="/js/dojotoolkit/dijit/themes/claro/claro.css" />
+        <link rel="stylesheet" href="/js/dojotoolkit/twc/themes/claro/claro.css" />
+
+		<script type="text/javascript">
+			var dojoConfig = {
+				async: true,
+				parseOnLoad: true,
+				isDebug: true,
+				baseUrl: "/js/dojotoolkit/",
+				locale: 'en-us',
+				packages: [
+					{ name: "dojo", location: "dojo" },
+					{ name: "dijit", location: "dijit" },
+					{ name: "twc", location: "twc" }
+				]
+			};
+		</script>
+
+        <script type="text/javascript" src="/js/dojotoolkit/dojo/dojo.js"></script> 
+
+        <script type="text/javascript">
+			function myTree( domLocation ) {
+				var store = new dojo.data.ItemFileWriteStore( { url: "/js/datastore/Family-1.7.json" });
+				var model = new twc.StoreModel( {
+								store: store,
+								query: {type: 'parent'},
+								rootLabel: 'The Family',
+								checkboxAll:  true,
+								checkboxRoot: true,
+								checkboxState: true,
+								checkboxStrict: true
+								}); 
+				var tree = new twc.Tree( {
+								model: model,
+								id: "MenuTree",
+								checkboxMultiState: true,
+//								checkboxStyle: "HTML",
+								allowMultiState: true,
+//								customIconClass: "twcIcon",
+//								customIcons: true,
+								branchReadOnly: false,
+								branchIcons: true,
+								nodeIcons: true
+								});
+				tree.placeAt( domLocation );
+				return tree;
+			};
+
+			
+			
+        </script> 
+	</head>
+    
+    <body class="claro">
+		<div id="CheckboxTree">	
+			<script type="text/javascript">
+
+			require([
+				"dojo/_base/array",
+				"dojo/dom",
+				"dojo/data/ItemFileWriteStore",
+				"dijit/Tree",
+				"twc"
+				], function( array, dom, ItemFileWriteStore, twc ) {
+
+					function myCheckboxes( checkBoxes ) {
+						array.forEach( checkBoxes, function( checkbox ) {
+							console.log( "Checkbox state: " + this.store.getValue( checkbox, "checked" )); 
+							this.updateCheckbox( checkbox, false );
+							}, this )
+					};
+
+					function updates( matches, updates ) {
+						alert( "Query matches: " + matches + ", Updates: " + updates );
+					};
+
+					tree = myTree("CheckboxTree");
+
+//				tree.model.getCheckbox( {name: "*", type : "parent" }, myCheckboxes );
+//				tree.model.check( "Peter", updates, this );
+
+				});
+			</script>
+		</div>
+	</body> 
+</html>
