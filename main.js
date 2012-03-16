@@ -1,1 +1,1 @@
-define([	"./CheckBox",	"./StoreModel",	"./Tree"	], function( CheckBox, StoreModel, Tree ){	var	twc = { 			Tree: Tree, 			StoreModel: StoreModel, 			CheckBox: CheckBox 		};	return twc;});
+define([  "./CheckBox",  "./StoreModel",  "./Tree"  ], function( CheckBox, StoreModel, Tree ){  var cbtree = {         Tree: Tree,         StoreModel: StoreModel,         CheckBox: CheckBox     };  return cbtree;});

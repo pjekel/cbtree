@@ -1,5 +1,5 @@
 /*
- *  twc CheckBox Widgets CSS
+ *  cbtree CheckBox Widgets CSS
  *
  *	Order of images in the sprite (from L to R):
  *		checkbox	normal 	 - checked
@@ -12,8 +12,7 @@
  *							 - unchecked
  *							 - mixed
 */
-.claro .twcCheckBox,
-.claro .twcCheckBoxIcon {
+.claro .cbtreeCheckBox {
 	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
@@ -22,49 +21,47 @@
 	padding: 0;
 }
 
-.claro .twcCheckBox, 
-.claro .twcCheckBoxIcon {
+.claro .cbtreeCheckBox {
 	/* unchecked */
 	background-position: -16px;
 }
 
-.claro .twcCheckBoxChecked, 
-.claro .twcCheckBoxIcon {
+.claro .cbtreeCheckBoxChecked {
 	/* checked */
 	background-position: 0px;
 }
 
-.claro .twcCheckBoxDisabled {
-	/* disabled */
-	background-position: -48px;
-}
-
-.claro .twcCheckBoxCheckedDisabled {
-	/* disabled but checked */
-	background-position: -48px;
-}
-
-.claro .twcCheckBoxMixed {
+.claro .cbtreeCheckBoxMixed {
 	/* checked & mixed */
 	background-position: -32px;
 }
 
-.claro .twcCheckBoxMixedDisabled {
-	/* checked & mixed */
+.claro .cbtreeCheckBoxDisabled {
+	/* disabled */
 	background-position: -64px;
 }
 
-.claro .twcCheckBoxHover {
+.claro .cbtreeCheckBoxCheckedDisabled {
+	/* disabled but checked */
+	background-position: -48px;
+}
+
+.claro .cbtreeCheckBoxMixedDisabled {
+	/* checked & mixed */
+	background-position: -80px;
+}
+
+.claro .cbtreeCheckBoxHover {
 	/* hovering over an unchecked enabled checkbox */
 	background-position: -112px;
 }
 
-.claro .twcCheckBoxCheckedHover {
+.claro .cbtreeCheckBoxCheckedHover {
 	/* hovering over a checked enabled checkbox */
 	background-position: -96px;
 }
 
-.claro .twcCheckBoxMixedHover {
+.claro .cbtreeCheckBoxMixedHover {
 	/* checked & mixed */
 	background-position: -128px;
 }

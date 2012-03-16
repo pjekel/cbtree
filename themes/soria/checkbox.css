@@ -1,5 +1,5 @@
 /*
- *  twc CheckBox Widgets CSS
+ *  cbtree CheckBox Widgets CSS
  *
  *	Order of images in the sprite (from L to R):
  *		checkbox	normal 	 - checked
@@ -12,8 +12,7 @@
  *							 - unchecked
  *							 - mixed
 */
-.soria .twcCheckBox,
-.soria .twcCheckBoxIcon {
+.soria .cbtreeCheckBox {
 	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
@@ -22,50 +21,47 @@
 	padding: 0;
 }
 
-.soria .twcCheckBox, 
-.soria .twcCheckBoxIcon {
+.soria .cbtreeCheckBox {
 	/* unchecked */
 	background-position: -16px;
 }
 
-.soria .twcCheckBoxChecked, 
-.soria .twcCheckBoxIcon {
+.soria .cbtreeCheckBoxChecked {
 	/* checked */
 	background-position: 0px;
 }
 
-.soria .twcCheckBoxDisabled {
-	/* disabled */
-	background-position: -48px;
-}
-
-.soria .twcCheckBoxCheckedDisabled {
-	/* disabled but checked */
-	background-position: -48px;
-}
-
-.soria .twcCheckBoxMixed {
+.soria .cbtreeCheckBoxMixed {
 	/* checked & mixed */
 	background-position: -32px;
 }
 
-.soria .twcCheckBoxMixedDisabled {
-	/* checked & mixed */
+.soria .cbtreeCheckBoxDisabled {
+	/* disabled */
 	background-position: -64px;
 }
 
-.soria .twcCheckBoxHover {
+.soria .cbtreeCheckBoxCheckedDisabled {
+	/* disabled but checked */
+	background-position: -48px;
+}
+
+.soria .cbtreeCheckBoxMixedDisabled {
+	/* checked & mixed */
+	background-position: -80px;
+}
+
+.soria .cbtreeCheckBoxHover {
 	/* hovering over an unchecked enabled checkbox */
 	background-position: -112px;
 }
 
-.soria .twcCheckBoxCheckedHover {
+.soria .cbtreeCheckBoxCheckedHover {
 	/* hovering over a checked enabled checkbox */
 	background-position: -96px;
 }
 
-.soria .twcCheckBoxMixedHover {
+.soria .cbtreeCheckBoxMixedHover {
 	/* checked & mixed */
 	background-position: -128px;
 }
-

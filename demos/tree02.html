@@ -2,31 +2,16 @@
          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head> 
-    <title>Dijit Tree with Checkboxes </title>     
-<!--
-		NOTE:	When changing themes, the <body class=xxx> MUST change accordingly.
-		
+    <title>Dijit Tree with Checkboxes and custom Icons</title>     
+
     <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
     <link rel="stylesheet" href="../themes/claro/claro.css" />
-
-    <link rel="stylesheet" href="../../dijit/themes/soria/soria.css" />
-    <link rel="stylesheet" href="../themes/soria/soria.css" />
-
-    <link rel="stylesheet" href="../../dijit/themes/tundra/tundra.css" />
-    <link rel="stylesheet" href="../themes/tundra/tundra.css" />
-
-    <link rel="stylesheet" href="../../dijit/themes/nihilo/nihilo.css" />
-    <link rel="stylesheet" href="../themes/nihilo/nihilo.css" />
-
--->
-    <link rel="stylesheet" href="../../dijit/themes/nihilo/nihilo.css" />
-    <link rel="stylesheet" href="../themes/nihilo/nihilo.css" />
 
 		<script type="text/javascript">
 			var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: true,
+            isDebug: false,
             baseUrl: "../../",
             locale: 'en-us',
             packages: [
@@ -41,7 +26,7 @@
 
   </head>
     
-  <body class="nihilo">
+  <body class="claro">
     <div id="CheckboxTree">	
       <script type="text/javascript">
 
@@ -51,17 +36,6 @@
         "dojo/data/ItemFileWriteStore",
         "cbtree"
         ], function( array, dom, ItemFileWriteStore, cbtree ) {
-
-          function myCheckboxes( checkBoxes ) {
-            array.forEach( checkBoxes, function( checkbox ) {
-              console.log( "Checkbox state: " + this.store.getValue( checkbox, "checked" )); 
-              this.updateCheckbox( checkbox, false );
-              }, this )
-          };
-
-          function updates( matches, updates ) {
-            alert( "Query matches: " + matches + ", Updates: " + updates );
-          };
 
           var store = new dojo.data.ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
           var model = new cbtree.StoreModel( {
@@ -77,16 +51,16 @@
                   model: model,
                   id: "MenuTree",
                   checkboxMultiState: true,
+                  customIconClass: "indentIcon",
+                  customIcons: true,
                   branchReadOnly: false,
                   branchIcons: true,
                   nodeIcons: true
                   });
           tree.placeAt( "CheckboxTree" );
 
-//        tree.model.getCheckbox( {name: "*", type : "parent" }, myCheckboxes );
-//        tree.model.check( "John", updates, this );
-
         });
+        
       </script>
     </div>
   </body> 

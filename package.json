@@ -1,19 +1,19 @@
 {
-	"name": "twc",
-	"author": "Peter Jekel",
-	"version":"1.7.2",
-	"description": "Dijit Tree with Multi State Checkboxes",
-	"licenses": [
-		 {
-			"type": "BSD 2-Clause",
-			"url": "http://thejekels.com/js/twc/LICENSE"
-		 }
-	],
-	"dependencies": {
-			"dojo" : ">= 1.7",
-			"dijit" : ">= 1.7"
-	},
-	"keywords": [ "Dojo", "Dijit", "Tree", "Checkbox"],
-	"homepage": "http://thejekels.com",
-	"dojoBuild": "twc.profile.js"
+  "name": "cbtree",
+  "author": "Peter Jekel",
+  "version":"1.7.2",
+  "description": "Dijit Tree with Multi State Checkboxes",
+  "licenses": [
+     {
+      "type": "BSD 2-Clause",
+      "url": "http://thejekels.com/js/cbtree/LICENSE"
+     }
+  ],
+  "dependencies": {
+      "dojo" : ">= 1.7",
+      "dijit" : ">= 1.7"
+  },
+  "keywords": [ "Dojo", "Dijit", "Tree", "Checkbox"],
+  "homepage": "http://thejekels.com",
+  "dojoBuild": "cbtree.profile.js"
 }

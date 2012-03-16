@@ -12,7 +12,8 @@
  *							 - unchecked
  *							 - mixed
 */
-.nihilo .cbtreeCheckBox {
+.claro .cbtreeCheckBox,
+.claro .cbtreeCheckBoxIcon {
 	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
@@ -21,47 +22,49 @@
 	padding: 0;
 }
 
-.nihilo .cbtreeCheckBox {
+.claro .cbtreeCheckBox, 
+.claro .cbtreeCheckBoxIcon {
 	/* unchecked */
 	background-position: -16px;
 }
 
-.nihilo .cbtreeCheckBoxChecked {
+.claro .cbtreeCheckBoxChecked, 
+.claro .cbtreeCheckBoxIcon {
 	/* checked */
 	background-position: 0px;
 }
 
-.nihilo .cbtreeCheckBoxMixed {
-	/* checked & mixed */
-	background-position: -32px;
-}
-
-.nihilo .cbtreeCheckBoxDisabled {
+.claro .cbtreeCheckBoxDisabled {
 	/* disabled */
-	background-position: -64px;
+	background-position: -48px;
 }
 
-.nihilo .cbtreeCheckBoxCheckedDisabled {
+.claro .cbtreeCheckBoxCheckedDisabled {
 	/* disabled but checked */
 	background-position: -48px;
 }
 
-.nihilo .cbtreeCheckBoxMixedDisabled {
+.claro .cbtreeCheckBoxMixed {
 	/* checked & mixed */
-	background-position: -80px;
+	background-position: -32px;
 }
 
-.nihilo .cbtreeCheckBoxHover {
+.claro .cbtreeCheckBoxMixedDisabled {
+	/* checked & mixed */
+	background-position: -64px;
+}
+
+.claro .cbtreeCheckBoxHover {
 	/* hovering over an unchecked enabled checkbox */
 	background-position: -112px;
 }
 
-.nihilo .cbtreeCheckBoxCheckedHover {
+.claro .cbtreeCheckBoxCheckedHover {
 	/* hovering over a checked enabled checkbox */
 	background-position: -96px;
 }
 
-.nihilo .cbtreeCheckBoxMixedHover {
+.claro .cbtreeCheckBoxMixedHover {
 	/* checked & mixed */
 	background-position: -128px;
 }
