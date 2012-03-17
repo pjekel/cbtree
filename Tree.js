@@ -48,6 +48,28 @@ define([
     //    Specifies the HTML template to be used.
     templateString: cbtreeNodeTemplate,
 
+    _applyClassAndStyle: function(item, lower, upper){
+      // summary:
+      //		Set the appropriate CSS classes and styles for labels, icons and rows.
+      // item:
+      //		The data item.
+      // lower:
+      //		The lower case attribute to use, e.g. 'icon', 'label' or 'row'.
+      // upper:
+      //		The upper case attribute to use, e.g. 'Icon', 'Label' or 'Row'.
+      // tags:
+      //		private
+
+      var clsName = "_" + lower + "Class";
+      var nodeName = lower + "Node";
+      var oldCls = this[clsName];
+
+      this[clsName] = this.tree["get" + upper + "Class"](item, this.isExpanded, this.indent);
+      domClass.replace(this[nodeName], this[clsName] || "", oldCls || "");
+
+      domStyle.set(this[nodeName], this.tree["get" + upper + "Style"](item, this.isExpanded) || {});
+    },
+
     _createCheckbox: function() {
       // summary:
       //    Create a checkbox on the cbtreeTreeNode if a checkbox style is specified.
@@ -149,7 +171,7 @@ define([
       //
       if( this.tree.customIcons )
       {
-        domClass.replace( this.iconNode, this.tree.customIconClass, "dijitIcon dijitTreeIcon" );
+        domClass.replace( this.iconNode, this.tree.customIcons.cssClass, "dijitIcon dijitTreeIcon" );
       }
       this._createCheckbox();
       this.inherited( arguments );
@@ -177,7 +199,7 @@ define([
     //    'cbtreeFolderOpened', 'cbtreeFolderClosed' and 'cbtreeLeaf'. The primary 
     //    ccs class for the icon stip itself can be set using the 'customIconClass'
     //    property.
-    customIcons: false,
+    customIcons: undefined,
     
     // customIconClass: String
     //    Sets the primary css class for custom Icons. Only valid in conjunction
@@ -295,22 +317,30 @@ define([
       return this.inherited(arguments);  /* Pass it on to the parent tree... */
     },
 
-    getIconClass: function(/*dojo.data.Item*/ item, /*Boolean*/ opened){
+    getIconClass: function(/*dojo.data.Item*/ item, /*Boolean*/ opened, /*Numeric*/ indent ){
       // summary:
-      //    Return the css class for the node Icon. 
+      //    Return the css class(es) for the node Icon. 
       // description:
-      //    Return the css class for the node Icon. If custom icons are enabled,
-      //    the class returned is either: 'FolderOpen', 'FolderClosed' or 'Leaf'
-      //    prefixed with the custom icon class, otherwise the default dijit css
-      //    class is returned. 
+      //    Return the css class(es) for the node Icon. If custom icons are enabled,
+      //    the base class returned is either: 'Expanded', 'Collapsed' or 'Terminal'
+      //    prefixed with the custom icon class. If custom icon indentation is true
+      //    an additional class is returned which is the base class suffixed with 
+      //    the current indent level. If custom icons are disabled the default dijit
+      //    css class is returned. 
       //
-      if( this.customIcons )
-      {
+      var iconClass;
+      
+      if( this.customIcons ) {
         if (!item || this.model.mayHaveChildren(item)) {
-          return (opened ? this.customIconClass + "FolderOpened" 
-                          : this.customIconClass + "FolderClosed");
+          iconClass = (opened ? this.customIcons.cssClass + "Expanded" 
+                              : this.customIcons.cssClass + "Collapsed");
+        } else {
+          iconClass = this.customIcons.cssClass + "Terminal";
         }
-        return this.customIconClass + "Leaf";
+        if( this.customIcons.indent === true ) {
+          return ( iconClass + ' ' + iconClass + '_' + indent );
+        }
+        return iconClass;
       }
       return this.inherited(arguments);
     },
