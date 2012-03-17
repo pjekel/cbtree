@@ -6,7 +6,7 @@
 
     <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
     <link rel="stylesheet" href="../themes/claro/claro.css" />
-    <link rel="stylesheet" href="../icons/cbtreeIcons.css" />
+    <link rel="stylesheet" href="../icons/networkIcons.css" />
 
 		<script type="text/javascript">
 			var dojoConfig = {
@@ -38,11 +38,11 @@
         "cbtree"
         ], function( array, dom, ItemFileWriteStore, cbtree ) {
 
-          var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
+          var store = new ItemFileWriteStore( { url: "../datastore/Network-1.7.json" });
           var model = new cbtree.StoreModel( {
                   store: store,
-                  query: {type: 'parent'},
-                  rootLabel: 'The Family',
+                  query: {type: 'computer'},
+                  rootLabel: 'The Network',
                   checkboxAll:  true,
                   checkboxRoot: true,
                   checkboxState: true,
@@ -52,9 +52,8 @@
                   model: model,
                   id: "MenuTree",
                   checkboxMultiState: true,
-                  customIconClass: "indentIcon",
-                  customIcons: true,
-                  branchReadOnly: false,
+                  customIcons: { cssClass: "networkIcon", 
+                                 indent: true },
                   branchIcons: true,
                   nodeIcons: true
                   });
