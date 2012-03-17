@@ -63,7 +63,7 @@
             alert( "Query matches: " + matches + ", Updates: " + updates );
           };
 
-          var store = new dojo.data.ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
+          var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
           var model = new cbtree.StoreModel( {
                   store: store,
                   query: {type: 'parent'},

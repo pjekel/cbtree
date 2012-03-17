@@ -6,6 +6,7 @@
 
     <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
     <link rel="stylesheet" href="../themes/claro/claro.css" />
+    <link rel="stylesheet" href="../icons/cbtreeIcons.css" />
 
 		<script type="text/javascript">
 			var dojoConfig = {
@@ -37,7 +38,7 @@
         "cbtree"
         ], function( array, dom, ItemFileWriteStore, cbtree ) {
 
-          var store = new dojo.data.ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
+          var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
           var model = new cbtree.StoreModel( {
                   store: store,
                   query: {type: 'parent'},

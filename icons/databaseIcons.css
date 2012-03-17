@@ -5,14 +5,14 @@
  *
  *    Replace the icon sprite 'images/nodeIcons.gif' with the sprite of your
  *    choice and create the cbtree with the property 'customIcons' set to true.
- *    If you want your own icon class instead of '.cbtreeIcon', simply replace
- *    all occurrences of 'cbtreeIcon' in this document with your class name and
+ *    If you want your own icon class instead of '.databaseIcon', simply replace
+ *    all occurrences of 'databaseIcon' in this document with your class name and
  *    set the 'customIconClass' property of the tree accordingly.
  *
  *    For example: 
  *
  *      If you created the icon class 'myIcon' by replacing all occurrences of
- *      'cbtreeIcon' in the text below you would create your tree as follows:
+ *      'databaseIcon' in the text below you would create your tree as follows:
  *
  *        myTree = cbtree.Tree( {
  *                          ...
@@ -22,13 +22,13 @@
  *                  });
  *
  *		This css file must be imported by theme related css file. For example:
- *		If the theme is 'tundra', place the following statement in 'tundra.css':
+ *		If the theme is 'claro', place the following statement in 'claro.css':
  *
  *      @import url("nodeIcons.css");
  */
 
-.tundra .cbtreeIcon {
-	background-image: url('images/nodeIcons.gif'); /* Node icons sprite image */
+.databaseIcon {
+	background-image: url('images/databaseIcons.gif'); /* Node icons sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;
@@ -36,14 +36,14 @@
 	padding: 0;
 }
 
-.tundra .cbtreeIconLeaf {
+.databaseIconLeaf {
 	background-position: -0px;
 }
 
-.tundra .cbtreeIconFolderClosed {
+.databaseIconFolderClosed {
 	background-position: -16px;
 }
 
-.tundra .cbtreeIconFolderOpened {
+.databaseIconFolderOpened {
 	background-position: -32px;
 }

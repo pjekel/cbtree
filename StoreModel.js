@@ -207,10 +207,7 @@ define([
       //  storeItem:
       //    The item in the dojo.data.store whos checkbox state is updated.
       //  newState:
-      //    The new state of the checkbox: true or false
-      //  mixedState:
-      //    Indicates if a parent checkbox has a mixed state (i.e some children 
-      //    checked but not all)
+      //    The new state of the checkbox: true, false or 'mixed'.
       //  example:
       //    model.setCheckboxState(item, true);
       //

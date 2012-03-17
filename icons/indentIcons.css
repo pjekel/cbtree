@@ -5,14 +5,14 @@
  *
  *    Replace the icon sprite 'images/nodeIcons.gif' with the sprite of your
  *    choice and create the cbtree with the property 'customIcons' set to true.
- *    If you want your own icon class instead of '.cbtreeIcon', simply replace
- *    all occurrences of 'cbtreeIcon' in this document with your class name and
+ *    If you want your own icon class instead of '.indentIcon', simply replace
+ *    all occurrences of 'indentIcon' in this document with your class name and
  *    set the 'customIconClass' property of the tree accordingly.
  *
  *    For example: 
  *
  *      If you created the icon class 'myIcon' by replacing all occurrences of
- *      'cbtreeIcon' in the text below you would create your tree as follows:
+ *      'indentIcon' in the text below you would create your tree as follows:
  *
  *        myTree = cbtree.Tree( {
  *                          ...
@@ -22,13 +22,13 @@
  *                  });
  *
  *		This css file must be imported by theme related css file. For example:
- *		If the theme is 'nihilo', place the following statement in 'nihilo.css':
+ *		If the theme is 'claro', place the following statement in 'claro.css':
  *
  *      @import url("nodeIcons.css");
  */
 
-.nihilo .cbtreeIcon {
-	background-image: url('images/nodeIcons.gif'); /* Node icons sprite image */
+.indentIcon {
+	background-image: url('images/indentIcons.gif'); /* Node icons sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;
@@ -36,14 +36,14 @@
 	padding: 0;
 }
 
-.nihilo .cbtreeIconLeaf {
+.indentIconLeaf {
 	background-position: -0px;
 }
 
-.nihilo .cbtreeIconFolderClosed {
+.indentIconFolderClosed {
 	background-position: -16px;
 }
 
-.nihilo .cbtreeIconFolderOpened {
+.indentIconFolderOpened {
 	background-position: -32px;
 }
