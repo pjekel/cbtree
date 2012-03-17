@@ -180,7 +180,7 @@ define([
       if( storeItem != this.root ) {
         var references = storeItem[this.store._reverseRefMap];
         for(itemId in references ) {
-          parents.push(this.store._itemsByIdentity[itemId]);
+          parents.push( this.store._getItemByIdentity( itemId ) );
         }
         if (!parents.length) {
           parents.push(this.root);
