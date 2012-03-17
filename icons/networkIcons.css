@@ -1,0 +1,55 @@
+/*
+ *  Sample cbtree custom node icon CSS
+ *
+ *  Usage:  See README
+ *
+ */
+
+.networkIcon {
+	background-image: url('images/networkIcons.gif'); /* Node icons sprite image */
+	background-repeat: no-repeat;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	padding: 0;
+}
+
+.networkIconTerminal {
+	background-position: -0px;
+}
+
+.networkIconCollapsed {
+	background-position: -16px;
+}
+
+.networkIconExpanded {
+	background-position: -32px;
+}
+
+.networkIconCollapsed_0,
+.networkIconExpanded_0 {
+	background-position: -48px;
+}
+
+.networkIconCollapsed_1 {
+	background-position: -64px;
+}
+.networkIconExpanded_1 {
+	background-position: -80px;
+}
+
+.networkIconCollapsed_2 {
+	background-position: -96px;
+}
+
+.networkIconExpanded_2 {
+	background-position: -112px;
+}
+
+.networkIconCollapsed_3 {
+	background-position: -16px;
+}
+
+.networkIconExpanded_3 {
+	background-position: -32px;
+}

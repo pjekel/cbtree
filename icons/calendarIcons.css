@@ -1,30 +1,8 @@
 /*
  *  Sample cbtree custom node icon CSS
  *
- *  Usage:  
+ *  Usage:  See README
  *
- *    Replace the icon sprite 'images/nodeIcons.gif' with the sprite of your
- *    choice and create the cbtree with the property 'customIcons' set to true.
- *    If you want your own icon class instead of '.calendarIcon', simply replace
- *    all occurrences of 'calendarIcon' in this document with your class name and
- *    set the 'customIconClass' property of the tree accordingly.
- *
- *    For example: 
- *
- *      If you created the icon class 'myIcon' by replacing all occurrences of
- *      'calendarIcon' in the text below you would create your tree as follows:
- *
- *        myTree = cbtree.Tree( {
- *                          ...
- *                      customIconClass: "myIcon",
- *                      customIcons: true,
- *                          ...
- *                  });
- *
- *		This css file must be imported by theme related css file. For example:
- *		If the theme is 'claro', place the following statement in 'claro.css':
- *
- *      @import url("nodeIcons.css");
  */
 
 .calendarIcon {
@@ -36,14 +14,14 @@
 	padding: 0;
 }
 
-.calendarIconLeaf {
+.calendarIconTerminal {
 	background-position: -0px;
 }
 
-.calendarIconFolderClosed {
+.calendarIconCollapsed {
 	background-position: -16px;
 }
 
-.calendarIconFolderOpened {
+.calendarIconExpanded {
 	background-position: -32px;
 }
