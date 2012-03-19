@@ -25,12 +25,13 @@
 define([
   "dijit/tree/ForestStoreModel",
   "dojo/_base/array",
+  "dojo/_base/connect",
   "dojo/_base/declare",
   "dojo/_base/lang",
   "dojo/dom-attr"
-], function( ForestStoreModel, array, declare, lang, domAttr) {
+], function( ForestStoreModel, array, connect, declare, lang, domAttr) {
 
-  return declare( [ForestStoreModel ], { 
+  return declare( [ForestStoreModel], { 
     // checkboxAll: Boolean
     //    If true, every node in the tree will receive a checkbox regardless if
     //    the 'checked' attribute is specified in the dojo.data.store
@@ -64,19 +65,25 @@ define([
     //    'checkboxState'. 
     checkboxIdent: "checked",
     
+    // _multiState: [private] Boolean
+    //    Determines if the state of a checkbox needs to be maintained in as multi
+    //    state in or as a dual state. ({"mixed",true,false} vs {true,false}).
+    //    Note: This parameter is set by the tree.
+    _multiState: true,
+    
     // _validating: [private] number
     //    Indicates if store validation is ongoing. Whenever the store is being
     //    validated, which happens BEFORE the tree is actually rendered, there is
-    //    no need to trigger any onCheckboxChange events as there are no tree
+    //    no need to trigger any onCheckBoxChange events as there are no tree
     //    nodes and thus no checkboxes improving startup performance. 
     //
     //    Note: _validating is a counter as method _validateStore() calls
     //          itself recursively. Only if it drops back down to zero do
-    //          we need to start issuing onCheckboxChange events.
+    //          we need to start issuing onCheckBoxChange events.
     //      
     _validating: 0,
     
-    _checkOrUncheck: function( /* String|Object */ query, /* Boolean */ newState, /* Callback */ onComplete, 
+    _checkOrUncheck: function( /*String|Object*/ query, /*Boolean*/ newState, /*Callback*/ onComplete, 
                   /* Context */ scope ) {
       // summary:
       //    Check or uncheck the checked state of all store items that match the query.
@@ -104,10 +111,10 @@ define([
       var matches = 0,
           updates = 0;
 
-      this.getCheckbox( query, function( storeItems ) {
+      this.getStoreItems( query, function( storeItems ) {
         array.forEach( storeItems, function( storeItem ) {
           if( this.store.getValue( storeItem, this.checkboxIdent) != newState ) {
-            this.updateCheckbox( storeItem, newState );
+            this._setCheckedAttr( storeItem, newState );
             updates += 1; 
           }
           matches += 1;
@@ -118,38 +125,37 @@ define([
       }, this );
     },
 
-    _getCheckboxState: function(/*dojo.data.Item*/ storeItem) {
+    _getCheckedAttr: function(/*dojo.data.Item*/ storeItem) {
       // summary:
-      //    Get the current checkbox state from the dojo.data.store.
+      //    Get the current checked state from the dojo.data.store for the specified
+      //    store item.
       // description:
-      //    Get the current checkbox state from the dojo.data store. A checkbox can
-      //    have three different states: true, false or undefined. Undefined in this
-      //    context means no checkbox identifier (checkboxIdent) was found in the 
-      //    dojo.data store. Depending on the checkbox attributes as specified above
-      //    the following will take place:
+      //    Get the current checked state from the dojo.data store. The checked state
+      //    in the store can be: 'mixed', true, false or undefined. Undefined in this
+      //    context means no checked identifier (checkboxIdent) was found in the store
+      //    Depending on the checkbox attributes as specified above the following will
+      //    take place:
       //
-      //    a)  If the current checkbox state is undefined and the checkbox attribute
+      //    a)  If the current checked state is undefined and the checkbox attribute
       //        'checkboxAll' or 'checkboxRoot' is true one will be created and the
       //        default state 'checkboxState' will be applied.
       //    b)  If the current state is undefined and 'checkboxAll' is false the state
-      //        undefined remains unchanged and is returned. This will prevent any tree
+      //        undefined remains unchanged and is returned. This will prevent a tree
       //        node from creating a checkbox.
       //
       //  storeItem:
       //    The item in the dojo.data.store whos checkbox state is returned.
       //  example:
-      //    var currState = model._getCheckboxState(item);
+      //    var currState = model._getCheckedAttr(item);
       //    
       var checked;
       
       if ( storeItem != this.root ) {
-        if( this.store.hasAttribute( storeItem, this.checkboxIdent )) {
-          checked = this.store.getValue(storeItem, this.checkboxIdent);
-        }  
-        else  // Attribute missing
+        checked = this.store.getValue(storeItem, this.checkboxIdent);
+        if( checked === undefined )
         {
           if( this.checkboxAll) {
-            this._setCheckboxState( storeItem, this.checkboxState );
+            this._setCheckedState( storeItem, this.checkboxState );
             checked = this.checkboxState;
           }
         }
@@ -162,6 +168,20 @@ define([
         }
       }
       return checked;  // the current state of the checkbox (true/false or undefined)
+    },
+
+    _getFuncNames: function( /*String*/ name ) {
+      // summary:
+      //		Helper function for the get() and set() mthods. Returns the function names
+      //    in lowerCamelCase for the get and set functions associated with the 'name'
+      //    attribute.
+      // name:
+      //    Attribute name.
+      // tags:
+      //		private
+      var cc = name.replace(/^[a-z]|-[a-zA-Z]/g, function(c){ return c.charAt(c.length-1).toUpperCase(); });
+      var fncSet = { set: "_set"+cc+"Attr", get: "_get"+cc+"Attr" };
+      return fncSet;
     },
 
     _getParentsItem: function(/*dojo.data.Item*/ storeItem ) {
@@ -189,34 +209,100 @@ define([
       return parents // parent(s) of a dojo.data.item (Array of dojo.data.items)
     },
 
-    _setCheckboxState: function(/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
+    _getStoreItemAttr: function( /*dojo.data.Item*/ storeItem, /*String*/ attr ) {
       // summary:
-      //    Set/update (stores) the checkbox state on the dojo.data store.
-      // description:
-      //    Set/update the checkbox state on the dojo.data.store. Retreive the
-      //    current state of the checkbox and validate if an update is required,
-      //    this will keep update events to a minimum.
-      //    On completion a 'onCheckboxChange' event is triggered if required. 
-      //    If the current state is undefined (ie: no checkbox attribute specified
-      //    for this dojo.data.item) the 'checkboxAll' attribute is checked  to see
-      //    if one needs to be created. In case of the root the 'checkboxRoot' 
-      //    attribute is checked.
+      //    Return the attribute value of a dojo.data.store item.   This method
+      //    provides the hook for the get() method for all store item attribute
+      //    other than 'checked'.
+      // storeItem:
+      //    The item in the dojo.data.store whos attribute value is returned.
+      // attr:
+      //    Attribute name whos value is returned. 
+      return this.store.getValue( storeItem, attr )
+    },
+
+     _onStoreChanged: function( /*dojo.data.Item*/ storeItem, /*String*/ attr, /*AnyType*/ oldValue, 
+                                 /*AnyType*/ newValue ) {
+      // summary:
+      //    This callback receives notifications for every call to setValue()
+      //    of the store. Note: The model calls _setValueOrValues() instead, 
+      //    explicitly disabling all notifications.
+      //    By intercepting any setValue() events here quarantees that if the
+      //    store is called directly (e.g. outside the scope of the model) we
+      //    still will be able to maintain a strict parent-child relationship
+      //    if so required.
       //
-      //    NOTE: The store.setValue function will create the 'checked' attribute
-      //          for the item if none exists.   
+      //    NOTE: We only redirect the store change if the 'checked' attr
+      //          of the store item changed.
+      // tag:
+      //    private, callback
+      if( attr == this.checkboxIdent && this.checkboxStrict && oldValue != newValue ) {
+        // Revert back to the old value first, then call _setCheckAttr().
+        this.store._setValueOrValues( storeItem, attr, oldValue, false );
+        this._setCheckedAttr( storeItem, newValue );
+      }
+    },
+    
+   _setCheckedAttr: function(/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
+      // summary:
+      //    Update the checked state ('mixed'/true/false) for the store item
+      //    and the associated parent and child checkboxes, if any. 
+      // description:
+      //    Update the checked state for a single store item and the associated
+      //    parent and child checkboxes, if any. This method is called from the
+      //    tree if the user checked/unchecked a checkbox. The parent and child
+      //    tree nodes are updated to maintain consistency if 'checkboxStrict'
+      //    is set to true. Use the public API set() to change the checked state
+      //    programmatically.
       //  storeItem:
-      //    The item in the dojo.data.store whos checkbox state is updated.
+      //    The item in the dojo.data.store whos checked state needs updating.
       //  newState:
-      //    The new state of the checkbox: true, false or 'mixed'.
+      //    The new checked state: 'mixed', true or false
       //  example:
-      //    model.setCheckboxState(item, true);
+      //    model.set( item,"checked",newState );
+      //  | model._setCheckedAttr(item, true);
+      
+      if( !this.checkboxStrict ) {
+        this._setCheckedState( storeItem, newState );    // Just update the checkbox state
+      } else {
+        this._updateChildCheckBox( storeItem, newState ); // Update children and parent(s).
+      }
+    },
+
+    _setCheckedState: function(/*dojo.data.Item*/ storeItem, /*Boolean|String*/ newState ) {
+      // summary:
+      //    Set/update the checked state on the dojo.data store. Returns true if
+      //    the checked state changed otherwise false.
+      // description:
+      //    Set/update the checked state on the dojo.data.store. Retreive the
+      //    current checked state and validate if an update is required, this 
+      //    will keep update events to a minimum. If the current checked state
+      //    is undefined (ie: no checked attribute specified in the store) the 
+      //    'checkboxAll' attribute is tested to see if a checkbox needs to be
+      //    created.  In case of the root node the 'checkboxRoot' attribute is
+      //    checked.
+      //
+      //    NOTE: The store._setValueOrValues() method will add the attribute
+      //          for the item if none exists.   
+      //
+      //  storeItem:
+      //    The item in the dojo.data.store whos checked state is updated.
+      //  newState:
+      //    The new checked state: 'mixed', true or false.
+      //  tag:
+      //    private
       //
       var stateChanged = true;
 
+      if( !this._multiState ) {
+        // In two state mode only true or false allowed.
+        newState = newState ? true : false;
+      }
       if( storeItem != this.root ) {
         var currState = this.store.getValue(storeItem, this.checkboxIdent);
         if( (currState !== undefined || this.checkboxAll) && (currState != newState ) ) {
-          this.store.setValue(storeItem, this.checkboxIdent, newState);
+          // Update the store BUT disable the notification.
+          this.store._setValueOrValues( storeItem, this.checkboxIdent, newState, false );
         } else {
           stateChanged = false;
         }
@@ -231,58 +317,92 @@ define([
       }
       // In case of any changes trigger the update event but only if we're not validating the store.
       if( stateChanged && !this._validating ) {
-        this.onCheckboxChange(storeItem, newState);
+        this.onCheckBoxChange(storeItem, newState);
       }
       return stateChanged;
     },
 
-    _updateChildCheckbox: function(/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
+    _setStoreItemAttr: function( /*dojo.data.Item*/ storeItem, /*String*/ attr, /*AnyType*/ value ) {
+      // summary:
+      //    Hook for the set() method for all attributes other than 'checked'.
+      //  storeItem:
+      //    The item in the dojo.data.store whos attribute value will be updated.
+      // attr:
+      //    Attribute name whos value is being updated. 
+      //  value:
+      //    The new value to be applied to the attribute.
+      //
+      if( attr == this.store._getIdentifierAttribute() ) {
+        throw new Error("cbtree: identifier attribute: {" + attr + "} can not be changed.");
+      }
+      return this.store._setValueOrValues( storeItem, attr, value, false );
+    },
+
+    _toggleCheckedState: function(/*dojo.data.Item*/ storeItem){
+      // summary:
+      //    Toggle the current checked state. This method is typically called
+      //    as the result of a mouse click event or when the user pressed the
+      //    spacebar.
+      //  storeItem:
+      //    The item in the dojo.data.store whos checkbox state is toggled.
+      //
+      var currState = this.store.getValue(storeItem, this.checkboxIdent);
+      if( currState !== undefined )  {
+        this._setCheckedAttr( storeItem, (currState == 'mixed' ? true : !currState ) );
+      }
+    },
+    
+    _updateChildCheckBox: function(/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
       //  summary:
-      //    Set the parent (storeItem) and all child checkboxes to true/false
+      //    Set the parent (the storeItem) and all child checkboxes to true/false
       //  description:
-      //    If a parent checkbox changes state, all child and grandchild checkboxes
+      //    If a parent checked changed state, all child and grandchild checkboxes
       //    will be updated to reflect the change. For example, if the parent state
       //    is set to true, all child and grandchild checkboxes will receive that
-      //    same 'true' state. If a child checkbox changes state all of its parents
+      //    same 'true' state. If a child checkbox changed state all of its parents
       //    need to be re-evaluated.
       //  storeItem:
-      //    The parent dojo.data.item whos child/grandchild checkboxes require updating.
+      //    The parent dojo.data.item whos child/grandchild checkboxes require
+      //    updating.
       //  newState:
       //    The new state of the checkbox: true or false
+      //  tag:
+      //    private
 
       if( this.mayHaveChildren( storeItem )) {
         this.getChildren( storeItem, lang.hitch( this,
           function( children ) {
             array.forEach( children, function(child) {
-              this._updateChildCheckbox( child, newState );
+              this._updateChildCheckBox( child, newState );
             }, this );          
           }),
           function(err) {
             console.error(this, ": updating child checkboxes: ", err);
           });
       } else {
-        if( this._setCheckboxState( storeItem, newState ) ) {
-          this._updateParentCheckbox( storeItem );
+        if( this._setCheckedState( storeItem, newState ) ) {
+          this._updateParentCheckBox( storeItem );
         }
       }
     },
 
-    _updateParentCheckbox: function(/*dojo.data.Item*/ storeItem ) {
+    _updateParentCheckBox: function(/*dojo.data.Item*/ storeItem ) {
       //  summary:
-      //    Update the parent checkbox states depending on the state of all child
+      //    Update the parent checked state depending on the state of all child
       //    checkboxes.
       //  description:
-      //    Update the parent checkbox state depending on the state of all of its
+      //    Update the parent checked state depending on the state of all of its
       //    child checkboxes. The parent checkbox automatically changes state if 
       //    ALL child checkboxes are true or false.  If, as a result, the parent
-      //    checkbox changes state, we check if its parent needs to be updated as
-      //    well, all the way upto the root. 
+      //    checked state changed, we check if its parent needs updating as well
+      //    all the way upto the root. 
       //
       //    NOTE: If any of the children have a mixed state, the parent will
       //          automatically get a mixed state too.
       //  storeItem:
       //    The dojo.data.item whos parent checkboxes require updating.
-      //
+      //  tag:
+      //    private
       var parents = this._getParentsItem( storeItem );
       array.forEach( parents, function( parentItem ) {
         this.getChildren( parentItem, lang.hitch( this,
@@ -291,7 +411,7 @@ define([
                 hasUnChecked = false,
                 isMixed      = false;
             array.some( children, function(child) {
-              state = this._getCheckboxState(child);
+              state = this._getCheckedAttr(child);
               isMixed |= ( state == "mixed" );
               switch( state ) {  // ignore 'undefined' state
                 case true:
@@ -305,8 +425,8 @@ define([
             }, this );
             isMixed |= !(hasChecked ^ hasUnChecked);
             // If the parent has a mixed state its checked state is always true.
-            if( this._setCheckboxState( parentItem,  isMixed ? "mixed" : hasChecked ? true: false ) ) {
-              this._updateParentCheckbox( parentItem );
+            if( this._setCheckedState( parentItem,  isMixed ? "mixed" : hasChecked ? true: false ) ) {
+              this._updateParentCheckBox( parentItem );
             }
           }),
           function(err) {
@@ -315,7 +435,7 @@ define([
       }, this );
     },
     
-    _validateData: function(/*dojo.data.Item*/ storeItem, /*thisObject*/ scope ) {
+    _validateData: function(/*dojo.data.Item*/ storeItem, /*Context*/ scope ) {
       // summary:
       //    Validate/normalize the parent-child checkbox relationship if the
       //    attribute 'checkboxStrict' is set to true. This method is called
@@ -365,7 +485,7 @@ define([
             }
           },this );
           if( !hasGrandChild && oneChild ) {  // Found a child on the lowest branches ?
-            this._updateParentCheckbox( oneChild );
+            this._updateParentCheckBox( oneChild );
           }
           this._validating -= 1;
         }),
@@ -376,22 +496,28 @@ define([
       );
     },
 
-    check: function( query, onComplete, scope ) {
+    check: function( /*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
       // summary:
       //    Check all store items that match the query.
       // description:
       //    See description _checkOrUncheck()
       //  example:
-      //    model.check( { name: "John" } ); or model.check( "John", myCallback, this );
-
+      //    model.check( { name: "John" } ); 
+      //  | model.check( "John", myCallback, this );
+      //
       this._checkOrUncheck( query, true, onComplete, scope );
     },
 
-    constructor: function(params){
+    constructor: function(/*Object*/ params){
       // summary:
-      //		Create the dummy root.
+      //		Create the dummy root and connect to the store to intercept any
+      //    setValue() changes.
       // description:
-      //    Create the dummy root and set the initial checked state for the tree root.
+      //    Create the dummy root and set the initial checked state for the
+      //    tree root. A connection with the store is establish to intercept
+      //    changes to any of the store items that happen outside the scope
+      //    of the model. This will quarantee that if a user calls the store
+      //    directly the model gets notified.
       // tags:
       //		private
 
@@ -404,9 +530,22 @@ define([
         label: params.rootLabel,
         children: params.rootChildren	// optional param
       };
+      // Go intercept any 'unauthorized' changes.
+      connect.connect(this.store, "onSet", this, "_onStoreChanged");
     },
 
-   getCheckbox: function( /* String|Object */ query, /* Callback */ onComplete, /* Context */ scope ) {
+    get: function( /*dojo.data.Item*/ storeItem , /*String*/ attr){
+      // summary:
+      //		Get a property from a store item.
+      //	name:
+      //		The property to get.
+      // description:
+
+      var func = this._getFuncNames( attr );
+      return this[func.get] ? this[func.get](storeItem) : this._getStoreItemAttr( storeItem, attr );
+    },
+
+    getStoreItems: function( /* String|Object */ query, /* Callback */ onComplete, /* Context */ scope ) {
       // summary:
       //    Get the list of store items that match the query and have a checkbox.
       // description:
@@ -457,16 +596,23 @@ define([
       });
     },
 
-    onCheckboxChange: function(/*dojo.data.Item*/ storeItem ) {
+    onCheckBoxChange: function(/*dojo.data.Item*/ storeItem ) {
       // summary:
       //    Callback whenever a checkbox state has changed state, so that 
       //    the Tree can update the checkbox.  This callback is generally
-      //    triggered by the '_setCheckboxState' function. 
+      //    triggered by the '_setCheckedState' function. 
       // tags:
       //    callback
     },
       
-    uncheck: function( query, onComplete, scope ) {
+    set: function( /*dojo.data.Item*/ item, /*String*/ name, /*anytype*/ value ) {
+      // summary:
+      var names = this._getFuncNames( name );
+      return this[names.set] ? this[names.set](item, value)
+                              : this._setStoreItemAttr( item, name, value );
+    },
+     
+    uncheck: function( /*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
       // summary:
       //    Uncheck all store items that match the query.
       // description:
@@ -476,33 +622,8 @@ define([
       //    model.uncheck( "John", myCallback, this );
 
       this._checkOrUncheck( query, false, onComplete, scope );
-    },
-    
-    updateCheckbox: function(/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
-      // summary:
-      //    Update the checkbox state (true/false) for the store item and the
-      //    associated parent and child checkboxes, if any. 
-      // description:
-      //    Update a single checkbox state (true/false) for the store item and
-      //    the associated parent and child checkboxes, if any. This method is
-      //    called from the tree if a user checked or unchecked a checkbox on
-      //    the tree or can be called programmatically.  The parent and child
-      //    tree nodes are updated to maintain consistency if 'checkboxStrict'
-      //    is set to true.
-      //  storeItem:
-      //    The item in the dojo.data.store whos checkbox state needs updating.
-      //  newState:
-      //    The new state of the checkbox: true or false
-      //  example:
-      //    model.updateCheckboxState(item, true);
-      //
-      if( !this.checkboxStrict ) {
-        this._setCheckboxState( storeItem, newState );    // Just update the checkbox state
-      } else {
-        this._updateChildCheckbox( storeItem, newState ); // Update children and parent(s).
-      }
     }
-
+    
   });  /* end declare() */
 
 });  /* end define() */
