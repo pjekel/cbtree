@@ -51,6 +51,7 @@ define([
     _applyClassAndStyle: function(item, lower, upper){
       // summary:
       //		Set the appropriate CSS classes and styles for labels, icons and rows.
+      //    This local implementation passed the indent level as an extra argument.
       // item:
       //		The data item.
       // lower:
@@ -70,7 +71,7 @@ define([
       domStyle.set(this[nodeName], this.tree["get" + upper + "Style"](item, this.isExpanded) || {});
     },
 
-    _createCheckbox: function() {
+    _createCheckBox: function() {
       // summary:
       //    Create a checkbox on the cbtreeTreeNode if a checkbox style is specified.
       // description:
@@ -80,12 +81,12 @@ define([
       //    If the 'checked' property of the state is undefined no reference was
       //    found and if 'checkboxAll' is false no checkbox will be created.
       //
-      //  NOTE: The attribute 'checkboxAll' is validated by _getCheckboxState(),
+      //  NOTE: The attribute 'checkboxAll' is validated by getCheckBoxState(),
       //        therefore no need to do it here.
       //    
       if( this.tree.checkboxStyle !== "none" )
       {
-        var  checked = this.tree.model._getCheckboxState( this.item );
+        var  checked = this.tree.model._getCheckedAttr( this.item );
  
         if( checked !== undefined ) {
           switch( this.tree.checkboxStyle ) {
@@ -93,17 +94,19 @@ define([
               this._checkbox = new CheckBox({ 
                                   multiState: this.tree.checkboxMultiState,
                                   checked: checked,
-                                  label: this.label }
+                                  value: this.label }
                                 );
               domConstruct.place(this._checkbox.domNode, this.checkBoxNode, 'replace');
               break;
               
             case "HTML":
               this._checkbox = win.doc.createElement('input');
-              this._checkbox.className = 'cbtreeHTMLCheckBox';
-              this._checkbox.type      = 'checkbox';
               
-              this._setCheckedState( checked );
+              domAttr.set( this._checkbox, "className", "cbtreeHTMLCheckBox" );
+              domAttr.set( this._checkbox, "type", "checkbox" );
+              domAttr.set( this._checkbox, "value", this.label );
+
+              this._setCheckBoxState( checked );
               domConstruct.place(this._checkbox, this.checkBoxNode, 'replace');
               break;
           }
@@ -125,7 +128,26 @@ define([
       }
     },
     
-    _setCheckedState: function( /*Boolean*/ checked ) {
+    _onClick: function( /*Event*/ evt){
+      // summary:
+      //		Handler for onclick event on a tree node
+      // description:
+      //    If the click event occured on a checkbox, intercept it and go update
+      //    the store and generate the checkbox click related events otherwise
+      //    pass the event on to the tree as a regular click event.
+      // tags:
+      //		private
+
+      if(evt.target.nodeName == 'INPUT') {
+        var newState = this._getCheckedAttr();
+        this.tree.model._setCheckedAttr( this.item, newState ); 
+        this.tree._onCheckBoxClick( this, newState, evt );
+      } else {
+        this.tree._onClick(this, evt);
+      }
+    },
+
+    _setCheckBoxState: function( /*Boolean*/ newState ) {
       // summary:
       //    Update the 'checked' state of a HTML or dijit checkbox.
       // description:
@@ -134,30 +156,48 @@ define([
       //    'mixed' is used to store the mixed state. 
       //    The visual aspect of a mixed checkbox state is only supported when
       //    using the dijit style checkbox (default).
-      //  checked:
+      //
+      //  newState:
       //    The new checkbox state which can be either true, false or 'mixed'.
       //
       switch( this.tree.checkboxStyle ) {
         case "dijit":
-          this._checkbox._setCheckedState( checked );
+          this._checkbox._setCheckedAttr( newState );
           break;
         case "HTML":
           if( this.tree.checkboxMultiState ) {
-            domAttr.set( this._checkbox, "mixed", ( checked == "mixed" ? true : false) );
+            domAttr.set( this._checkbox, "mixed", ( newState == "mixed" ? true : false) );
           }
-          domAttr.set( this._checkbox, "checked", (checked ? true : false) );
+          domAttr.set( this._checkbox, "checked", ( newState ? true : false) );
           break;
       }
     },
-    
-    _getCheckedState: function() {
-      // summery:
-      //    Get the current checked state of the checkbox.
-      // description:
-      //    Get the current checked state of the checkbox. It returns true
-      //    or false.
 
-      return this._checkbox.checked;
+    _getCheckedAttr: function() {
+      // summery:
+      //    Get the current checked state of the checkbox. Provide the hook for
+      //    get("checked")
+      // description:
+      //    Get the current checked state of the checkbox. It returns either 'mixed',
+      //    true or false. 
+      //
+      var checked;
+      if( this._checkbox ) {
+        checked = this._checkbox.checked;
+      }
+      return checked;
+    },
+    
+    _setCheckedAttr: function( /*Boolean|String)*/ newState ) {
+      // summery:
+      //    Set the new checked state of the checkbox. Provide the hook for
+      //    set("checked",newValue)
+      // description:
+      //    Set the new checked state of the checkbox.
+      //
+      if( this._checkbox ) {
+        this.tree.model._setCheckedAttr( this.item, newState );
+      }
     },
     
     postCreate: function() {
@@ -166,14 +206,14 @@ define([
       //    instanciated.
       // description:
       //    Handle the creation of the checkbox after the cbtreeTreeNode has been
-      //    instanciated. If a customIconClass was specified for the tree, set it
-      //    here and remove the default 'dijit' classes. (see template).
+      //    instanciated. If a customIcons was specified for the tree, set it now
+      //    and remove the default 'dijit' classes. (see template).
       //
       if( this.tree.customIcons )
       {
         domClass.replace( this.iconNode, this.tree.customIcons.cssClass, "dijitIcon dijitTreeIcon" );
       }
-      this._createCheckbox();
+      this._createCheckBox();
       this.inherited( arguments );
     }
   });  /* end declare() _TreeNode*/
@@ -196,16 +236,9 @@ define([
     // customIcons: Boolean
     //    If customIcons is true the default dijit icons 'Open' 'Closed' and 'Leaf'
     //    will be replaced by a custom icon strip with three distinct css classes: 
-    //    'cbtreeFolderOpened', 'cbtreeFolderClosed' and 'cbtreeLeaf'. The primary 
-    //    ccs class for the icon stip itself can be set using the 'customIconClass'
-    //    property.
-    customIcons: undefined,
+    //    'Expanded', 'Collapsed' and 'Terminal'.
+    customIcons: null,
     
-    // customIconClass: String
-    //    Sets the primary css class for custom Icons. Only valid in conjunction
-    //    with the 'customIcons' property. The default value is 'cbtreeIcon'.
-    customIconClass: "cbtreeIcon",
-
     // branchIcons: Boolean
     //    Determines if the FolderOpen/FolderClosed icon is displayed.
     branchIcons: true,
@@ -227,13 +260,13 @@ define([
       return new TreeNode( args );
     },
 
-    _onCheckboxChange: function(/*dojo.data.Item*/ storeItem ) {
+    _onCheckBoxChange: function(/*dojo.data.Item*/ storeItem ) {
       // summary:
       //    Process notification of a change to a checkbox state (triggered
       //    by the model).
       // description:
       //    Whenever the model changes the state of a checkbox in the dojo.data
-      //    store it will trigger the 'onCheckboxChange' event allowing the Tree
+      //    store it will trigger the 'onCheckBoxChange' event allowing the Tree
       //    to make the same changes on the tree Node. There is a condition however
       //    when we get a checkbox update but the associated tree node does not
       //    exist:
@@ -245,7 +278,7 @@ define([
       //    callback
 
       var model   = this.model,
-          state    = model._getCheckboxState( storeItem ),
+          state    = model._getCheckedAttr( storeItem ),
           identity = model.getIdentity(storeItem),
           nodes    = this._itemNodesMap[identity];
     
@@ -255,47 +288,36 @@ define([
       if( nodes ) {
         array.forEach( nodes, function(node) {
           if( node._checkbox != null )
-            node._setCheckedState( state );
+            node._setCheckBoxState( state );
         }, this );
       }
     }, 
 
-    _onClick: function(/*TreeNode*/ nodeWidget, /*Event*/ e) {
+    _onCheckBoxClick: function(/*TreeNode*/ nodeWidget, /*Boolean|String*/ newState, /*Event*/ e) {
       // summary:
       //    Translates click events into commands for the controller to
       //    process.
       // description:
-      //    the _onClick function is called whenever a mouse 'click' is
-      //    detected. This instance of _onClick only handles the click
-      //    events associated with the checkbox whos DOM name is 'INPUT'.
-      // 
-
-      // Only handle checkbox clicks here
-      if(e.target.nodeName != 'INPUT') {
-        return this.inherited( arguments );
-      }
-
-      var isExpando = ( nodeWidget.isExpandable || this.isExpandoNode( e.target, nodeWidget ) ),
-        storeItem = nodeWidget.item;
+      //    the _onCheckBoxClick function is called whenever a mouse 'click'
+      //    on a checkbox is detected. Because the click was on the checkbox
+      //    we are not handling any node expansion or collapsing here.
+      //
+      var storeItem = nodeWidget.item;
         
       this._publish("execute", { item: storeItem, node: nodeWidget, evt: e} );
-      // Go tell the model to update the checkbox state
-      this.model.updateCheckbox( storeItem, nodeWidget._getCheckedState() ); 
-      // Generate some additional events users can connect to...
-      this.onClick( storeItem, nodeWidget, e );
-      if( nodeWidget._getCheckedState() ) {
-        this.onNodeChecked( storeItem, nodeWidget);
+      // Generate events incase any listeners are tuned in...
+      this.onCheckBoxClick( storeItem, nodeWidget, e );
+      if( newState ) {
+        this.onCheckBoxChecked( storeItem, nodeWidget, e);
       } else {
-        this.onNodeUnchecked( storeItem, nodeWidget);
+        this.onCheckBoxUnchecked( storeItem, nodeWidget, e);
       }
-      if( isExpando )
-      {
-        this.onParentNode( storeItem, nodeWidget, e );
-      }
-      if( this.checkboxStyle == "dijit" ) {
+      this.onClick(nodeWidget.item, nodeWidget, e);
+      this.focusNode(nodeWidget);
+
+      if( this.checkboxStyle != "HTML" ) {
         event.stop(e);
       }
-      this.focusNode(nodeWidget);
     },
     
     _onKeyPress: function(/*Event*/ e){
@@ -309,12 +331,12 @@ define([
       if( !e.altKey ) {
         var treeNode = registry.getEnclosingWidget(e.target);
         if( treeNode && treeNode._checkbox != null ) {
-          if( typeof(e.charOrCode) == "string" && e.charOrCode == " " ) {
-            this.model.updateCheckbox( treeNode.item, !treeNode._checkbox.checked );
+          if( (typeof e.charOrCode == "string") && (e.charOrCode == " ") ) {
+            this.model._toggleCheckedState( treeNode.item );
           }
         }
       }
-      return this.inherited(arguments);  /* Pass it on to the parent tree... */
+      this.inherited(arguments);  /* Pass it on to the parent tree... */
     },
 
     getIconClass: function(/*dojo.data.Item*/ item, /*Boolean*/ opened, /*Numeric*/ indent ){
@@ -345,23 +367,23 @@ define([
       return this.inherited(arguments);
     },
 
-    onNodeChecked: function(/*dojo.data.Item*/ storeItem, /*treeNode*/ treeNode) {
+    onCheckBoxChecked: function(/*dojo.data.Item*/ storeItem, /*treeNode*/ treeNode, /*Event*/ e) {
       // summary:
-      //    Callback when a checkbox tree node is checked
+      //    Callback when a checkbox on a tree node is checked
       // tags:
       //    callback
     },
     
-    onNodeUnchecked: function(/*dojo.data.Item*/ storeItem, /*treeNode*/ treeNode) {
+    onCheckBoxClick: function( /*dojo.data.Item*/ storeItem, /*treeNode*/ treeNode, /*Event*/ e) {
+      // summary:
+      //    Callback when a checkbox on a tree node is clicked
+      // tags:
+      //    callback
+    },
+    
+    onCheckBoxUnchecked: function(/*dojo.data.Item*/ storeItem, /*treeNode*/ treeNode, /*Event*/ e) {
       // summary:
       //    Callback when a checkbox tree node is unchecked
-      // tags:
-      //    callback
-    },
-    
-    onParentNode: function(/*dojo.data.Item*/ storeItem, /*treeNode*/ treeNode, /*Event*/ e ) {
-      // summary:
-      //    Callback when a parent checkbox gets checked/unchecked
       // tags:
       //    callback
     },
@@ -372,16 +394,25 @@ define([
       //    instanciationof the Tree. 
       // description:
       //    Whenever checkboxes are requested Validate if we have a 'write'
-      //    store first. Subscribe to the 'onCheckboxChange' event (triggered
+      //    store first. Subscribe to the 'onCheckBoxChange' event (triggered
       //    by the model) and kickoff the initial checkbox data validation.
       //
       var store = this.model.store;
 
       if( this.checkboxStyle !== "none" ) {
         if(!store.getFeatures()['dojo.data.api.Write']){
-          throw new Error("Tree: store must support dojo.data.Write");
+          throw new Error("cbtree: store must support dojo.data.Write");
         }
-        this.connect(this.model, "onCheckboxChange", "_onCheckboxChange");
+        if( this.customIcons && typeof this.customIcons != "object" ) {        
+          if ( (typeof this.customIcons == "string") && this.customIcons.length ) {
+            this.customIcons = { cssClass: this.customIcons, indent: true };
+          } else {
+            throw new Error("cbtree: customIcons must be an object or string");
+            this.customIcons = null;
+          }
+        }
+        this.connect(this.model, "onCheckBoxChange", "_onCheckBoxChange");
+        this.model._multiState = this.checkboxMultiState;
         this.model._validateData( this.model.root, this.model );
       }
       this.inherited(arguments);
