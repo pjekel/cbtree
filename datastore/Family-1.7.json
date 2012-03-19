@@ -19,6 +19,6 @@
      { name:'Charlotte', type:'child', checked: false },
      { name:'Paul', type:'child', checked: true },
      { name:'Donna', type:'child', checked: false },
-     { name:'Eric', type:'child', checked: false }
+     { name:'Eric', type:'child', checked: true }
 ]}
 
