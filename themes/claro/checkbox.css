@@ -65,3 +65,19 @@
 	/* checked & mixed */
 	background-position: -128px;
 }
+
+.claro .cbtreeCheckBoxReadOnly {
+	/* read-only */
+	background-position: -160px;
+}
+
+.claro .cbtreeCheckBoxCheckedReadOnly {
+	/* checked read-only */
+	background-position: -144px;
+}
+
+.claro .cbtreeCheckBoxMixedReadOnly {
+	/* read-only */
+	background-position: -176px;
+}
+

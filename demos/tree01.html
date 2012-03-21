@@ -28,7 +28,6 @@
             parseOnLoad: true,
             isDebug: true,
             baseUrl: "../../",
-            locale: 'en-us',
             packages: [
               { name: "dojo",  location: "dojo" },
               { name: "dijit", location: "dijit" },
@@ -83,7 +82,7 @@
                   });
           tree.placeAt( "CheckboxTree" );
 
-//        tree.model.getCheckbox( {name: "*", type : "parent" }, myCheckboxes );
+//        tree.model.getStoreItems( {name: "*", type : "parent" }, myCheckboxes );
 //        tree.model.check( "John", updates, this );
 
         });
