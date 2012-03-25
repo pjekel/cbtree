@@ -51,10 +51,10 @@
         "cbtree"
         ], function( array, dom, ItemFileWriteStore, cbtree ) {
 
-          function myCheckboxes( checkBoxes ) {
+          function unCheckParents( checkBoxes ) {
             array.forEach( checkBoxes, function( checkbox ) {
-              console.log( "Checkbox state: " + this.store.getValue( checkbox, "checked" )); 
-              this.updateCheckbox( checkbox, false );
+              console.log( "Checkbox state: " + this.get( checkbox, "checked" )); 
+              this.set( checkbox, "checked", false );
               }, this )
           };
 
@@ -67,10 +67,10 @@
                   store: store,
                   query: {type: 'parent'},
                   rootLabel: 'The Family',
-                  checkboxAll:  true,
-                  checkboxRoot: true,
-                  checkboxState: true,
-                  checkboxStrict: true
+                  checkedAll:  true,
+                  checkedRoot: true,
+                  checkedState: true,
+                  checkedStrict: true
                   }); 
           var tree = new cbtree.Tree( {
                   model: model,
@@ -82,7 +82,7 @@
                   });
           tree.placeAt( "CheckboxTree" );
 
-//        tree.model.getStoreItems( {name: "*", type : "parent" }, myCheckboxes );
+//        tree.model.getStoreItems( {name: "*", type : "parent" }, unCheckParents );
 //        tree.model.check( "John", updates, this );
 
         });
