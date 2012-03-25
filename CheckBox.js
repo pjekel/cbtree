@@ -27,7 +27,7 @@ define([
   "dojo/_base/declare",
   "dojo/_base/event",
   "dojo/dom-attr"
-], function( CheckBox, declare, event, domAttr ) {
+], function ( CheckBox, declare, event, domAttr ) {
 
   return declare( [CheckBox], {
     // baseClass: [protected] String
@@ -35,20 +35,20 @@ define([
     //    classes of widget.
     //    (ex: "twcCheckBox twcCheckBoxChecked twcCheckBoxMixed")
     baseClass: "cbtreeCheckBox",
-
+    
     // value:  Boolean
     //    Indicate if the checkbox is a mutli state checkbox or not. If
     //    multiState is true the 'checked' attr can be either: 'mixed',
     //    true or false otherwise 'checked' can only be true or false.
     multiState: true,
 
-    _getCheckedAttr: function() {
+    _getCheckedAttr: function () {
       // summary:
       //    Returns the current checked state
       return this.checked;
     },
     
-    _onClick: function( /*Event*/ evt ) {
+    _onClick: function (/*Event*/ evt ) {
       // summary:
       //    Process a click event on the checkbox.
       // description:
@@ -65,7 +65,7 @@ define([
       return event.stop(evt);
     },
 
-    _setCheckedAttr: function( /*Boolean | String*/ checked, /*Boolean?*/ priorityChange ) {
+    _setCheckedAttr: function (/*Boolean | String*/ checked, /*Boolean?*/ priorityChange ) {
       // summary
       //    Set the new checked state of the checkbox.
       // description
@@ -88,7 +88,7 @@ define([
       return newState;
     },
 
-    _setValueAttr: function(/*String or Boolean*/ newValue, /*Boolean?*/ priorityChange){
+    _setValueAttr: function (/*String or Boolean*/ newValue, /*Boolean?*/ priorityChange){
       // summary:
       //    Handler for value= attribute to constructor, Overwrites the
       //    default '_setValueAttr' method as we will handle the Checkbox
@@ -105,9 +105,9 @@ define([
       }
     },
 
-    toggle: function() {
+    toggle: function () {
       // summary:
-      //    Toggle the current checkbox state end return the new state. If the
+      //    Toggle the current checkbox state and return the new state. If the
       //    checkbox is read-only or disabled the current state is returned.
       //
       var curState = this.get( "checked" );
