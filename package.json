@@ -1,7 +1,7 @@
 {
   "name": "cbtree",
   "author": "Peter Jekel",
-  "version":"1.7.2",
+  "version":"0.9",
   "description": "Dijit Tree with Multi State Checkboxes",
   "licenses": [
      {
