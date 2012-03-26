@@ -2,36 +2,26 @@
 // Copyright (c) 2010-2012, Peter Jekel
 // All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
+//  The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
+//  is released under to following three licenses:
 //
-// 1 Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
+//  1 - BSD 2-Clause                (http://thejekels.com/js/cbtree/LICENSE)
+//  2 - The "New" BSD License       (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//  3 - The Academic Free License   (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-// 2 Redistributions in binary form must reproduce the above copyright notice, this
-//   list of conditions and the following disclaimer in the documentation and/or other 
-//   materials provided with the distribution.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
-// SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
-// BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
-// WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  In case of doubt, the BSD 2-Clause license takes precedence.
 //
 define([
   "dijit/tree/TreeStoreModel",
   "dojo/_base/array",
   "dojo/_base/declare",
   "dojo/_base/lang",
-  "dojo/_base/window"
-], function (TreeStoreModel, array, declare, lang) {
+  "dojo/_base/window",
+	"dojo/aspect",
+	"./ItemWriteStoreEX"    // ItemFileWriteStore extensions.
+], function (TreeStoreModel, array, declare, lang, win, aspect, ItemWriteStoreEX ) {
 
   return declare([TreeStoreModel], { 
-
     // checkedAll: Boolean
     //    If true, every store item will receive a 'checked' state property regard-
     //    less if the 'checked' attribute is specified in the dojo.data.store
@@ -85,18 +75,48 @@ define([
     //    Label of fabricated root item
     rootLabel: "ROOT",
 
-    // _identity: [private] String
-    //    The identity specified for the store. The identity equates to the 'identifier'
-    //    property of the store if any.
-    _identity: null,
-
     // _queryAttrs: [private] array of strings
     //    A list of attribute names included in the query. The list is used to determine
     //    if a re-query of the store is required after a property of a store item has
     //    changed value.
     _queryAttrs: [],
   
- 
+    constructor: function (/*Object*/ params){
+      // summary:
+      //    Create the dummy root.
+      // description:
+      //    Create the dummy root and set the initial checked state for the
+      //    tree root.
+      // tags:
+      //    extension
+
+      // Make dummy root item
+      this.root = {
+        store: this,
+        root: true,
+        checked: this.checkedState,
+        id: params.rootId,
+        label: params.rootLabel,
+        children: params.rootChildren  // optional param
+      };
+
+      // Compose a list of attribute names included in the query.
+      if( this.query ) {
+        for( var attr in this.query ) {
+          this._queryAttrs.push( attr );
+        }
+      }
+
+			if(this.store.getFeatures()['dojo.data.api.Notification']){
+        this.connects = this.connects.concat([
+          aspect.after(this.store, "onRoot", lang.hitch(this, "onRootChange"), true)
+        ]);
+      }
+    },
+
+		// =======================================================================
+		// Private Methods related to checked states
+
     _checkOrUncheck: function (/*String|Object*/ query, /*Boolean*/ newState, /*Callback*/ onComplete, 
                                 /*Context*/ scope ) {
       // summary:
@@ -188,44 +208,6 @@ define([
       return checked;  // the current checked state (true/false or undefined)
     },
 
-    _getFuncNames: function (/*String*/ name ) {
-      // summary:
-      //    Helper function for the get() and set() mthods. Returns the function names
-      //    in lowerCamelCase for the get and set functions associated with the 'name'
-      //    property.
-      // name:
-      //    Attribute name.
-      // tags:
-      //    private
-
-      if( typeof name == "string" ) {
-        var cc = name.replace(/^[a-z]|-[a-zA-Z]/g, function (c){ return c.charAt(c.length-1).toUpperCase(); });
-        var fncSet = { set: "_set"+cc+"Attr", get: "_get"+cc+"Attr" };
-        return fncSet;
-      }
-      throw new Error("StoreModel:_getFuncNames(): get/set attribute name must be of type string.");
-    },
-
-    _getStoreIdentity: function () {
-      // summary:
-      //    Get the identity (identifier) property of the store, if any.
-      // tags:
-      //    private
-
-      if( this._identity ) {
-        return this._identity;
-      }
-      if( this._identity === null ) {
-        var identities = this.store.getIdentityAttributes();
-        if( identities ) {
-          this._identity = identities[0];
-        } else {
-          this._identity = undefined;
-        }
-      }
-      return this._identity;
-    },
-
     _getParentsItem: function (/*dojo.data.Item*/ storeItem, /*String?*/ parentRefMap ) {
       // summary:
       //    Get the parent(s) of a dojo.data item.  
@@ -297,30 +279,6 @@ define([
       return state ? true : false;
     },
     
-    _requeryTop: function(){
-      // summary:
-      //    Reruns the query for the children of the root node, sending out an
-      //    onChildrenChange notification if those children have changed.
-      // tags:
-      //    private
-
-      var oldChildren = this.root.children || [];
-      this.store.fetch({
-        query: this.query,
-        onComplete: lang.hitch(this, function(newChildren){
-          this.root.children = newChildren;
-
-          // If the list of children or the order of children has changed...
-          if(oldChildren.length != newChildren.length ||
-            array.some(oldChildren, function(item, idx){ 
-                return newChildren[idx] != item;
-              })) {
-            this.onChildrenChange(this.root, newChildren);
-          }
-        }) /* end hitch() */
-      }); /* end fetch() */
-    },
-
    _setCheckedAttr: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
       // summary:
       //    Update the checked state for the store item and the associated parents
@@ -476,6 +434,9 @@ define([
       //  tag:
       //    private
       
+      if( !this.checkedStrict ) {
+        return;
+      }
       var parents = this._getParentsItem( storeItem, reverseRefMap ),
           newState;
 
@@ -513,6 +474,9 @@ define([
       }, this ); /* end forEach() */
     },
     
+		// =======================================================================
+		// Private Methods related to store validation
+
     _validateData: function (/*dojo.data.Item*/ storeItem ) {
       // summary:
       //    Validate/normalize the parent-child checked state relationship if
@@ -569,86 +533,85 @@ define([
         this.onError
       );
     },
-
-    check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
-      // summary:
-      //    Check all store items that match the query.
-      // description:
-      //    See description _checkOrUncheck()
-      //  example:
-      //    model.check( { name: "John" } ); 
-      //  | model.check( "John", myCallback, this );
-      //
-      this._checkOrUncheck( query, true, onComplete, scope );
-    },
     
-    constructor: function (/*Object*/ params){
+		// =======================================================================
+		// Misc Private Methods
+
+    _getFuncNames: function (/*String*/ name ) {
       // summary:
-      //    Create the dummy root.
-      // description:
-      //    Create the dummy root and set the initial checked state for the
-      //    tree root.
+      //    Helper function for the get() and set() methods. Returns the function names
+      //    in lowerCamelCase for the get and set functions associated with the 'name'
+      //    property.
+      // name:
+      //    Attribute name.
       // tags:
-      //    extension
+      //    private
 
-      // Make dummy root item
-      this.root = {
-        store: this,
-        root: true,
-        checked: this.checkedState,
-        id: params.rootId,
-        label: params.rootLabel,
-        children: params.rootChildren  // optional param
-      };
-
-      // Compose a list of attribute names included in the query.
-      if( this.query ) {
-        for( var attr in this.query ) {
-          this._queryAttrs.push( attr );
-        }
+      if( typeof name == "string" ) {
+        var cc = name.replace(/^[a-z]|-[a-zA-Z]/g, function (c){ return c.charAt(c.length-1).toUpperCase(); });
+        var fncSet = { set: "_set"+cc+"Attr", get: "_get"+cc+"Attr" };
+        return fncSet;
       }
+      throw new Error("StoreModel:_getFuncNames(): get/set attribute name must be of type string.");
     },
 
-    deleteItem: function (/*dojo.data.Item*/ storeItem ){
+    _mapIdentifierAttr: function( args, /*Boolean?*/ delMappedAttr ) {
       // summary:
-      //    Delete a store item.
-      // storeItem:
-      //    The store item to be delete.
+      //    Map the 'newItemIdAttr' property of a new item to the store identifier
+      //    attribute.
+      // description:
+      //    If a store has an identifier attribute defined each new item MUST have
+      //    at least that same attribute defined otherwise the store will reject
+      //    the item to be inserted. This method handles the conversion from the
+      //    'newItemIdAttr' to the store required identifier attribute.
+      // args:
+      //    Object defining the new item properties.
+      // delMappedAttr:
+      //    If true it determines, when a mapping was made, if the mapped attribute
+      //    is to be removed from the new item properties.
+      // tags:
+      //    private, extension
       
-      return this.store.deleteItem( storeItem );
+      var identifierAttr = this.store.getIdentifierAttr();
+      
+      if( identifierAttr ) {
+        if( !args[identifierAttr] && (this.newItemIdAttr && args[this.newItemIdAttr])) {
+          args[identifierAttr] = args[this.newItemIdAttr];
+          if( delMappedAttr ) {
+            delete args[this.newItemIdAttr];
+          }
+          return true;
+        }
+      }
+      return false;
     },
     
-    fetchItemByIdentity: function(/* object */ keywordArgs){
+    _requeryTop: function(){
       // summary:
+      //    Reruns the query for the children of the root node, sending out an
+      //    onChildrenChange notification if those children have changed.
       // tags:
-      //    extension
+      //    private
 
-      if(keywordArgs.identity == this.root.id){
-        var scope = keywordArgs.scope ? keywordArgs.scope : win.global;
-        if(keywordArgs.onItem){
-          keywordArgs.onItem.call(scope, this.root);
-        }
-      }else{
-        this.inherited(arguments);
-      }
+      var oldChildren = this.root.children || [];
+      this.store.fetch({
+        query: this.query,
+        onComplete: lang.hitch(this, function(newChildren){
+          this.root.children = newChildren;
+
+          // If the list of children or the order of children has changed...
+          if(oldChildren.length != newChildren.length ||
+            array.some(oldChildren, function(item, idx){ 
+                return newChildren[idx] != item;
+              })) {
+            this.onChildrenChange(this.root, newChildren);
+          }
+        }) /* end hitch() */
+      }); /* end fetch() */
     },
 
-    get: function (/*dojo.data.Item*/ storeItem , /*String*/ attr){
-      // summary:
-      //    Provide the getter capabilities for store items thru the model.  The
-      //    'get' operates on a store item providing a convenient way to get any
-      //    store item properties.
-      // storeItem:
-      //    The store item whose property to get.
-      // attr:
-      //    Name of property to get
-
-      if(this.isItem( storeItem )) {
-        var func = this._getFuncNames( attr );
-        return this[func.get] ? this[func.get](storeItem) : this._getStoreItemAttr( storeItem, attr );
-      }
-      throw new Error("StoreModel:get(): argument is not a valid store item.");
-    },
+		// =======================================================================
+		// Methods for traversing hierarchy
 
     getChildren: function(/*dojo.data.Item*/ parentItem, /*function(items)*/ callback, /*function*/ onError){
       // summary:
@@ -672,6 +635,35 @@ define([
       }
     },
 
+    mayHaveChildren: function(/*dojo.data.Item*/ storeItem){
+      // summary:
+      //    Tells if an item has or may have children.  Implementing logic here
+      //    avoids showing +/- expando icon for nodes that we know don't have children.
+      //    (For efficiency reasons we may not want to check if an element actually
+      //    has children until user clicks the expando node)
+      // tags:
+      //    extension
+      return storeItem === this.root || this.inherited(arguments);
+    },
+
+		// =======================================================================
+		// Inspecting items
+
+    fetchItemByIdentity: function(/* object */ keywordArgs){
+      // summary:
+      // tags:
+      //    extension
+
+      if(keywordArgs.identity == this.root.id){
+        var scope = keywordArgs.scope ? keywordArgs.scope : win.global;
+        if(keywordArgs.onItem){
+          keywordArgs.onItem.call(scope, this.root);
+        }
+      }else{
+        this.inherited(arguments);
+      }
+    },
+
     getIdentity: function(/* item */ item){
       // summary:
       // tags:
@@ -684,6 +676,36 @@ define([
       // tags:
       //    extension
       return  (item === this.root) ? this.root.label : this.inherited(arguments);
+    },
+
+    isItem: function(/* anything */ something){
+      // summary:
+      //    Returns true if the specified item 'something' is a valid store item
+      //    or the tree root.
+      // tags:
+      //    extension
+
+      return (something === this.root) ? true : this.inherited(arguments);
+    },
+
+		// =======================================================================
+		// Read interface
+
+    get: function (/*dojo.data.Item*/ storeItem , /*String*/ attr){
+      // summary:
+      //    Provide the getter capabilities for store items thru the model.  The
+      //    'get' operates on a store item providing a convenient way to get any
+      //    store item properties.
+      // storeItem:
+      //    The store item whose property to get.
+      // attr:
+      //    Name of property to get
+
+      if(this.isItem( storeItem )) {
+        var func = this._getFuncNames( attr );
+        return this[func.get] ? this[func.get](storeItem) : this._getStoreItemAttr( storeItem, attr );
+      }
+      throw new Error("StoreModel:get(): argument is not a valid store item.");
     },
 
     getStoreItems: function (/* String|Object */ query, /* Callback */ onComplete, /* Context */ scope ) {
@@ -714,7 +736,7 @@ define([
           identity;
         
       if(typeof query == "string"){
-        identity = this._getStoreIdentity();
+        identity = this.store.getIdentifierAttr();
         if( !identity ){
           throw new Error("StoreModel:getStoreItems(): No identity defined for the data store.");
         }
@@ -744,183 +766,116 @@ define([
       });
     },
 
-    isItem: function(/* anything */ something){
+		// =======================================================================
+		// Write interface
+
+    addReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem ){
       // summary:
-      //    Returns true if the specified item 'something' is a valid store item
-      //    or the tree root.
-      // tags:
+      //    Add an existing item to the parentItem by reference.
+      // childItem:
+      //    Child item to be added to the parents list of children.
+      // parentItem:
+      //    Parent item.
+      // tag:
       //    extension
 
-      return (something === this.root) ? true : this.inherited(arguments);
+      if( this.store.addReference(childItem, parentItem, this.childrenAttrs[0]) ){
+        this._updateCheckedParent( childItem );
+      }
     },
-
-    mayHaveChildren: function(/*dojo.data.Item*/ storeItem){
+    
+    check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
       // summary:
-      //    Tells if an item has or may have children.  Implementing logic here
-      //    avoids showing +/- expando icon for nodes that we know don't have children.
-      //    (For efficiency reasons we may not want to check if an element actually
-      //    has children until user clicks the expando node)
-      // tags:
-      //    extension
-      return storeItem === this.root || this.inherited(arguments);
+      //    Check all store items that match the query.
+      // description:
+      //    See description _checkOrUncheck()
+      //  example:
+      //    model.check( { name: "John" } ); 
+      //  | model.check( "John", myCallback, this );
+      //
+      this._checkOrUncheck( query, true, onComplete, scope );
+    },
+    
+    deleteItem: function (/*dojo.data.Item*/ storeItem ){
+      // summary:
+      //    Delete a store item.
+      // storeItem:
+      //    The store item to be delete.
+      
+      return this.store.deleteItem( storeItem );
     },
 
-    newItem: function(/* dojo.dnd.Item */ args, /*Item*/ parent, /*int?*/ insertIndex){
+    newItem: function(/*dojo.dnd.Item*/ args, /*dojo.data.item*/ parent, /*int?*/ insertIndex){
       // summary:
       //    Creates a new item.   See `dojo.data.api.Write` for details on args.
-      //    Used in drag & drop when item from external source dropped onto tree.
+      //    Used in drag & drop when item from external source dropped onto tree
+      //    or can be called programmatically.
       // description:
       //    Developers will need to override this method if new items get added
       //    to parents with multiple children attributes, in order to define which
       //    children attribute points to the new item.
-
-      var identity = this._getStoreIdentity(),
-          pInfo    = null,
+      // args:
+      //    Object defining the new item properties.
+      // parent:
+      //    A valid store item that will serve as the parent of the new item. If
+      //    ommitted, the new item is automatically created as a top level item
+      //    in the store. (see also: newReferenceItem() )
+      // insertIndex:
+      //    If specified the location in the parents list of child items.
+      
+      var pInfo = null,
           newItem;
 
       if(parent !== this.root){
-        pInfo = {parent: parent, attribute: this.childrenAttrs[0]};
-      } else {
-        this.onNewRootItem(args);
-      }
-
-      if( identity && args[identity]){
-        // Maybe there's already a corresponding item in the store; if so, reuse it.
-        this.fetchItemByIdentity(
-          { identity: args[identity], 
-            onItem: function(item){
-              if(item){
-                // There's already a matching item in store, use it
-                this.pasteItem(item, null, parent, true, insertIndex);
-              } else {
-                // Create new item in the tree, based on the drag source.
-                newItem = this.store.newItem(args, pInfo);
-                if(newItem && (insertIndex!=undefined)){
-                  // Move new item to desired position
-                  this.pasteItem(newItem, parent, parent, false, insertIndex);
-                }
-              }
-            },
-            scope: this 
-          });
-      }
-      else  // No identity
-      {
-        // [as far as we know] there is no id so we must assume this is a new item
-        newItem = this.store.newItem(args, pInfo);
-        if(newItem && (insertIndex!=undefined)){
-          // Move new item to desired position
-          this.pasteItem(newItem, parent, parent, false, insertIndex);
+        if( this.isItem( parent )) {
+          pInfo = {parent: parent, attribute: this.childrenAttrs[0]};
+        } else {
         }
-        return newItem;
       }
+
+      this._mapIdentifierAttr( args, true );
+      try {
+        newItem = this.store.itemExist( args );   // Write store extension...
+        if( newItem ) {
+          this.pasteItem(newItem, null, parent, true, insertIndex);
+        } else {
+          newItem = this.store.newItem(args, pInfo);
+          if(newItem && (insertIndex!=undefined)){
+            // Move new item to desired position
+            this.pasteItem(newItem, parent, parent, false, insertIndex);
+          }
+        }
+      } catch(err) {
+        throw new Error( "StoreModel:newItem(): " + err );
+      } 
+      return newItem;
     },
 
-    onAddToRoot: function(/* item */ item){
+    newReferenceItem: function(/*dojo.dnd.Item*/ args, /*dojo.data.item*/ parent, /*int?*/ insertIndex){
       // summary:
-      //    Called when item added to root of tree; user must override this method
-      //    to modify the item so that it matches the query for top level items
-      // tags:
-      //    extension
-      // example:
-      //  |  store.setValue(item, "root", true);
-      console.log(this, ": item ", item, " added to root");
-    },
-
-    onDeleteItem: function (/*Object*/ storeItem){
-      // summary:
-      //    Handler for delete notifications from the store.  Because all parent
-      //    references for the item have already been removed we need to use the
-      //    backup list to determine who the parents were and update their checked
-      //    state accordingly.
-      // storeItem:
-      //    The store item that was deleted.
-
-      var backupRef = "backup_" + this.store._reverseRefMap;
-          
-      if(array.indexOf(this.root.children, storeItem) != -1){
-        this._requeryTop();
-      }
-      this.inherited(arguments);
-
-      this._updateCheckedParent( storeItem, backupRef );
-    },
-
-    onError: function (/*Object*/ err ) {
-      // summary:
-      //    Callback when an error occurred.
-      // tags:
-      //    callback
-      console.err( this, err );
-    },
-    
-    onLeaveRoot: function(/* item */ item){
-      // summary:
-      //    Called when item removed from root of tree; user must override this method
-      //    to modify the item so it doesn't match the query for top level items
-      // tags:
-      //    extension
-      // example:
-      //   |  store.unsetAttribute(item, "root");
-
-      console.log(this, ": item ", item, " removed from root");
-    },
-
-    onNewItem: function(/* dojo.data.Item */ item, /* Object */ parentInfo){
-      // summary:
-      //    Handler for when new items appear in the store.  Developers should override this
-      //    method to be more efficient based on their app/data.
+      //    Create a new top level item and add it as a child to the parent.
       // description:
-      //    Note that the default implementation requeries the top level items every time
-      //    a new item is created, since any new item could be a top level item (even in
-      //    addition to being a child of another item, since items can have multiple parents).
-      // tags:
-      //    extension
-      this._requeryTop();
+      //    In contrast to the newItem() method, this method ALWAYS creates the
+      //    new item as a top level item regardsless if a parent is specified or
+      //    not.
+      // args:
+      //    Object defining the new item properties.
+      // parent:
+      //    A valid store item that will serve as the parent of the new item. If
+      //    ommitted, the new item is automatically created as a top level item
+      //    in the store. (see also: newReferenceItem() )
+      // insertIndex:
+      //    If specified the location in the parents list of child items.
+      var newItem;
 
-      this._updateCheckedParent( item );
-      this.inherited(arguments);
-    },
-
-    onNewRootItem: function(/* dojo.dnd.Item */ /*===== args =====*/){
-      // summary:
-      //    User can override this method to modify a new element that's being
-      //    added to the root of the tree, for example to add a flag like root=true
-    },
-
-    onSetItem: function(storeItem, attribute, oldValue, newValue ){
-      // summary:
-      //    Updates the tree view according to changes in the data store.
-      // description:
-      //    Handles updates to a store item's children by calling onChildrenChange(), and
-      //    other updates to a store item by calling onChange().
-      // storeItem: 
-      //    Store item
-      // attribute: 
-      //    attribute-name-string
-      // oldValue: object | array
-      // newValue: object | array
-      // tags:
-      //    extension
-     
-      if(array.indexOf(this.childrenAttrs, attribute) != -1){
-        // Store item's children list changed
-        this.getChildren(storeItem, lang.hitch(this, function(children){
-          // See comments in onNewItem() about calling getChildren()
-          this.onChildrenChange(storeItem, children);
-        }));
-      }else{
-        if( this._queryAttrs.length && array.indexOf( this._queryAttrs, attribute ) != -1 ) {
-          this._requeryTop();
-        }
-        if( attribute == this.store._labelAttr ) {
-          attribute = "label";
-        }
-        this.onChange(storeItem, attribute, newValue );
+      newItem = this.newItem( args, parent, insertIndex );
+      if( newItem ) {
+        this.store.attachToRoot(newItem);
       }
+      return newItem;
     },
 
-    pasteItem: function(/*Item*/ childItem, /*Item*/ oldParentItem, /*Item*/ newParentItem, 
+    pasteItem: function(/*dojo.data.item*/ childItem, /*dojo.data.item*/ oldParentItem, /*dojo.data.item*/ newParentItem, 
                          /*Boolean*/ bCopy, /*int?*/ insertIndex){
       // summary:
       //    Move or copy an item from one parent item to another.
@@ -932,7 +887,7 @@ define([
           // It's onLeaveRoot()'s responsibility to modify the item so it no longer matches
           // this.query... thus triggering an onChildrenChange() event to notify the Tree
           // that this element is no longer a child of the root node
-          this.onLeaveRoot(childItem);
+          this.store.detachFromRoot(childItem);
         }
       }
       this.inherited(arguments, [childItem,
@@ -941,15 +896,32 @@ define([
         bCopy,
         insertIndex
       ]);
-      if(newParentItem === this.root){
-        // It's onAddToRoot()'s responsibility to modify the item so it matches
-        // this.query... thus triggering an onChildrenChange() event to notify the Tree
-        // that this element is now a child of the root node
-        this.onAddToRoot(childItem);
-      }
       this._updateCheckedParent( childItem );
     },
 
+    removeReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem ){
+      // summary:
+      //    Remove a child reference from its parent. Only the references are
+      //    removed, the childItem is not delete.
+      // childItem:
+      //    Child item to be removed from parents children list.
+      // parentItem:
+      //    Parent item.
+      // tag:
+      //    extension
+      
+      if( this.store.removeReference( childItem, parentItem, this.childrenAttrs[0]) ){
+        // If any children are left get the first and update the checked state.
+        this.getChildren(parentItem, lang.hitch(this,
+          function(children){
+            if( children.length ) {
+              this._updateCheckedParent( children[0] );
+            }
+          })
+        ); /* end getChildren() */
+      }
+    },
+    
     set: function (/*dojo.data.item*/ storeItem, /*String*/ attr, /*anytype*/ value ) {
       // summary:
       //    Provide the setter capabilities for store items thru the model. The
@@ -981,6 +953,103 @@ define([
 
       this._checkOrUncheck( query, false, onComplete, scope );
     },
+
+		// =======================================================================
+		// Events from data store
+
+    onDeleteItem: function (/*dojo.data.item*/ storeItem){
+      // summary:
+      //    Handler for delete notifications from the store. At this point all
+      //    parent references for the item have already been removed therefore
+      //    we need to use the backup list to determine who the parents were
+      //    and update their checked state accordingly.
+      // storeItem:
+      //    The store item that was deleted.
+
+      var backupRef = "backup_" + this.store._reverseRefMap;
+          
+      this.inherited(arguments);
+
+      this._updateCheckedParent( storeItem, backupRef );
+    },
+
+    onNewItem: function(/*dojo.data.item*/ storeItem, /*Object*/ parentInfo){
+      // summary:
+      //    Handler for when new items appear in the store.
+      // description:
+      //    Whenever a new item is added to the store this specific handler is
+      //    called.
+      // tags:
+      //    extension
+
+      this._updateCheckedParent( storeItem );
+      this.inherited(arguments);
+    },
+
+    onRootChange: function (/*dojo.data.item*/ storeItem, /*Object*/ evt) {
+      // summary:
+      //    Handler for any changes to the stores top level items.
+      // description:
+      //    Users can extend this method to modify a new element that's being
+      //    added to the root of the tree, for example to make sure the new item
+      //    matches the tree root query. Remember, even though the item is added
+      //    as a top level item in the store it does not quarentee it will match
+      //    your tree query unless your query is simply the store identifier.
+      // storeItem:
+      //    The store item that was attached to, or detached from, the root.
+      // evt:
+      //    Object detailing the type of event { attach: boolean, detach: boolean }.
+
+      if( evt.attach || (array.indexOf(this.root.children, storeItem) != -1) ){
+        this._requeryTop();
+      }
+    },
+    
+    onSetItem: function(/*dojo.data.item*/ storeItem, /*string*/ attribute, /*AnyType*/ oldValue, 
+                         /*AnyType*/ newValue ){
+      // summary:
+      //    Updates the tree view according to changes in the data store.
+      // description:
+      //    Handles updates to a store item's children by calling onChildrenChange(), and
+      //    other updates to a store item by calling onChange().
+      // storeItem: 
+      //    Store item
+      // attribute: 
+      //    attribute-name-string
+      // oldValue: object | array
+      // newValue: object | array
+      // tags:
+      //    extension
+     
+      if(array.indexOf(this.childrenAttrs, attribute) != -1){
+        // Store item's children list changed
+        this.getChildren(storeItem, lang.hitch(this, function(children){
+          // See comments in onNewItem() about calling getChildren()
+          this.onChildrenChange(storeItem, children);
+        }));
+      }else{
+        // If the attribute is any of the attributes used in the store query
+        // requery the store.
+        if( this._queryAttrs.length && array.indexOf( this._queryAttrs, attribute ) != -1 ) {
+          this._requeryTop();
+        }
+        if( attribute == this.store._labelAttr ) {
+          attribute = "label";
+        }
+        this.onChange(storeItem, attribute, newValue );
+      }
+    },
+
+		// =======================================================================
+		// Model callbacks
+
+    onError: function (/*Object*/ err ) {
+      // summary:
+      //    Callback when an error occurred.
+      // tags:
+      //    callback
+      console.err( this, err );
+    }
 
   });  /* end declare() */
 
