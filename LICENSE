@@ -1,5 +1,12 @@
-The Dijit Tree with MultiState Checkboxes is released under a BSD 2-Clause
-License included below.
+The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
+is released under to following three licenses:
+
+  1 - BSD 2-Clause                (http://thejekels.com/js/cbtree/LICENSE)
+  2 - The "New" BSD License       (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+  3 - The Academic Free License   (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+
+  In case of doubt, the BSD 2-Clause license takes precedence. The BSD 2-Clause text 
+  is included below:
 
 BSD 2-Clause License
 ----
