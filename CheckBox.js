@@ -2,25 +2,14 @@
 // Copyright (c) 2010-2012, Peter Jekel
 // All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
+//  The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
+//  is released under to following three licenses:
 //
-// 1 Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
+//  1 - BSD 2-Clause                (http://thejekels.com/js/cbtree/LICENSE)
+//  2 - The "New" BSD License       (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//  3 - The Academic Free License   (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-// 2 Redistributions in binary form must reproduce the above copyright notice, this
-//   list of conditions and the following disclaimer in the documentation and/or other 
-//   materials provided with the distribution.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
-// SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
-// BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
-// WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  In case of doubt, the BSD 2-Clause license takes precedence.
 //
 define([
   "dijit/form/CheckBox",
@@ -44,7 +33,8 @@ define([
 
     _getCheckedAttr: function () {
       // summary:
-      //    Returns the current checked state
+      //    Returns the current checked state. This method provides the hook 
+      //    for get("checked").
       return this.checked;
     },
     
@@ -57,6 +47,9 @@ define([
       //    current checkbox state.
       //
       //    NOTE: A click event will never change the state to mixed.
+      // evt:
+      //    Click event object
+      //
       
       if(!this.readOnly && !this.disabled){
         this.toggle();
@@ -70,7 +63,7 @@ define([
       //    Set the new checked state of the checkbox.
       // description
       //    Set the new checked state of the checkbox.
-      //  state:
+      // checked:
       //    New state which is either 'mixed', true or false.
       var newState = checked,
           txtState;
@@ -88,7 +81,7 @@ define([
       return newState;
     },
 
-    _setValueAttr: function (/*String or Boolean*/ newValue, /*Boolean?*/ priorityChange){
+    _setValueAttr: function (/*String | Boolean*/ newValue, /*Boolean?*/ priorityChange){
       // summary:
       //    Handler for value= attribute to constructor, Overwrites the
       //    default '_setValueAttr' method as we will handle the Checkbox
@@ -98,6 +91,7 @@ define([
       //    (the one specified as "value" when the CheckBox was constructed).
       //
       //    NOTE: Changing the checkbox value DOES NOT change the checked state.
+      // newValue:
       
       if(typeof newValue == "string"){
         this.value = newValue;
