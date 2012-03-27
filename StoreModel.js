@@ -6,8 +6,8 @@
 //  is released under to following three licenses:
 //
 //  1 - BSD 2-Clause                (http://thejekels.com/js/cbtree/LICENSE)
-//  2 - The "New" BSD License       (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//  3 - The Academic Free License   (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//  2 - The "New" BSD License       (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//  3 - The Academic Free License   (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 //  In case of doubt, the BSD 2-Clause license takes precedence.
 //
@@ -558,7 +558,7 @@ define([
     _mapIdentifierAttr: function( args, /*Boolean?*/ delMappedAttr ) {
       // summary:
       //    Map the 'newItemIdAttr' property of a new item to the store identifier
-      //    attribute.
+      //    attribute. Return true if the mapping was made.
       // description:
       //    If a store has an identifier attribute defined each new item MUST have
       //    at least that same attribute defined otherwise the store will reject
@@ -567,7 +567,7 @@ define([
       // args:
       //    Object defining the new item properties.
       // delMappedAttr:
-      //    If true it determines, when a mapping was made, if the mapped attribute
+      //    If true, it determines when a mapping was made, if the mapped attribute
       //    is to be removed from the new item properties.
       // tags:
       //    private, extension
@@ -688,6 +688,15 @@ define([
       return (something === this.root) ? true : this.inherited(arguments);
     },
 
+    isRootItem: function( storeItem ){
+      // summary:
+      //    Returns true if the item a top level item in the store otherwise false.
+      // item:
+      //    A valid dojo.data.store item.
+
+      return this.store.isRootItem( storeItem );
+    },
+
 		// =======================================================================
 		// Read interface
 
@@ -783,6 +792,15 @@ define([
         this._updateCheckedParent( childItem );
       }
     },
+
+    attachToRoot: function ( storeItem ){
+      // summary:
+      //    Promote a store item to a top level item.
+      // storeItem:
+      //    A valid dojo.data.store item.
+
+      this.store.attachToRoot(storeItem);
+    },
     
     check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
       // summary:
@@ -792,7 +810,7 @@ define([
       //  example:
       //    model.check( { name: "John" } ); 
       //  | model.check( "John", myCallback, this );
-      //
+
       this._checkOrUncheck( query, true, onComplete, scope );
     },
     
@@ -801,10 +819,20 @@ define([
       //    Delete a store item.
       // storeItem:
       //    The store item to be delete.
-      
+
       return this.store.deleteItem( storeItem );
     },
 
+    detachFromRoot: function ( storeItem ) {
+      // summary:
+      //    Detach item from the root by removing it from the stores top level item
+      //    list
+      // storeItem:
+      //    A valid dojo.data.store item.
+
+      this.store.detachFromRoot( storeItem );
+    },
+    
     newItem: function(/*dojo.dnd.Item*/ args, /*dojo.data.item*/ parent, /*int?*/ insertIndex){
       // summary:
       //    Creates a new item.   See `dojo.data.api.Write` for details on args.
@@ -814,6 +842,10 @@ define([
       //    Developers will need to override this method if new items get added
       //    to parents with multiple children attributes, in order to define which
       //    children attribute points to the new item.
+      //
+      //    NOTE: Whenever a parent is specified the underlaying store method
+      //          newItem() will NOT create args as a top level item a.k.a a
+      //          root item.
       // args:
       //    Object defining the new item properties.
       // parent:
@@ -833,7 +865,7 @@ define([
         }
       }
 
-      this._mapIdentifierAttr( args, true );
+      this._mapIdentifierAttr( args, false );
       try {
         newItem = this.store.itemExist( args );   // Write store extension...
         if( newItem ) {
@@ -866,11 +898,12 @@ define([
       //    in the store. (see also: newReferenceItem() )
       // insertIndex:
       //    If specified the location in the parents list of child items.
+
       var newItem;
 
       newItem = this.newItem( args, parent, insertIndex );
       if( newItem ) {
-        this.store.attachToRoot(newItem);
+        this.store.attachToRoot(newItem); // Make newItem a top level item.
       }
       return newItem;
     },
@@ -882,6 +915,7 @@ define([
       //    Used in drag & drop
       // tags:
       //    extension
+
       if(oldParentItem === this.root){
         if(!bCopy){
           // It's onLeaveRoot()'s responsibility to modify the item so it no longer matches
@@ -911,7 +945,7 @@ define([
       //    extension
       
       if( this.store.removeReference( childItem, parentItem, this.childrenAttrs[0]) ){
-        // If any children are left get the first and update the checked state.
+        // If any children are left get the first and update the parent checked state.
         this.getChildren(parentItem, lang.hitch(this,
           function(children){
             if( children.length ) {
@@ -995,10 +1029,14 @@ define([
       //    matches the tree root query. Remember, even though the item is added
       //    as a top level item in the store it does not quarentee it will match
       //    your tree query unless your query is simply the store identifier.
+      //    Therefore, in case of a store root detach event (evt.detach=true) we
+      //    only require if the item is a known child of the tree root.
       // storeItem:
       //    The store item that was attached to, or detached from, the root.
       // evt:
       //    Object detailing the type of event { attach: boolean, detach: boolean }.
+      // tag:
+      //    callback, public
 
       if( evt.attach || (array.indexOf(this.root.children, storeItem) != -1) ){
         this._requeryTop();
