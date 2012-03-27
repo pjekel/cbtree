@@ -6,8 +6,8 @@
 //  is released under to following three licenses:
 //
 //  1 - BSD 2-Clause                (http://thejekels.com/js/cbtree/LICENSE)
-//  2 - The "New" BSD License       (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//  3 - The Academic Free License   (http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//  2 - The "New" BSD License       (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//  3 - The Academic Free License   (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 //  In case of doubt, the BSD 2-Clause license takes precedence.
 //
@@ -274,7 +274,7 @@ define([
       //  IMPORTANT:
       //    In case of a checkbox update event we call the set() method of the
       //    checkbox direct as node.set("checked",value) would go back to the
-      //    store creating an infinite loop.
+      //    model creating an infinite loop.
         
       if ( array.indexOf( this._storeEvents, attr ) != -1 ) {
         var identity = this.model.getIdentity(storeItem),
