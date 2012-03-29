@@ -15,7 +15,9 @@ define([
   "dojo/_base/array",
   "dojo/_base/declare",
   "dojo/_base/event",
+  "dojo/_base/lang", 
   "dojo/_base/window",
+  "dojo/dom",
   "dojo/dom-attr",
   "dojo/dom-class",
   "dojo/dom-construct",
@@ -25,7 +27,7 @@ define([
   "dijit/Tree",
   "./CheckBox",
   "./StoreModel"
-], function ( array, declare, event, win, domAttr, domClass, domConstruct, domStyle, 
+], function ( array, declare, event, lang, win, dom, domAttr, domClass, domConstruct, domStyle, 
               NodeTemplate, registry, Tree, CheckBox, StoreModel ) {
 
   var TreeNode = declare([Tree._TreeNode], {
@@ -76,10 +78,10 @@ define([
       // tags:
       //    private
 
-      var checked = this.tree.model.get( this.item, "checked" );
+      var checked = this.tree.model.getItem( this.item, "checked" );
       // Allow the ability to pass in another checkbox or multi state widget. (later).
-      if( this.checkBox == null ) {
-        if( checked !== undefined ) {
+      if ( this.checkBox == null ) {
+        if ( checked !== undefined ) {
           this.checkBox = new CheckBox( { multiState: multiState,
                                            checked: checked,
                                            value: this.label }
@@ -91,8 +93,8 @@ define([
       {
         this.checkBox.set("checked", checked );
       }
-      if( this.checkBox ) {
-        if( this.isExpandable && this.tree.branchReadOnly ) {
+      if ( this.checkBox ) {
+        if ( this.isExpandable && this.tree.branchReadOnly ) {
           this.checkBox.set( "readOnly", true );
         }
       }
@@ -101,9 +103,11 @@ define([
     _getCheckedAttr: function() {
       // summary:
       //    Get the current checkbox state. This method implements get("checked").
+      // tags:
+      //    private
       
-      if( this.checkBox ) {
-        return this.tree.model.get( this.item, "checked");
+      if ( this.checkBox ) {
+        return this.tree.model.getItem( this.item, "checked");
       }
     },
 
@@ -114,15 +118,14 @@ define([
       //    If the click event occured on a checkbox, get the new checkbox checked
       //    state, update the store and generate the checkbox click related events
       //    otherwise pass the event on to the tree as a regular click event.
-      //
       // evt:
       //    Event object.
       // tags:
       //    private
 
-      if(evt.target.nodeName == 'INPUT') {
+      if (evt.target.nodeName == 'INPUT') {
         var newState = this.checkBox.get("checked");
-        this.tree.model.set( this.item, "checked", newState );
+        this.tree.model.setItem( this.item, "checked", newState );
         this.tree._onCheckBoxClick( this, newState, evt );
       } else {
         this.tree._onClick(this, evt);
@@ -135,37 +138,52 @@ define([
       //    the set("checked", newState).
       //  newState:
       //    The checked state: 'mixed', true or false.
+      // tags:
+      //    private
 
-      if( this.checkBox ) {
-        return this.tree.model.set( this.item, "checked", newState );
+      if ( this.checkBox ) {
+        return this.tree.model.setItem( this.item, "checked", newState );
       }
     },
     
-    destroy: function () {
-      // summary:
-      //    Destroy the checkbox of the tree node widget.
-      //
-      if( this.checkbox ) {
-        this.checkbox.destroy();
-      }
-      this.inherited(arguments);
-    },
-
     _toggleCheckBox: function (){
       // summary:
       //    Toggle the current checkbox checked attribute and update the store
       //    accordingly. Typically called when the spacebar is pressed.
       // tags:
       //    private
-      //
+
       var newState;
-      if( this.checkBox ) {
+      if ( this.checkBox ) {
         newState = this.checkBox.toggle();
-        this.tree.model.set( this.item, "checked", newState );
+        this.tree.model.setItem( this.item, "checked", newState );
       }
       return newState;
     },
     
+    _updateIcon: function() {
+      // summary:
+      //    Update the icon class for all tree nodes. This method is only called
+      //    when custom icons are applied dynamically using set("customIcons",...)
+      //    on the tree.
+      // tags:
+      //    private
+      this._applyClassAndStyle( this.item, "icon", "Icon" );
+      array.forEach( this.getChildren(), function(child) {
+            child._updateIcon();
+          });     
+    },
+    
+    destroy: function () {
+      // summary:
+      //    Destroy the checkbox of the tree node widget.
+      //
+      if ( this.checkbox ) {
+        this.checkbox.destroy();
+      }
+      this.inherited(arguments);
+    },
+
     postCreate: function () {
       // summary:
       //    Handle the creation of the checkbox after the tree node has been
@@ -175,13 +193,21 @@ define([
       //    instanciated.  If customIcons are specified for the tree, set it
       //    here and remove the default 'dijit' classes. (see template).
       //
+      var domNode;
 
-      if( this.tree.checkboxStyle !== "none" ) {
+      if ( this.tree.checkboxStyle !== "none" ) {
         this._createCheckBox( this.tree.checkboxMultiState );
       }
-      if( this.tree.customIcons )
+      if ( this.tree.customIcons )
       {
-        domClass.replace( this.iconNode, this.tree.customIcons.cssClass, "dijitIcon dijitTreeIcon" );
+        // We should have a DOM node otherwise something went terribly wrong...
+        domNode = dom.byId( this.iconNode );
+        if( domNode ) {
+          // Remove all existing css classes and replace it with the custom icon
+          // base class and apply the node specific classes.
+          domClass.replace( this.iconNode, this.tree.customIcons.cssClass, (domNode["className"] || "") );
+          this._applyClassAndStyle( this.item, "icon", "Icon" );
+        }
       }
       // Just in case one is available, set the tooltip.
       this.set("tooltip", this.title );
@@ -238,9 +264,40 @@ define([
       //    Create a new cbtreeTreeNode instance.
       // description:
       //    Create a new cbtreeTreeNode instance.
+      // tags:
+      //    private
       return new TreeNode( args );
     },
 
+    _setCustomIconsAttr: function (/*string|object*/ customIcons ) {
+      // summary:
+      //    Hook for the set("customIcon",customIcon) method and allows for dynamic
+      //    changing of the tree node icons. If customIcons if a valid argument all
+      //    icon related information for every tree node is updated.
+      //
+      //    NOTE: No matter what the custom icons are, the associated css file(s)
+      //          MUST have been loaded prior to setting the new icon.
+      // customIcons:
+      //    A string specifying the css class of the custom icons or an object with
+      //    two properties: {cssClass: /*string*/, indent: /*boolean*/ }
+      // tags:
+      //    private
+      
+      if ( typeof customIcons != "object" ) {
+        if ( (typeof customIcons == "string") && customIcons.length ) {
+          this.customIcons = { cssClass: customIcons, indent: true };
+        } else {
+          throw new Error("cbtree: customIcons must be an object or string");
+        }
+      } else {
+        this.customIcons = customIcons;
+      }
+      // During tree instantiation there is no root node.
+      if (this.customIcons && this.rootNode) {
+        this.rootNode._updateIcon();
+      }
+    },
+    
     _onCheckBoxClick: function (/*TreeNode*/ nodeWidget, /*Boolean|String*/ newState, /*Event*/ evt) {
       // summary:
       //    Translates checkbox click events into commands for the controller
@@ -275,16 +332,18 @@ define([
       //    In case of a checkbox update event we call the set() method of the
       //    checkbox direct as node.set("checked",value) would go back to the
       //    model creating an infinite loop.
+      // tags:
+      //    private
         
       if ( array.indexOf( this._storeEvents, attr ) != -1 ) {
         var identity = this.model.getIdentity(storeItem),
             nodes = this._itemNodesMap[identity],
             request = {};
 
-        if(nodes){
+        if (nodes){
           request[attr] = value;
           array.forEach(nodes, function(node){
-            if( attr == this._checkedAttr ) {
+            if ( attr == this._checkedAttr ) {
               node.checkBox.set( "checked", value );
             } else {
               node.set( request );
@@ -304,9 +363,9 @@ define([
       // tags:
       //    private
 
-      if( !evt.altKey ) {
+      if ( !evt.altKey ) {
         var treeNode = registry.getEnclosingWidget(evt.target);
-        if( (typeof evt.charOrCode == "string") && (evt.charOrCode == " ") ) {
+        if ( (typeof evt.charOrCode == "string") && (evt.charOrCode == " ") ) {
           treeNode._toggleCheckBox();
         }
       }
@@ -325,7 +384,7 @@ define([
       //    the current indent level. If custom icons are disabled the default dijit
       //    css class is returned. 
 
-      if( !this.customIcons ) {
+      if ( !this.customIcons ) {
         return this.inherited(arguments);
       }
       
@@ -335,15 +394,15 @@ define([
           iconClass;
 
       iconClass = customClass + ((!storeItem || isExpandable ) ? (opened ? "Expanded" : "Collapsed") : "Terminal");
-      if( nodeWidget ) {
-        if( customIndent !== undefined && customIndent !== false ) {
+      if ( nodeWidget ) {
+        if ( customIndent !== undefined && customIndent !== false ) {
           // Test boolean versus numeric
-          if( customIndent === true || customIndent >= nodeWidget.indent ) {
-            return ( iconClass + ' ' + iconClass + '_' + nodeWidget.indent );
+          if ( customIndent === true || customIndent >= nodeWidget.indent ) {
+            return ( customClass + ' ' + iconClass + ' ' + iconClass + '_' + nodeWidget.indent );
           }
         }
       }
-      return iconClass;
+      return (customClass + ' ' + iconClass);
     },
 
     getIconStyle:function (/*dojo.data.Item*/ storeItem, /*Boolean*/ opened, /*TreeNode?*/ nodeWidget ) {
@@ -356,21 +415,21 @@ define([
 
       var style = {};
       
-      if( nodeWidget ) {
-        if( nodeWidget.isExpandable ) {
+      if ( nodeWidget ) {
+        if ( nodeWidget.isExpandable ) {
           if ( !this.branchIcons ) {
             style["display"] = "none";
             return style;
           }
         } else {
-          if( !this.nodeIcons ) {
+          if ( !this.nodeIcons ) {
             style["display"] = "none";
             return style;
           }
         }
       }
-      if( this.customIcons && this.customIcons.style ) {
-        if( typeof this.customIcons.style == "object" ) {
+      if ( this.customIcons && this.customIcons.style ) {
+        if ( typeof this.customIcons.style == "object" ) {
           return this.customIcons.style;
         }
       }
@@ -393,21 +452,13 @@ define([
 
       var store = this.model.store;
 
-      if( this.checkboxStyle !== "none" ) {
-        if(!store.getFeatures()['dojo.data.api.Write']){
+      if ( this.checkboxStyle !== "none" ) {
+        if (!store.getFeatures()['dojo.data.api.Write']){
           throw new Error("postCreate(): store must support dojo.data.Write");
-        }
-        if( this.customIcons && typeof this.customIcons != "object" ) {        
-          if ( (typeof this.customIcons == "string") && this.customIcons.length ) {
-            this.customIcons = { cssClass: this.customIcons, indent: true };
-          } else {
-            throw new Error("cbtree: customIcons must be an object or string");
-            this.customIcons = null;
-          }
         }
         // Get the checked state attribute name and add it to the list of store
         // events.
-        this._checkedAttr = this.model.checkedAttr;
+        this._checkedAttr = this.model.get("checkedAttr");
         this._storeEvents.unshift( this._checkedAttr );
         
         this.model.multiState = this.checkboxMultiState;
