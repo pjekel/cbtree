@@ -80,6 +80,10 @@ define([
     //    if a re-query of the store is required after a property of a store item has
     //    changed value.
     _queryAttrs: [],
+
+    // _validating: [private] Number
+    //    If not equal to zero it indicates store validation is on going.
+    _validating: 0,
   
     constructor: function (/*Object*/ params) {
       // summary:
@@ -334,10 +338,11 @@ define([
         return;
       }
       var parents = this._getParentsItem( storeItem, reverseRefMap ),
+          parentState,
           newState;
 
       array.forEach( parents, function ( parentItem ) {
-        newState = this._getItemCheckedAttr(parentItem);
+        parentState = this._getItemCheckedAttr(parentItem);
         this.getChildren( parentItem, lang.hitch( this,
           function (children) {
             var hasChecked   = false,
@@ -362,7 +367,8 @@ define([
               isMixed |= !(hasChecked ^ hasUnchecked);
               newState = (isMixed ? "mixed" : hasChecked ? true: false);
             }
-            if ( this._setCheckedState( parentItem,  newState ) ) {
+            // Only update its parent(s) if the checked state changed. 
+            if (this._setCheckedState( parentItem, newState ) ) {
               this._updateCheckedParent( parentItem );
             }
           }),
@@ -383,14 +389,18 @@ define([
       //    (fake) tree root.
       //  tag:
       //    private
-
+    
+      if( !storeItem ) {
+        storeItem = this.root;
+      }
       if ( this.checkedStrict ) {
         try {
           this.store._forceLoad();    // Try a forced synchronous load
         } catch(e) { 
           console.log(e);
         }
-        lang.hitch( this, this._validateStore ) ( storeItem ? storeItem : this.root ); 
+        lang.hitch( this, this._validateStore ) ( storeItem );
+        this._updateCheckedParent( storeItem );
       }
     },
 
@@ -410,7 +420,8 @@ define([
       this.getChildren( storeItem, lang.hitch( this,
         function (children) {
           var hasGrandChild = false,
-              oneChild = null;          
+              oneChild = null;
+          this._validating += 1;        
           array.forEach( children, function ( child ) {
             if ( this.mayHaveChildren( child )) {
               this._validateStore( child );
@@ -422,10 +433,28 @@ define([
           if ( !hasGrandChild && oneChild ) {  // Found a child on the lowest branch ?
             this._updateCheckedParent( oneChild );
           }
+          this._validating -= 1;
+          if ( !this._validating ) {
+            this._onStoreComplete();
+          }
         }),
         this.onError
       );
     },
+
+    _onStoreComplete: function(){
+      // summary:
+      //    Handler for store validation completion. If all the root children were
+      //    already in a consistant state before store validation, none of them
+      //    would have trigger an update of the root itself. As a result we need
+      //    to force one.
+      
+      if( this.checkedRoot && this.root.children.length ) {
+        this._updateCheckedParent( this.root.children[0] );
+      }
+      this.onStoreComplete();
+    },
+
 
 		// =======================================================================
 		// Model getters and setters
@@ -1137,6 +1166,13 @@ define([
         }
         this.onChange(storeItem, attribute, newValue );
       }
+    },
+
+    onStoreComplete: function(){
+      // summary:
+      //    Handler for store validation completion.
+      // tag:
+      //    callback
     },
 
 		// =======================================================================
