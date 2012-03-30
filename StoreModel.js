@@ -512,18 +512,19 @@ define([
       //    Name of property to get
 
       var attr = (attribute == this.checkedAttr ? "checked" : attribute);
-      if ( storeItem !== this.root ){
-        if (this.isItem( storeItem )) {
-          var func = this._getFuncNames( "Item", attr );
-          if ( lang.isFunction( this[func.get] )) {
-            return this[func.get](storeItem);
-          } else {
+
+      if( this.isItem( storeItem ) || storeItem === this.root) {
+        var func = this._getFuncNames( "Item", attr );
+        if ( lang.isFunction( this[func.get] )) {
+          return this[func.get](storeItem);
+        } else {
+          if ( storeItem !== this.root ){
             return this.store.getValue( storeItem, attr )
           }
+          return this.root[attr];
         }
-        throw new Error("StoreModel:getItem(): argument is not a valid store item.");
       }
-      return this.root[attr];
+      throw new Error("StoreModel:getItem(): argument is not a valid store item.");
     },
 
     _getItemCheckedAttr: function (/*dojo.data.Item*/ storeItem) {
