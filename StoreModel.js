@@ -61,6 +61,8 @@ define([
     //    or as a dual state. ({"mixed",true,false} vs {true,false}).
     multiState: true,
 
+    normalize: true,
+    
     // query: String
     //    Specifies the set of children of the root item.
     // example:
@@ -215,10 +217,11 @@ define([
       if ( typeof state == "boolean" ) {
         return state;
       }
-      if ( state == "mixed" ) {
-        if ( this.multiState && this.mayHaveChildren( storeItem ) ) {
-          return state;
-        } 
+      if ( this.multiState && state == "mixed" ) {
+        if (this.normalize && !this.mayHaveChildren( storeItem )){
+            return true;
+        }
+        return state;
       }
       return state ? true : false;
     },
@@ -247,27 +250,30 @@ define([
       //    private
 
       var stateChanged = true,
+          forceUpdate = false,
+          normState,
           oldValue;
           
-      newState = this._normalizeState( storeItem, newState );
+      normState   = this._normalizeState( storeItem, newState );
+      forceUpdate = (normState != newState);
       if ( storeItem != this.root ) {
         var currState = this.store.getValue(storeItem, this.checkedAttr);
-        if ( (currState !== undefined || this.checkedAll) && (currState != newState ) ) {
-          this.store.setValue( storeItem, this.checkedAttr, newState );
+        if ( (currState !== undefined || this.checkedAll) && (currState != normState || forceUpdate) ) {
+          this.store.setValue( storeItem, this.checkedAttr, normState );
         } else {
           stateChanged = false;
         }
       } 
       else  // Tree root instance
       {
-        if ( this.checkedRoot && ( this.root.checked != newState ) ) {
+        if ( this.checkedRoot && ( this.root.checked != normState || forceUpdate) ) {
           oldValue = this.root.checked;
-          this.root.checked = newState;
+          this.root.checked = normState;
           /*
             As the root is not an actual store item we must call onSetItem() explicitly
-            to mimic a store update, in all other events the store will do it for us.
+            to mimic a store update.
           */
-          this.onSetItem( storeItem, this.checkedAttr, oldValue, newState );
+          this.onSetItem( storeItem, this.checkedAttr, oldValue, normState );
         } else {
           stateChanged = false;
         }
@@ -378,11 +384,10 @@ define([
     
     _validateData: function (/*dojo.data.Item*/ storeItem ) {
       // summary:
-      //    Validate/normalize the parent-child checked state relationship if
-      //    the attribute 'checkedStrict' is set to true. This method is called
-      //    as part of the post creation of the Tree instance. First we try a
-      //    forced synchronous load of the Json datafile dramatically improving
-      //    the startup time.
+      //    Validate/normalize the parent-child checked state relationship. If the
+      //    attribute 'checkedStrict' is true this method is called as part of the
+      //    post creation of the Tree instance.  First we try a forced synchronous
+      //    load of the Json dataObject dramatically improving the startup time.
       //
       //  storeItem:
       //    The element to start traversing the dojo.data.store, typically the
@@ -390,16 +395,13 @@ define([
       //  tag:
       //    private
     
-      if( !storeItem ) {
-        storeItem = this.root;
-      }
       if ( this.checkedStrict ) {
         try {
           this.store._forceLoad();    // Try a forced synchronous load
         } catch(e) { 
           console.log(e);
         }
-        lang.hitch( this, this._validateStore ) ( storeItem );
+        lang.hitch( this, this._validateStore ) ( storeItem ? storeItem : this.root );
         this._updateCheckedParent( storeItem );
       }
     },
@@ -433,6 +435,7 @@ define([
           if ( !hasGrandChild && oneChild ) {  // Found a child on the lowest branch ?
             this._updateCheckedParent( oneChild );
           }
+          // If the validation count drops to zero we're done.
           this._validating -= 1;
           if ( !this._validating ) {
             this._onStoreComplete();
