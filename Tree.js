@@ -31,19 +31,63 @@ define([
               NodeTemplate, registry, Tree, CheckBox, StoreModel ) {
 
   var TreeNode = declare([Tree._TreeNode], {
-    // checkBox: 
-    //    Reference to a checkbox widget.
-    checkBox: null,
-
     // templateString: String
     //    Specifies the HTML template to be used.
     templateString: NodeTemplate,
 
+    // _checkBox: [private] widget 
+    //    Checkbox or custome widget instance.
+    _checkBox: null,
+
+    // _icon: [private] Object
+    //    Custom icon associated with the tree node. If none is specified the
+    //    default dijit icons are used.
+    _icon: null,
+    
+    // _toggle: [private] Boolean
+    //    Indicates if the checkbox widget supports the toggle function.
+    _toggle: false,
+    
+    // _widget: [private] Function
+    //    Specifies the widget to be instanciated for the tree node. The default
+    //    is the cbtree CheckBox widget.
+    _widget: CheckBox,
+    
+    // _widgetArgs: [private] Object
+    //    Set of default attributes which will be passed to the checkbox or custom
+    //    widget constructor.
+    _widgetArgs: { multiState: null, 
+                   checked: true, 
+                   value: 'on'},
+                   
+    // _widgetTarget: [private] String
+    //    Specifies the event target nodename for the widget, that is, the value of
+    //    evt.target.nodeName in a onClick event. The default is 'INPUT'
+    _widgetTarget: 'INPUT',
+    
+    constructor: function( args ){
+      // summary:
+      //    If a custom widget is specified, it is used instead of the default
+      //    cbtree checkbox. Any optional arguments are appended to the default
+      //    widget argument list. (see _widgetArgs).
+      if (args.widget) {
+        this._widget = args.widget.widget;
+        if(args.widget.target) {
+          this._widgetTarget = args.widget.target;
+        }
+        if (args.widget.attr) {
+          for(var attr in args.widget.attr) {
+            this._widgetArgs[attr] = args.widget.attr[attr];
+          }
+        }
+      }
+    },
+
     _applyClassAndStyle: function (/*dojo.data.Item*/ storeItem, /*String*/ lower, /*String*/ upper){
       // summary:
       //    Set the appropriate CSS classes and styles for labels, icons and rows.
-      //    This local implementation passes the nodeWidget ("this") as an extra 
-      //    argument to support custom icons.
+      //    If custom icons have been specified fetch the icon info from the tree
+      //    node instead of the tree.
       // storeItem:
       //    The data storeItem.
       // lower:
@@ -53,13 +97,14 @@ define([
       // tags:
       //    private
 
+      var widget   = (lower == 'icon') ? this : this.tree;
       var clsName  = "_" + lower + "Class";
       var nodeName = lower + "Node";
       var oldCls   = this[clsName];
 
-      this[clsName] = this.tree["get" + upper + "Class"](storeItem, this.isExpanded, this);
+      this[clsName] = widget["get" + upper + "Class"](storeItem, this.isExpanded);
       domClass.replace(this[nodeName], this[clsName] || "", oldCls || "");
-      domStyle.set(this[nodeName], this.tree["get" + upper + "Style"](storeItem, this.isExpanded, this) || {});
+      domStyle.set(this[nodeName], widget["get" + upper + "Style"](storeItem, this.isExpanded, this) || {});
     },
 
     _createCheckBox: function (/*Boolean*/ multiState ) {
@@ -79,36 +124,46 @@ define([
       //    private
 
       var checked = this.tree.model.getItem( this.item, "checked" );
-      // Allow the ability to pass in another checkbox or multi state widget. (later).
-      if ( this.checkBox == null ) {
-        if ( checked !== undefined ) {
-          this.checkBox = new CheckBox( { multiState: multiState,
-                                           checked: checked,
-                                           value: this.label }
-                                        );
-          domConstruct.place(this.checkBox.domNode, this.checkBoxNode, 'replace');
+      if ( checked !== undefined ) {
+        // Initialize the default checkbox attributes.
+        this._widgetArgs.multiState = multiState;
+        this._widgetArgs.checked    = checked;
+        this._widgetArgs.value      = this.label;
+        
+        this._checkBox = new this._widget( this._widgetArgs );
+        if (this._checkBox) {
+          this._toggle = lang.isFunction( this._checkBox.toggle );
+          domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
+        } else {
+          throw new Error(this.declaredClass+"::_createCheckBox(): failed to create a new checkbox");
         }
-      } 
-      else /* Passed in checkbox... */
-      {
-        this.checkBox.set("checked", checked );
       }
-      if ( this.checkBox ) {
+      if ( this._checkBox ) {
         if ( this.isExpandable && this.tree.branchReadOnly ) {
-          this.checkBox.set( "readOnly", true );
+          this._checkBox.set( "readOnly", true );
         }
       }
     },
 
     _getCheckedAttr: function() {
       // summary:
-      //    Get the current checkbox state. This method implements get("checked").
+      //    Get the current checkbox state. This method provides the hook for
+      //    get("checked").
       // tags:
       //    private
       
-      if ( this.checkBox ) {
+      if ( this._checkBox ) {
         return this.tree.model.getItem( this.item, "checked");
       }
+    },
+
+    _getIconAttr: function() {
+      // summary:
+      //    Returns the custom icon associated with the tree node. This method
+      //    is the hook for get("icon").
+      // tags:
+      //    private
+      return this._icon ? this._icon : this.tree._icon;
     },
 
     _onClick: function (/*Event*/ evt){
@@ -123,8 +178,8 @@ define([
       // tags:
       //    private
 
-      if (evt.target.nodeName == 'INPUT') {
-        var newState = this.checkBox.get("checked");
+      if (evt.target.nodeName == this._widgetTarget) {
+        var newState = this._checkBox.get("checked");
         this.tree.model.setItem( this.item, "checked", newState );
         this.tree._onCheckBoxClick( this, newState, evt );
       } else {
@@ -141,9 +196,42 @@ define([
       // tags:
       //    private
 
-      if ( this.checkBox ) {
+      if ( this._checkBox ) {
         return this.tree.model.setItem( this.item, "checked", newState );
       }
+    },
+    
+    _setIconAttr: function (/*String|*Object*/ icon) {
+      // summary:
+      //    Associate a custom icon with the tree node. Remove all existing css
+      //    classes and replace it with the custom icon base class and apply the
+      //    node specific classes, that is, 'Expanded, Collapsed or Terminal'.
+      // icon:
+      //    A string specifying the css class of the icon or an object with two
+      //    properties: {cssClass: /*string*/, indent: /*boolean*/ }
+      // tags:
+      //    private
+      
+      this._icon = this.tree._icon2Object(icon);
+      domClass.replace( this.iconNode, this._icon.cssClass, (dom.byId( this.iconNode )["className"] || "") );
+      this._applyClassAndStyle( this.item, "icon", "Icon" );
+    },
+    
+    _setNodeIconAll: function(/*Object*/ icon ) {
+      // summary:
+      //    Set the icon class for all tree nodes. This method is only called
+      //    when custom icons are applied dynamically using set("icon",...) on 
+      //    the tree for example: tree.set("icon",myIcon) or tree.setIcon(myIcon)
+      // icon:
+      //    A string specifying the css class of the icon or an object with two
+      //    properties: {cssClass: /*string*/, indent: /*boolean*/ }
+      // tags:
+      //    private
+
+      this.set("icon", icon );
+      array.forEach( this.getChildren(), function(child) {
+            child._setNodeIconAll(icon);
+          });     
     },
     
     _toggleCheckBox: function (){
@@ -153,35 +241,80 @@ define([
       // tags:
       //    private
 
-      var newState;
-      if ( this.checkBox ) {
-        newState = this.checkBox.toggle();
+      var newState, oldState;
+      if ( this._checkBox ) {
+        if (this._toggle) {
+          newState = this._checkBox.toggle();
+        } else {
+          oldState = this._checkBox.get("checked");
+          newState = (oldState == "mixed" ? true : !oldState);
+        }
         this.tree.model.setItem( this.item, "checked", newState );
       }
       return newState;
-    },
-    
-    _updateIcon: function() {
-      // summary:
-      //    Update the icon class for all tree nodes. This method is only called
-      //    when custom icons are applied dynamically using set("customIcons",...)
-      //    on the tree.
-      // tags:
-      //    private
-      this._applyClassAndStyle( this.item, "icon", "Icon" );
-      array.forEach( this.getChildren(), function(child) {
-            child._updateIcon();
-          });     
     },
     
     destroy: function () {
       // summary:
       //    Destroy the checkbox of the tree node widget.
       //
-      if ( this.checkbox ) {
-        this.checkbox.destroy();
+      if ( this._checkbox ) {
+        this._checkbox.destroy();
       }
       this.inherited(arguments);
+    },
+
+    getIconClass: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ opened ){
+      // summary:
+      //    Return the css class(es) for the node Icon.
+      // description:
+      //    Return the css class(es) for the node Icon. If custom icons are enabled,
+      //    the base class returned is either: 'Expanded', 'Collapsed' or 'Terminal'
+      //    prefixed with the custom icon class. If custom icon indentation is true
+      //    an additional class is returned which is the base class suffixed with 
+      //    the current indent level. If custom icons are disabled the default dijit
+      //    css class is returned. 
+      // storeItem:
+      //    A valid dojo.data.item
+      // opened:
+      //    Indicates if the tree node currently is expanded. (true/false)
+      
+      if (!this._icon) {
+        return this.tree.getIconClass(storeItem,opened);
+      }
+      var iconIndent = this._icon.indent,
+          iconClass  = this._icon.cssClass;
+ 
+      iconClass += (this.isExpandable ? (this.isExpanded ? "Expanded" : "Collapsed") : "Terminal");
+      if ( iconIndent !== undefined && iconIndent !== false ) {
+        // Test boolean versus numeric
+        if ( iconIndent === true || iconIndent >= this.indent ) {
+          return ( iconClass + ' ' + iconClass + '_' + this.indent );
+        }
+      }
+      return iconClass;
+    },
+
+    getIconStyle: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ opened ){
+      // summary:
+      //    Return the DOM style for the node Icon.
+      // description:
+      //    Return the DOM style for the node Icon. If a style object for the
+      //    custom icons was specified is it returned.
+      // storeItem:
+      //    A valid dojo.data.item
+      // opened:
+      //    Indicates if the tree node currently is expanded. (true/false)
+
+      var style = this.tree.getIconStyle( storeItem, opened, this );
+      if ( this._icon && this._icon.style ) {
+        if ( typeof this._icon.style == "object" ) {
+          for(var name in this._icon.style) {
+            style[name] = this._icon.style[name];
+          }
+        }
+      }
+      return style;
     },
 
     postCreate: function () {
@@ -190,30 +323,20 @@ define([
       //    instanciated.
       // description:
       //    Handle the creation of the checkbox after the tree node has been
-      //    instanciated.  If customIcons are specified for the tree, set it
+      //    instanciated. If a custom icon is specified for the tree, set it
       //    here and remove the default 'dijit' classes. (see template).
       //
-      var domNode;
-
       if ( this.tree.checkboxStyle !== "none" ) {
         this._createCheckBox( this.tree.checkboxMultiState );
       }
-      if ( this.tree.customIcons )
-      {
-        // We should have a DOM node otherwise something went terribly wrong...
-        domNode = dom.byId( this.iconNode );
-        if( domNode ) {
-          // Remove all existing css classes and replace it with the custom icon
-          // base class and apply the node specific classes.
-          domClass.replace( this.iconNode, this.tree.customIcons.cssClass, (domNode["className"] || "") );
-          this._applyClassAndStyle( this.item, "icon", "Icon" );
-        }
+      if (this.tree._icon) {
+        this.set( "icon", this.tree._icon );
       }
       // Just in case one is available, set the tooltip.
       this.set("tooltip", this.title );
       this.inherited( arguments );
     }
-  });  /* end declare() TreeNode*/
+  });  /* end declare() _TreeNode*/
 
 
   return declare( [Tree], {
@@ -228,11 +351,11 @@ define([
     //    or 'unchecked'. If true the state can be 'mixed', true or false.
     checkboxMultiState: true,
 
-    // customIcons: String|Object
-    //    If customIcons is specified the default dijit icons 'Open' 'Closed' and
-    //    'Leaf' will be replaced with a custom icon sprite with three distinct css
-    //    classes: 'Expanded', 'Collapsed' and 'Terminal'.
-    customIcons: null,
+    // _icon: String|Object
+    //    If _icon is specified the default dijit icons 'Open' 'Closed' and 'Leaf'
+    //    will be replaced with a custom icon sprite with three distinct css classes:
+    //    'Expanded', 'Collapsed' and 'Terminal'.
+    _icon: null,
     
     // branchIcons: Boolean
     //    Determines if the FolderOpen/FolderClosed icon or their custom equivalent
@@ -251,13 +374,17 @@ define([
     // storeEvents: [private] array of strings
     //    List of additional events (attribute names) the onItemChange() method
     //    will act upon besides the _checkedAttr property value.
-    _storeEvents: [ "label" ],
+    _storeEvents: [ "label", "icon" ],
 
     // _checkedAttr: [private] String
     //    Attribute name associated with the checkbox checked state in the store.
-    //    The value is retrieved from the models 'checkedAttr' property and
-    //    added to the list of store events.
+    //    The value is retrieved from the models 'checkedAttr' property and added
+    //    to the list of store events.
     _checkedAttr: "",
+    
+    // _customWidget: [private]
+    // 
+    _customWidget: null,
     
     _createTreeNode: function ( args ) {
       // summary:
@@ -266,35 +393,30 @@ define([
       //    Create a new cbtreeTreeNode instance.
       // tags:
       //    private
+      args["widget"] = this._customWidget;
       return new TreeNode( args );
     },
 
-    _setCustomIconsAttr: function (/*string|object*/ customIcons ) {
+    _icon2Object: function( /*String|Object*/ icon ) {
       // summary:
-      //    Hook for the set("customIcon",customIcon) method and allows for dynamic
-      //    changing of the tree node icons. If customIcons if a valid argument all
-      //    icon related information for every tree node is updated.
-      //
-      //    NOTE: No matter what the custom icons are, the associated css file(s)
-      //          MUST have been loaded prior to setting the new icon.
-      // customIcons:
-      //    A string specifying the css class of the custom icons or an object with
-      //    two properties: {cssClass: /*string*/, indent: /*boolean*/ }
+      //    Convert a string argument into an icon object. If icon is already an
+      //    object it is tested for the minimal required properties.
+      // icon:
+      //    A string specifying the css class of the icon or an object with two
+      //    properties: {cssClass: /*string*/, indent: /*boolean*/ }
       // tags:
       //    private
-      
-      if ( typeof customIcons != "object" ) {
-        if ( (typeof customIcons == "string") && customIcons.length ) {
-          this.customIcons = { cssClass: customIcons, indent: true };
+      if ( typeof icon != "object" ) {
+        if ( (typeof icon == "string") && icon.length ) {
+          return { cssClass: icon, indent: true };
         } else {
-          throw new Error("cbtree: customIcons must be an object or string");
+          throw new Error(this.declaredClass+"::_icon2Object(): icon must be an object or string");
         }
       } else {
-        this.customIcons = customIcons;
-      }
-      // During tree instantiation there is no root node.
-      if (this.customIcons && this.rootNode) {
-        this.rootNode._updateIcon();
+        if (icon.cssClass && icon.cssClass.length) {
+          return icon;
+        }
+        throw new Error(this.declaredClass+"::_icon2Object(): required property 'cssClass' is missing or empty");
       }
     },
     
@@ -331,7 +453,7 @@ define([
       //  IMPORTANT:
       //    In case of a checkbox update event we call the set() method of the
       //    checkbox direct as node.set("checked",value) would go back to the
-      //    model creating an infinite loop.
+      //    model again.
       // tags:
       //    private
         
@@ -344,7 +466,7 @@ define([
           request[attr] = value;
           array.forEach(nodes, function(node){
             if ( attr == this._checkedAttr ) {
-              node.checkBox.set( "checked", value );
+              node._checkBox.set( "checked", value );
             } else {
               node.set( request );
             }
@@ -372,7 +494,51 @@ define([
       this.inherited(arguments);  /* Pass it on to the parent tree... */
     },
 
-    getIconClass: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ opened, /*TreeNode?*/ nodeWidget ){
+    _setIconAttr: function (/*string|object*/ icon ) {
+      // summary:
+      //    Hook for the set("icon",customIcon) method and allows for dynamic
+      //    changing of the tree node icons. If icon if a valid argument all
+      //    icon related information for every tree node is updated.
+      //
+      //    NOTE: No matter what the custom icon is, the associated css file(s)
+      //          MUST have been loaded prior to setting the new icon.
+      // icon:
+      //    A string specifying the css class of the icon or an object with two
+      //    properties: {cssClass: /*string*/, indent: /*boolean*/ }
+      // tags:
+      //    private
+      
+      this._icon = this._icon2Object( icon );
+      // During tree instantiation there is no root node.
+      if (this._icon && this.rootNode) {
+        this.rootNode._setNodeIconAll( this._icon );
+      }
+    },
+    
+    _setWidgetAttr: function(/*function|object*/ widget ) {
+      // summary:
+      //    
+      // tag:
+      //    experimental
+      if ( typeof widget == "function" ) {
+        // Test if set("checked",value) and get("checked") is supported.
+        if ((lang.isFunction(widget.prototype._getCheckedAttr) || widget.prototype["checked"] !== undefined) && 
+            lang.isFunction(widget.prototype._setCheckedAttr)) {
+          this._customWidget = { widget: widget };
+        } else {
+          throw new Error(this.declaredClass+"::_setWidgetAttr(): Widget does not support required feature set");
+        }
+      }
+      if( typeof widget == "object" ) {
+        if( widget["widget"] ) {
+          this._customWidget = widget;
+        } else {
+          throw new Error(this.declaredClass+"::_setWidgetAttr(): required 'Widget' property missing");
+        }
+      }
+    },
+    
+    getIconClass: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ opened ){
       // summary:
       //    Return the css class(es) for the node Icon. This local implementation
       //    accepts the addition argument 'nodeWidget'.
@@ -384,25 +550,15 @@ define([
       //    the current indent level. If custom icons are disabled the default dijit
       //    css class is returned. 
 
-      if ( !this.customIcons ) {
+      if (!this._icon) {
         return this.inherited(arguments);
       }
       
-      var isExpandable = nodeWidget ? nodeWidget.isExpandable : this.model.mayHaveChildren(storeItem),
-          customIndent = this.customIcons.indent,
-          customClass  = this.customIcons.cssClass,
-          iconClass;
+      var isExpandable = this.model.mayHaveChildren(storeItem),
+          iconClass  = this._icon.cssClass;
 
-      iconClass = customClass + ((!storeItem || isExpandable ) ? (opened ? "Expanded" : "Collapsed") : "Terminal");
-      if ( nodeWidget ) {
-        if ( customIndent !== undefined && customIndent !== false ) {
-          // Test boolean versus numeric
-          if ( customIndent === true || customIndent >= nodeWidget.indent ) {
-            return ( customClass + ' ' + iconClass + ' ' + iconClass + '_' + nodeWidget.indent );
-          }
-        }
-      }
-      return (customClass + ' ' + iconClass);
+      iconClass += ((!storeItem || isExpandable ) ? (opened ? "Expanded" : "Collapsed") : "Terminal");
+      return iconClass;
     },
 
     getIconStyle:function (/*dojo.data.Item*/ storeItem, /*Boolean*/ opened, /*TreeNode?*/ nodeWidget ) {
@@ -428,11 +584,7 @@ define([
           }
         }
       }
-      if ( this.customIcons && this.customIcons.style ) {
-        if ( typeof this.customIcons.style == "object" ) {
-          return this.customIcons.style;
-        }
-      }
+      return style;
     },
 
     onCheckBoxClick: function (/*dojo.data.Item*/ storeItem, /*treeNode*/ treeNode, /*Event*/ e) {
@@ -454,7 +606,7 @@ define([
 
       if ( this.checkboxStyle !== "none" ) {
         if (!store.getFeatures()['dojo.data.api.Write']){
-          throw new Error("postCreate(): store must support dojo.data.Write");
+          throw new Error(this.declaredClass+"::postCreate(): store must support dojo.data.Write");
         }
         // Get the checked state attribute name and add it to the list of store
         // events.
@@ -465,6 +617,28 @@ define([
         this.model._validateData();
       }
       this.inherited(arguments);
+    },
+    
+    setIcon: function( /*String|Object*/ icon, /*dojo.data.item?*/ storeItem ) {
+      // summary:
+      //    Set a custom icon. If the storeItem argument is ommitted the icon is
+      //    applied to all tree nodes otherwise to the specified store item only.
+      // icon:
+      //    A string specifying the css class of the icon or an object with two
+      //    properties: {cssClass: /*string*/, indent: /*boolean*/ }
+      // storeItem:
+      //    A valid store item whose icon to set.
+      
+      var newIcon = this._icon2Object(icon);
+      if (storeItem){
+        if (this.model.isItem(storeItem)) {
+          this._onItemChange( storeItem, "icon", newIcon );
+        } else {
+          throw new Error(this.declaredClass+"::setIcon(): invalid store item specified.");
+        }
+      } else {
+        this.set( "icon", newIcon );
+      }
     }
   });  /* end declare() Tree */
 
