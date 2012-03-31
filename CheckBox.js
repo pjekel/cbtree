@@ -6,24 +6,24 @@
 //  is released under to following three licenses:
 //
 //  1 - BSD 2-Clause                (http://thejekels.com/js/cbtree/LICENSE)
-//  2 - The "New" BSD License       (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//  2 - The 'New' BSD License       (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //  3 - The Academic Free License   (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 //  In case of doubt, the BSD 2-Clause license takes precedence.
 //
 define([
-  "dijit/form/CheckBox",
-  "dojo/_base/declare",
-  "dojo/_base/event",
-  "dojo/dom-attr"
+  'dijit/form/CheckBox',
+  'dojo/_base/declare',
+  'dojo/_base/event',
+  'dojo/dom-attr'
 ], function ( CheckBox, declare, event, domAttr ) {
 
   return declare( [CheckBox], {
     // baseClass: [protected] String
     //    Root CSS class of the widget (ex: twcCheckBox), used to add CSS
     //    classes of widget.
-    //    (ex: "twcCheckBox twcCheckBoxChecked twcCheckBoxMixed")
-    baseClass: "cbtreeCheckBox",
+    //    (ex: 'cbtreeCheckBox cbtreeCheckBoxChecked cbtreeCheckBoxMixed')
+    baseClass: 'cbtreeCheckBox',
     
     // value:  Boolean
     //    Indicate if the checkbox is a mutli state checkbox or not. If
@@ -34,7 +34,7 @@ define([
     _getCheckedAttr: function () {
       // summary:
       //    Returns the current checked state. This method provides the hook 
-      //    for get("checked").
+      //    for get('checked').
       return this.checked;
     },
     
@@ -51,7 +51,7 @@ define([
       //    Click event object
       //
       
-      if(!this.readOnly && !this.disabled){
+      if (!this.readOnly && !this.disabled){
         this.toggle();
         return this.onClick(evt);
       }
@@ -69,14 +69,14 @@ define([
           txtState;
 
       // Normalize the new state 
-      if( newState !== "mixed" || !this.multiState ) {
+      if ( newState !== 'mixed' || !this.multiState ) {
         newState = newState ? true : false;
       } 
-      txtState = (newState == 'mixed' ? newState : (newState ? "true" : "false"));
+      txtState = (newState == 'mixed' ? newState : (newState ? 'true' : 'false'));
 
-      this._set("checked", newState );      /* Fast track set() */
-      domAttr.set(this.focusNode || this.domNode, "checked", newState );
-      (this.focusNode || this.domNode).setAttribute("aria-checked", txtState );
+      this._set('checked', newState );      /* Fast track set() */
+      domAttr.set(this.focusNode || this.domNode, 'checked', newState );
+      (this.focusNode || this.domNode).setAttribute('aria-checked', txtState );
       this._handleOnChange( newState, priorityChange);
       return newState;
     },
@@ -88,12 +88,12 @@ define([
       //    checked attribute explictly.
       // description:
       //    If passed a string, changes the value attribute of the CheckBox
-      //    (the one specified as "value" when the CheckBox was constructed).
+      //    (the one specified as 'value' when the CheckBox was constructed).
       //
       //    NOTE: Changing the checkbox value DOES NOT change the checked state.
       // newValue:
       
-      if(typeof newValue == "string"){
+      if (typeof newValue == 'string'){
         this.value = newValue;
         domAttr.set(this.focusNode, 'value', newValue);
       }
@@ -104,8 +104,8 @@ define([
       //    Toggle the current checkbox state and return the new state. If the
       //    checkbox is read-only or disabled the current state is returned.
       //
-      var curState = this.get( "checked" );
-      if(!this.readOnly && !this.disabled){
+      var curState = this.get( 'checked' );
+      if (!this.readOnly && !this.disabled){
         return this._setCheckedAttr( (curState == 'mixed' ? true : !curState ) );      
       }
       return curState;
