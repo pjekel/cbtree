@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head> 
+    <title>CheckBox Tree with third party widget </title>     
+<!--
+  This demo uses a third party widget 'TriStateCheckbox' instead of the default
+  cbtree multi-state checkbox.  Note: for this demo checked state normalization
+  is turned off allowing ALL checkboxes to cycle thru all possible states.
+-->
+
+    <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
+    <link rel="stylesheet" href="../../cbtree/themes/claro/claro.css" />
+    <link rel="stylesheet" href="../../dojox/form/resources/TriStateCheckBox.css" />
+
+		<script type="text/javascript">
+			var dojoConfig = {
+            async: true,
+            parseOnLoad: true,
+            isDebug: false,
+            baseUrl: "../../",
+            packages: [
+              { name: "dojo",  location: "dojo" },
+              { name: "dojox",  location: "dojox" },
+              { name: "dijit", location: "dijit" },
+              { name: "cbtree",location: "cbtree" }
+            ]
+			};
+		</script>
+    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+  </head>
+    
+  <body class="claro">
+    <div id="CheckboxTree">	
+      <script type="text/javascript">
+
+      require([
+        "dojo/_base/array",
+        "dojo/_base/connect",
+        "dojo/dom",
+        "dojo/data/ItemFileWriteStore",
+        "dojox/form/TriStateCheckbox",
+        "cbtree"
+        ], function( array, connect, dom, ItemFileWriteStore, TriStateCheckBox, cbtree ) {
+
+          var store = new ItemFileWriteStore( { url: "../datastore/Simpsons.json" });
+          var model = new cbtree.StoreModel( {
+                  store: store,
+                  query: {type: 'parent'},
+                  rootLabel: 'The Simpsons',
+                  checkedRoot: true,
+                  normalize: false
+                  }); 
+          var tree = new cbtree.Tree( {
+                  model: model,
+                  id: "MenuTree",
+                  widget: { widget: TriStateCheckBox, attr: { states:['mixed', true, false] }}
+                  });
+          tree.placeAt( "CheckboxTree" );
+        });
+      </script>
+    </div>
+  </body> 
+</html>
