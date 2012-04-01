@@ -46,7 +46,7 @@ define([
     
     // _toggle: [private] Boolean
     //    Indicates if the checkbox widget supports the toggle function.
-    _toggle: false,
+    _toggle: true,
     
     // _widget: [private] Function
     //    Specifies the widget to be instanciated for the tree node. The default
@@ -80,6 +80,8 @@ define([
             this._widgetArgs[attr] = args.widget.attr[attr];
           }
         }
+        // Test if the widget supports the toggle() method.
+        this._toggle = lang.isFunction( this._widget.prototype.toggle );
       }
     },
 
@@ -131,12 +133,7 @@ define([
         this._widgetArgs.value      = this.label;
         
         this._checkBox = new this._widget( this._widgetArgs );
-        if (this._checkBox) {
-          this._toggle = lang.isFunction( this._checkBox.toggle );
-          domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
-        } else {
-          throw new Error(this.declaredClass+"::_createCheckBox(): failed to create a new checkbox");
-        }
+        domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
       }
       if ( this._checkBox ) {
         if ( this.isExpandable && this.tree.branchReadOnly ) {
@@ -237,7 +234,8 @@ define([
     _toggleCheckBox: function (){
       // summary:
       //    Toggle the current checkbox checked attribute and update the store
-      //    accordingly. Typically called when the spacebar is pressed.
+      //    accordingly. Typically called when the spacebar is pressed. 
+      //    If a custom widget does not support toggle() we will just mimic it.
       // tags:
       //    private
 
@@ -514,28 +512,53 @@ define([
         this.rootNode._setNodeIconAll( this._icon );
       }
     },
-    
+
     _setWidgetAttr: function(/*function|object*/ widget ) {
       // summary:
-      //    
+      //    Set the custom widget. This method is the hook for set("widget",widget).
+      // description:
+      //    Set the custom widget. A valid widget MUST have a 'checked' property
+      //    AND methods get() and set() otherwise the widget is rejected and an
+      //    error is thrown.
+      // widget: 
+      //    An object or function. In case of an object, the object can have the
+      //    following properties:
+      //      widget:   Function, the widget constructor.
+      //      attr:     Object, arguments passed to the constructor (optional)
+      //      target:   String, target nodename (optional)
       // tag:
       //    experimental
-      if ( typeof widget == "function" ) {
-        // Test if set("checked",value) and get("checked") is supported.
-        if ((lang.isFunction(widget.prototype._getCheckedAttr) || widget.prototype["checked"] !== undefined) && 
-            lang.isFunction(widget.prototype._setCheckedAttr)) {
-          this._customWidget = { widget: widget };
-        } else {
-          throw new Error(this.declaredClass+"::_setWidgetAttr(): Widget does not support required feature set");
-        }
+      var customWidget = widget,
+          property = "checked",
+          message,
+          proto;
+
+      if (typeof widget != "object") {
+        return this._setWidgetAttr( { widget: widget } );
       }
-      if( typeof widget == "object" ) {
-        if( widget["widget"] ) {
-          this._customWidget = widget;
-        } else {
-          throw new Error(this.declaredClass+"::_setWidgetAttr(): required 'Widget' property missing");
+
+      if( widget.hasOwnProperty( "widget" ) ) {
+        customWidget = widget.widget;
+        if( typeof customWidget == "function" ){
+          proto = customWidget.prototype;
+          if( proto && typeof proto[property] !== "undefined" ){
+            // See if the widget has a getter and setter methods...
+            if( lang.isFunction( proto.get ) && lang.isFunction( proto.set ) ) {
+              this._customWidget = widget;
+              return true;
+            } else {
+              message = "Widget does not support get() and/or set()";
+            }
+          } else {
+            message = "widget MUST have a 'checked' property";
+          }
+        }else{
+          message = "argument is not a valid Widget";
         }
+      } else {
+        message = "Object is missing required widget property";
       }
+      throw new Error(this.declaredClass+"::_setWidgetAttr(): " + message);
     },
     
     getIconClass: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ opened ){
