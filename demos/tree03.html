@@ -4,7 +4,7 @@
     <title>Dijit CheckBox Tree using the cbtree API</title>     
 
     <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" media="screen"/>
-    <link rel="stylesheet" href="../../cbtree/themes/claro/claro.css" media="screen"/>
+    <link rel="stylesheet" href="../themes/claro/claro.css" media="screen"/>
 
     <style>
       html,body { 
@@ -121,7 +121,7 @@
         TAB + TAB + "if( !model.isRootItem( child ) ) {<br/>" +
         TAB + TAB + TAB + "model.attachToRoot( child );<br/>" +
         TAB + TAB + "}<br/>" +
-        TAB + TAB + "model.setItem( child,'type','parent' );<br/>" +
+        TAB + TAB + "model.setItemAttr( child,'type','parent' );<br/>" +
         TAB + "}<br/>" +
         "}</pre></div>",
 
@@ -139,7 +139,7 @@
         TAB + TAB + "if( !model.isRootItem(newParent)) {<br/>" +
         TAB + TAB + TAB + "model.attachToRoot( newParent );<br/>" +
         TAB + TAB + "}<br/>" +
-        TAB + TAB + "model.setItem( newParent,'type','parent' );<br/>" +
+        TAB + TAB + "model.setItemAttr( newParent,'type','parent' );<br/>" +
         TAB + "}<br/>" +
         "}</pre></div>",
 
@@ -266,7 +266,7 @@
               if( !model.isRootItem( child ) ) {
                 model.attachToRoot( child );
               }
-              model.setItem( child,'type','parent' );
+              model.setItemAttr( child,'type','parent' );
             } else {
               throw new Error( "makeLisaTop(): Unable to fetch 'Lisa'");
             }
@@ -285,7 +285,7 @@
               if( !model.isRootItem(newParent)) {
                 model.attachToRoot( newParent );
               }
-              model.setItem( newParent,'type','parent' );
+              model.setItemAttr( newParent,'type','parent' );
             } else {
               throw new Error( "parentBart(): Unable to fetch 'Bart'");
             }

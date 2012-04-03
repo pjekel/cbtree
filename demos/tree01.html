@@ -4,11 +4,8 @@
   <head> 
     <title>Dijit Tree with Checkboxes </title>     
 <!--
-		NOTE:	When changing themes, the <body class=xxx> MUST change accordingly.
-		
-    <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
-    <link rel="stylesheet" href="../themes/claro/claro.css" />
-
+    NOTE:  When changing themes, the <body class=xxx> MUST change accordingly.
+    
     <link rel="stylesheet" href="../../dijit/themes/soria/soria.css" />
     <link rel="stylesheet" href="../themes/soria/soria.css" />
 
@@ -19,11 +16,11 @@
     <link rel="stylesheet" href="../themes/nihilo/nihilo.css" />
 
 -->
-    <link rel="stylesheet" href="../../dijit/themes/nihilo/nihilo.css" />
-    <link rel="stylesheet" href="../themes/nihilo/nihilo.css" />
+    <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
+    <link rel="stylesheet" href="../themes/claro/claro.css" />
 
-		<script type="text/javascript">
-			var dojoConfig = {
+    <script type="text/javascript">
+      var dojoConfig = {
             async: true,
             parseOnLoad: true,
             isDebug: true,
@@ -33,34 +30,39 @@
               { name: "dijit", location: "dijit" },
               { name: "cbtree",location: "cbtree" }
             ]
-			};
-		</script>
+      };
+    </script>
 
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
 
   </head>
     
-  <body class="nihilo">
-    <div id="CheckboxTree">	
+  <body class="claro">
+    <div id="CheckboxTree">  
+      <h2>Click a checkbox</h2>
       <script type="text/javascript">
 
       require([
         "dojo/_base/array",
+        "dojo/_base/connect",
         "dojo/dom",
         "dojo/data/ItemFileWriteStore",
         "cbtree"
-        ], function( array, dom, ItemFileWriteStore, cbtree ) {
+        ], function( array, connect, dom, ItemFileWriteStore, cbtree ) {
 
-          function unCheckParents( checkBoxes ) {
-            array.forEach( checkBoxes, function( checkbox ) {
-              console.log( "Checkbox state: " + this.get( checkbox, "checked" )); 
-              this.set( checkbox, "checked", false );
-              }, this )
-          };
-
-          function updates( matches, updates ) {
-            alert( "Query matches: " + matches + ", Updates: " + updates );
-          };
+          function checkBoxClicked( storeItem, nodeWidget, evt ) {
+            var newState = nodeWidget.get("checked" );
+            var  label    = this.getItemAttr(storeItem,"label");
+            
+            if( newState ) {
+              nodeWidget.set("iconStyle", {border:"solid"} );
+              nodeWidget.set("labelStyle",{color:"red"});
+            } else {
+              nodeWidget.set("iconStyle", {border:"none"} );
+              nodeWidget.set("labelStyle",{color:"black"});
+            }
+            alert( "The new state for " + label + " is: " + newState );
+          }
 
           var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
           var model = new cbtree.StoreModel( {
@@ -75,15 +77,13 @@
           var tree = new cbtree.Tree( {
                   model: model,
                   id: "MenuTree",
-                  checkboxMultiState: true,
                   branchReadOnly: false,
                   branchIcons: true,
                   nodeIcons: true
                   });
           tree.placeAt( "CheckboxTree" );
 
-//        tree.model.getStoreItems( {name: "*", type : "parent" }, unCheckParents );
-//        tree.model.check( "John", updates, this );
+          connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
 
         });
       </script>
