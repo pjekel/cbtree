@@ -18,8 +18,9 @@ define([
 	"dojo/_base/lang",
 	"dojo/_base/window",
 	"dojo/aspect",
+	"dojo/has",
 	"./ItemWriteStoreEX"		// ItemFileWriteStore extensions.
-], function (TreeStoreModel, array, declare, lang, win, aspect, ItemWriteStoreEX) {
+], function (TreeStoreModel, array, declare, lang, win, aspect, has, ItemWriteStoreEX) {
 
 	return declare([TreeStoreModel], {
 		// checkedAll: Boolean
@@ -104,11 +105,14 @@ define([
 			// tags:
 			//		extension
 			
-			this._features = {'tree.model.getItemAttr':true, 'tree.model.setItemAttr':true};
+			has.add("tree-model-getItemAttr", 1);
 
 			if (!this.store.getFeatures()['dojo.data.api.Write']){
 				console.warn(this.declaredClass+"::constructor(): store is not write enabled.");
-				this._features["tree.model.setItemAttr"] = false;
+				this._writeEnabled = false;
+			} else {
+				has.add("tree-model-setItemAttr", 1);
+				this._writeEnabled = true;
 			}
 			// Make dummy root item
 			this.root = {
@@ -416,7 +420,7 @@ define([
 				} catch(e) { 
 					console.log(e);
 				}
-				if (this._features["tree.model.setItemAttr"]) {
+				if (has("tree-model-setItemAttr")) {
 					lang.hitch( this, this._validateStore ) ( storeItem ? storeItem : this.root );
 					this._updateCheckedParent( storeItem );
 				} else {
@@ -509,23 +513,6 @@ define([
 				throw new Error( this.declaredClass+"::get(): Invalid property: "+attribute );
 			}
 			throw new Error( this.declaredClass+"::get(): Attribute must be of type string" );
-		},
-
-		getFeatures: function(){
-			//	summary:
-			//		Returns the current supported feature set for the model. This method
-			//		is provided to mimic the dojo.data.store getFeatures() method.
-			//		(see also _getFeaturesAttr() )
-			return this._features; //Object
-		},
-
-		_getFeaturesAttr: function(){
-			//	summary:
-			//		Returns the current supported feature set for the model. This method
-			//		is the hook for get("features").
-			//	tag:
-			//		private
-			return this._features; //Object
 		},
 
 		_getLabelAttrAttr: function() {
@@ -712,7 +699,7 @@ define([
 			// value:
 			//		Value to be applied.
 			
-			if (this._features["tree.model.setItemAttr"]) {
+			if (this._writeEnabled ) {
 				var attr = (attribute == this.checkedAttr ? "checked" : attribute);
 				if (this.isItem( storeItem )) {
 					var func = this._getFuncNames( "Item", attr );
