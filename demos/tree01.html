@@ -50,16 +50,16 @@
         "cbtree"
         ], function( array, connect, dom, ItemFileWriteStore, cbtree ) {
 
-          function checkBoxClicked( storeItem, nodeWidget, evt ) {
+          function checkBoxClicked( item, nodeWidget, evt ) {
             var newState = nodeWidget.get("checked" );
-            var  label    = this.getItemAttr(storeItem,"label");
+            var  label    = this.getItemAttr(item,"label");
             
             if( newState ) {
-              nodeWidget.set("iconStyle", {border:"solid"} );
-              nodeWidget.set("labelStyle",{color:"red"});
+              tree.set("iconStyle", {border:"solid"}, item );
+              tree.set("labelStyle",{color:"red"}, item );
             } else {
-              nodeWidget.set("iconStyle", {border:"none"} );
-              nodeWidget.set("labelStyle",{color:"black"});
+              tree.set("iconStyle", {border:"none"}, item );
+              tree.set("labelStyle",{color:"black"}, item );
             }
             alert( "The new state for " + label + " is: " + newState );
           }
