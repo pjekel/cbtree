@@ -719,7 +719,7 @@ define([
 	 _setItemCheckedAttr: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
 			// summary:
 			//		Update the checked state for the store item and the associated parents
-			//		and children, if any. This is the hook for set(item,"checked",value).
+			//		and children, if any. This is the hook for setItemAttr(item,"checked",value).
 			// description:
 			//		Update the checked state for a single store item and the associated
 			//		parent(s) and children, if any. This method is called from the tree if
