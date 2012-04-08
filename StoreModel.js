@@ -302,8 +302,7 @@ define([
 			//		If a parent checked state changed, all child and grandchild states are
 			//		updated to reflect the change. For example, if the parent state is set
 			//		to true, all child and grandchild states will receive that same 'true'
-			//		state.	If a child changes state all of its parents will be updated if
-			//		required.
+			//		state.
 			//
 			//	storeItem:
 			//		The parent store item whose child/grandchild states require updating.
@@ -312,29 +311,20 @@ define([
 			//	tag:
 			//		private
 
-			if (this._setCheckedState(storeItem, newState)) {
-				if (this.mayHaveChildren(storeItem)) {
-					this.getChildren(storeItem, lang.hitch(this, 
-							function (children) {
-								array.forEach(children, function (child) {
-										this._updateCheckedChild(child, newState);
-									}, 
-								this 
-								);
-							}
-						), // end hitch()
-						this.onError 
-					); // end getChildren()
-				} 
+			if (this.mayHaveChildren(storeItem)) {
+				this.getChildren(storeItem, lang.hitch(this, 
+						function (children) {
+							array.forEach(children, function (child) {
+									this._updateCheckedChild(child, newState);
+								}, 
+							this 
+							);
+						}
+					), // end hitch()
+					this.onError 
+				); // end getChildren()
 			}
-/*
-			else // Item has no children
-			{
-				if (this._setCheckedState(storeItem, newState)) {
-					this._updateCheckedParent(storeItem);
-				}
-			}
-*/
+			this._setCheckedState(storeItem, newState);
 		},
 
 		_updateCheckedParent: function (/*dojo.data.Item*/ storeItem, /*String?*/ reverseRefMap) {
@@ -344,9 +334,7 @@ define([
 			//	description:
 			//		Update the parent checked state according to the state of all of its
 			//		child states. The parent checked state automatically changes if ALL
-			//		child states are true or false. If, as a result, the parent checked
-			//		state changed, we check if its parent needs updating as well all the
-			//		way upto the root. 
+			//		child states are true or false.
 			//
 			//		NOTE: If any of the children has a mixed state, the parent will
 			//					also get a mixed state. On the other hand, if none of the
@@ -358,61 +346,46 @@ define([
 			//	tag:
 			//		private
 			
-			if (!this.checkedStrict) {
+			if (!this.checkedStrict || storeItem == this.root) {
 				return;
 			}
-			var parents = this._getParentsItem(storeItem, reverseRefMap),
+			var parents    = this._getParentsItem(storeItem, reverseRefMap),
+					childState = this._getItemCheckedAttr(storeItem),
 					parentState,
 					newState;
 
 			array.forEach(parents, function (parentItem) {
 				parentState = this._getItemCheckedAttr(parentItem);
-				this.getChildren(parentItem, lang.hitch(this,
-					function (children) {
-						var hasChecked	 = false,
-								hasUnchecked = false,
-								isMixed			= false,
-								state;
-						array.some(children, function (child) {
-							state = this._getItemCheckedAttr(child);
-							isMixed |= (state == "mixed");
-							switch(state) {	// ignore 'undefined' state
-								case true:
-									hasChecked = true;
-									break;
-								case false: 
-									hasUnchecked = true;
-									break;
+				if (parentState != childState) {
+					this.getChildren(parentItem, lang.hitch(this,
+						function (children) {
+							var hasChecked	 = false,
+									hasUnchecked = false,
+									isMixed			= false,
+									state;
+							array.some(children, function (child) {
+								state = this._getItemCheckedAttr(child);
+								isMixed |= (state == "mixed");
+								switch(state) {	// ignore 'undefined' state
+									case true:
+										hasChecked = true;
+										break;
+									case false: 
+										hasUnchecked = true;
+										break;
+								}
+								return isMixed;
+							}, this);
+							// At least one checked/unchecked required to change parent state.
+							if (isMixed || hasChecked || hasUnchecked) {
+								isMixed |= !(hasChecked ^ hasUnchecked);
+								newState = (isMixed ? "mixed" : hasChecked ? true: false);
 							}
-							return isMixed;
-						}, this);
-						// At least one checked/unchecked required to change parent state.
-						if (isMixed || hasChecked || hasUnchecked) {
-							isMixed |= !(hasChecked ^ hasUnchecked);
-							newState = (isMixed ? "mixed" : hasChecked ? true: false);
-						}
-						// Only update its parent(s) if the checked state changed. 
-						if (this._setCheckedState(parentItem, newState)) {
-							this._updateCheckedParent(parentItem);
-						}
-					}),
-					this.onError);
+							this._setCheckedState(parentItem, newState);
+						}),
+						this.onError);
+				} /*end if() */
 			}, this); /* end forEach() */
-		},
-
-		_updateCheckedRoot: function (/*dojo.data.item*/ storeItem) {
-			// summary:
-			//		Update the checked state of the tree root.
-			//	storeItem:
-			//		The store item whose parent state requires updating.
-			//	tag:
-			//		private
-
-			if (this.checkedStrict  && this.checkedRoot) {
-				if (this.root.checked != this._getItemCheckedAttr(storeItem)) {
-					this._updateCheckedParent(storeItem);
-				}
-			}
 		},
 
 		_validateData: function (/*dojo.data.Item*/ storeItem) {
@@ -436,7 +409,6 @@ define([
 				}
 				if (has("tree-model-setItemAttr")) {
 					lang.hitch(this, this._validateStore) (storeItem ? storeItem : this.root);
-					this._updateCheckedParent(storeItem);
 				} else {
 					console.warn(this.declaredClass+"::_validateData(): store is not write enabled.");
 				}
@@ -503,7 +475,7 @@ define([
 			}
 			
 			if (this.checkedRoot && this.root.children.length) {
-				this._updateCheckedRoot(this.root.children[0]);
+				this._updateCheckedParent(this.root.children[0]);
 			}
 			this.onStoreComplete();
 		},
@@ -1221,9 +1193,9 @@ define([
 			// attribute: 
 			//		attribute-name-string
 			// oldValue:
-			//		
+			//		Old attribute value
 			// newValue:
-			//		
+			//		New attribute value.
 			// tags:
 			//		extension
 
@@ -1239,11 +1211,10 @@ define([
 				if (this._queryAttrs.length && array.indexOf(this._queryAttrs, attribute) != -1) {
 					this._requeryTop();
 				}
-				// In case the onSetItem() event was triggered by another model operating
-				// on the same store we need to update the root that is associated with
-				// this model as well.
-				if (this.checkedRoot && this.isRootItem(storeItem)) {
-					this._updateCheckedRoot(storeItem);
+				// If the attribute is the attribute associated with the checked state
+				// go update the store items parent.
+				if (attribute == this.checkedAttr) {
+					this._updateCheckedParent(storeItem);
 				}
 				this.onChange(storeItem, attribute, newValue);
 			}
