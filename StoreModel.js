@@ -82,10 +82,6 @@ define([
 		//		Label of fabricated root item
 		rootLabel: "ROOT",
 
-		// _labelAttr:	[private] String
-		//		Identifies the label attribute used by the store.
-		_labelAttr: null,
-		
 		// _queryAttrs: [private] array of strings
 		//		A list of attribute names included in the query. The list is used to determine
 		//		if a re-query of the store is required after a property of a store item has
@@ -143,7 +139,7 @@ define([
 		// Private Methods related to checked states
 
 		_checkOrUncheck: function (/*String|Object*/ query, /*Boolean*/ newState, /*Callback*/ onComplete, 
-																/*Context*/ scope ) {
+																/*Context*/ scope) {
 			// summary:
 			//		Check or uncheck the checked state of all store items that match the query.
 			// description:
@@ -161,7 +157,7 @@ define([
 			// onComplete:
 			//		If an onComplete callback function is provided, the callback function
 			//		will be called just once, after the last storeItem has been updated as: 
-			//		onComplete( matches, updates ).
+			//		onComplete(matches, updates).
 			// scope:
 			//		If a scope object is provided, the function onComplete will be invoked
 			//		in the context of the scope object. In the body of the callback function,
@@ -173,21 +169,21 @@ define([
 			var matches = 0,
 					updates = 0;
 
-			this.fetchItemsWithChecked( query, function ( storeItems ) {
-				array.forEach( storeItems, function ( storeItem ) {
-					if ( this.store.getValue( storeItem, this.checkedAttr) != newState ) {
-						this._setItemCheckedAttr( storeItem, newState );
+			this.fetchItemsWithChecked(query, function (storeItems) {
+				array.forEach(storeItems, function (storeItem) {
+					if (this.store.getValue(storeItem, this.checkedAttr) != newState) {
+						this._setItemCheckedAttr(storeItem, newState);
 						updates += 1; 
 					}
 					matches += 1;
-				}, this )
-				if ( onComplete ) {
-					onComplete.call( (scope ? scope : this ), matches, updates );
+				}, this)
+				if (onComplete) {
+					onComplete.call((scope ? scope : this), matches, updates);
 				}
-			}, this );
+			}, this);
 		},
 
-		_getParentsItem: function (/*dojo.data.Item*/ storeItem, /*String?*/ parentRefMap ) {
+		_getParentsItem: function (/*dojo.data.Item*/ storeItem, /*String?*/ parentRefMap) {
 			// summary:
 			//		Get the parent(s) of a dojo.data item.	
 			// description:
@@ -207,21 +203,21 @@ define([
 			var parents = [],
 					itemId;
 
-			if ( storeItem && (storeItem != this.root) ) {
+			if (storeItem && (storeItem != this.root)) {
 				var references = storeItem[ (parentRefMap ? parentRefMap : this.store._reverseRefMap) ];
-				if ( references ) {
-					for(itemId in references ) {
-						parents.push( this.store._getItemByIdentity( itemId ) );
+				if (references) {
+					for(itemId in references) {
+						parents.push(this.store._getItemByIdentity(itemId));
 					}
 				}
-				if ( parents.length == 0 ) {
+				if (parents.length == 0) {
 					parents.push(this.root);
 				}
 			}
 			return parents // parent(s) of a dojo.data.item (Array of dojo.data.items)
 		},
 
-		_normalizeState: function (/*dojo.data.Item*/ storeItem, /*Boolean|String*/ state ) {
+		_normalizeState: function (/*dojo.data.Item*/ storeItem, /*Boolean|String*/ state) {
 			// summary:
 			//		Normalize the checked state value so we don't store an invalid state
 			//		for a store item.
@@ -232,11 +228,11 @@ define([
 			// tags:
 			//		private
 			
-			if ( typeof state == "boolean" ) {
+			if (typeof state == "boolean") {
 				return state;
 			}
-			if ( this.multiState && state == "mixed" ) {
-				if (this.normalize && !this.mayHaveChildren( storeItem )){
+			if (this.multiState && state == "mixed") {
+				if (this.normalize && !this.mayHaveChildren(storeItem)){
 						return true;
 				}
 				return state;
@@ -244,7 +240,7 @@ define([
 			return state ? true : false;
 		},
 		
-		_setCheckedState: function (/*dojo.data.Item*/ storeItem, /*Boolean|String*/ newState ) {
+		_setCheckedState: function (/*dojo.data.Item*/ storeItem, /*Boolean|String*/ newState) {
 			// summary:
 			//		Set/update the checked state on the dojo.data store. Returns true if
 			//		the checked state changed otherwise false.
@@ -272,26 +268,26 @@ define([
 					normState,
 					oldValue;
 					
-			normState	 = this._normalizeState( storeItem, newState );
+			normState	 = this._normalizeState(storeItem, newState);
 			forceUpdate = (normState != newState);
-			if ( storeItem != this.root ) {
+			if (storeItem != this.root) {
 				var currState = this.store.getValue(storeItem, this.checkedAttr);
-				if ( (currState !== undefined || this.checkedAll) && (currState != normState || forceUpdate) ) {
-					this.store.setValue( storeItem, this.checkedAttr, normState );
+				if ((currState !== undefined || this.checkedAll) && (currState != normState || forceUpdate)) {
+					this.store.setValue(storeItem, this.checkedAttr, normState);
 				} else {
 					stateChanged = false;
 				}
 			} 
 			else	// Tree root instance
 			{
-				if ( this.checkedRoot && ( this.root.checked != normState || forceUpdate) ) {
+				if (this.checkedRoot && (this.root.checked != normState || forceUpdate)) {
 					oldValue = this.root.checked;
 					this.root.checked = normState;
 					/*
-						As the root is not an actual store item we must call onSetItem() explicitly
+						As the root is not an actual store item we must call onChange() explicitly
 						to mimic a store update.
 					*/
-					this.onSetItem( storeItem, this.checkedAttr, oldValue, normState );
+					this.onChange(storeItem, this.checkedAttr, normState);
 				} else {
 					stateChanged = false;
 				}
@@ -299,7 +295,7 @@ define([
 			return stateChanged;
 		},
 
-		_updateCheckedChild: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
+		_updateCheckedChild: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState) {
 			//	summary:
 			//		Set the parent (the storeItem) and all childrens states to true/false.
 			//	description:
@@ -316,28 +312,32 @@ define([
 			//	tag:
 			//		private
 
-			if ( this.mayHaveChildren( storeItem )) {
-				this.getChildren( storeItem, lang.hitch( this, 
-						function ( children ) {
-							array.forEach( children, function (child) {
-									this._updateCheckedChild( child, newState );
-								}, 
-							this 
-							);
-						}
-					), // end hitch()
-					this.onError 
-				); // end getChildren()
-			} 
+			if (this._setCheckedState(storeItem, newState)) {
+				if (this.mayHaveChildren(storeItem)) {
+					this.getChildren(storeItem, lang.hitch(this, 
+							function (children) {
+								array.forEach(children, function (child) {
+										this._updateCheckedChild(child, newState);
+									}, 
+								this 
+								);
+							}
+						), // end hitch()
+						this.onError 
+					); // end getChildren()
+				} 
+			}
+/*
 			else // Item has no children
 			{
-				if ( this._setCheckedState( storeItem, newState ) ) {
-					this._updateCheckedParent( storeItem );
+				if (this._setCheckedState(storeItem, newState)) {
+					this._updateCheckedParent(storeItem);
 				}
 			}
+*/
 		},
 
-		_updateCheckedParent: function (/*dojo.data.Item*/ storeItem, /*String?*/ reverseRefMap ) {
+		_updateCheckedParent: function (/*dojo.data.Item*/ storeItem, /*String?*/ reverseRefMap) {
 			//	summary:
 			//		Update the parent checked state according to the state of all child
 			//		checked states.
@@ -358,25 +358,25 @@ define([
 			//	tag:
 			//		private
 			
-			if ( !this.checkedStrict ) {
+			if (!this.checkedStrict) {
 				return;
 			}
-			var parents = this._getParentsItem( storeItem, reverseRefMap ),
+			var parents = this._getParentsItem(storeItem, reverseRefMap),
 					parentState,
 					newState;
 
-			array.forEach( parents, function ( parentItem ) {
+			array.forEach(parents, function (parentItem) {
 				parentState = this._getItemCheckedAttr(parentItem);
-				this.getChildren( parentItem, lang.hitch( this,
+				this.getChildren(parentItem, lang.hitch(this,
 					function (children) {
 						var hasChecked	 = false,
 								hasUnchecked = false,
 								isMixed			= false,
 								state;
-						array.some( children, function (child) {
+						array.some(children, function (child) {
 							state = this._getItemCheckedAttr(child);
-							isMixed |= ( state == "mixed" );
-							switch( state ) {	// ignore 'undefined' state
+							isMixed |= (state == "mixed");
+							switch(state) {	// ignore 'undefined' state
 								case true:
 									hasChecked = true;
 									break;
@@ -385,22 +385,37 @@ define([
 									break;
 							}
 							return isMixed;
-						}, this );
+						}, this);
 						// At least one checked/unchecked required to change parent state.
-						if ( isMixed || hasChecked || hasUnchecked ) {
+						if (isMixed || hasChecked || hasUnchecked) {
 							isMixed |= !(hasChecked ^ hasUnchecked);
 							newState = (isMixed ? "mixed" : hasChecked ? true: false);
 						}
 						// Only update its parent(s) if the checked state changed. 
-						if (this._setCheckedState( parentItem, newState ) ) {
-							this._updateCheckedParent( parentItem );
+						if (this._setCheckedState(parentItem, newState)) {
+							this._updateCheckedParent(parentItem);
 						}
 					}),
-					this.onError );
-			}, this ); /* end forEach() */
+					this.onError);
+			}, this); /* end forEach() */
 		},
-		
-		_validateData: function (/*dojo.data.Item*/ storeItem ) {
+
+		_updateCheckedRoot: function (/*dojo.data.item*/ storeItem) {
+			// summary:
+			//		Update the checked state of the tree root.
+			//	storeItem:
+			//		The store item whose parent state requires updating.
+			//	tag:
+			//		private
+
+			if (this.checkedStrict  && this.checkedRoot) {
+				if (this.root.checked != this._getItemCheckedAttr(storeItem)) {
+					this._updateCheckedParent(storeItem);
+				}
+			}
+		},
+
+		_validateData: function (/*dojo.data.Item*/ storeItem) {
 			// summary:
 			//		Validate/normalize the parent-child checked state relationship. If the
 			//		attribute 'checkedStrict' is true this method is called as part of the
@@ -413,23 +428,22 @@ define([
 			//	tag:
 			//		private
 		
-			if ( this.checkedStrict ) {
+			if (this.checkedStrict) {
 				try {
 					this.store._forceLoad();		// Try a forced synchronous load
-					this._labelAttr = this.store._labelAttr;
 				} catch(e) { 
 					console.log(e);
 				}
 				if (has("tree-model-setItemAttr")) {
-					lang.hitch( this, this._validateStore ) ( storeItem ? storeItem : this.root );
-					this._updateCheckedParent( storeItem );
+					lang.hitch(this, this._validateStore) (storeItem ? storeItem : this.root);
+					this._updateCheckedParent(storeItem);
 				} else {
 					console.warn(this.declaredClass+"::_validateData(): store is not write enabled.");
 				}
 			}
 		},
 
-		_validateStore: function (/*dojo.data.Item*/ storeItem ) {
+		_validateStore: function (/*dojo.data.Item*/ storeItem) {
 			// summary:
 			//		Validate/normalize the parent(s) checked state in the dojo.data store.
 			// description:
@@ -440,30 +454,30 @@ define([
 			//	storeItem:
 			//		The element to start traversing the dojo.data.store, typically model.root
 			//	example:
-			//		this._validateStore( storeItem );
+			//		this._validateStore(storeItem);
 			//	tag:
 			//		private
 
 			try {
-				this.getChildren( storeItem, lang.hitch( this,
+				this.getChildren(storeItem, lang.hitch(this,
 					function (children) {
 						var hasGrandChild = false,
 								oneChild = null;
 						this._validating += 1;				
-						array.forEach( children, function ( child ) {
-							if ( this.mayHaveChildren( child )) {
-								this._validateStore( child );
+						array.forEach(children, function (child) {
+							if (this.mayHaveChildren(child)) {
+								this._validateStore(child);
 								hasGrandChild = true;
 							} else {
 								oneChild = child;
 							}
-						},this );
-						if ( !hasGrandChild && oneChild ) {	// Found a child on the lowest branch ?
-							this._updateCheckedParent( oneChild );
+						},this);
+						if (!hasGrandChild && oneChild) {	// Found a child on the lowest branch ?
+							this._updateCheckedParent(oneChild);
 						}
 						// If the validation count drops to zero we're done.
 						this._validating -= 1;
-						if ( !this._validating ) {
+						if (!this._validating) {
 							this._onStoreComplete();
 						}
 					}),
@@ -484,10 +498,12 @@ define([
 			//	tag:
 			//		private
 			
-			this._labelAttr = this.store._labelAttr;
-
-			if( this.checkedRoot && this.root.children.length ) {
-				this._updateCheckedParent( this.root.children[0] );
+			if (!this.labelAttr) {
+				this.labelAttr = this.store._labelAttr;
+			}
+			
+			if (this.checkedRoot && this.root.children.length) {
+				this._updateCheckedRoot(this.root.children[0]);
 			}
 			this.onStoreComplete();
 		},
@@ -502,17 +518,17 @@ define([
 			//		Name of property to get
 
 			if (lang.isString(attribute)){
-				var func = this._getFuncNames( "", attribute );
-				if ( lang.isFunction( this[func.get] )) {
+				var func = this._getFuncNames("", attribute);
+				if (lang.isFunction(this[func.get])) {
 					return this[func.get]();
 				}
-				attribute = lang.trim( attribute );
-				if ( typeof this[attribute] !== "undefined" && attribute.charAt(0) != '_' ) {
+				attribute = lang.trim(attribute);
+				if (typeof this[attribute] !== "undefined" && attribute.charAt(0) != '_') {
 					return this[attribute];
 				}
-				throw new Error( this.declaredClass+"::get(): Invalid property: "+attribute );
+				throw new Error(this.declaredClass+"::get(): Invalid property: "+attribute);
 			}
-			throw new Error( this.declaredClass+"::get(): Attribute must be of type string" );
+			throw new Error(this.declaredClass+"::get(): Attribute must be of type string");
 		},
 
 		_getLabelAttrAttr: function() {
@@ -523,50 +539,55 @@ define([
 			//									loaded but there is no onLoad() event for the store. The
 			//									handler _onStoreComplete() will set the label but the handler
 			//									is only called if store validation has been requested.
-			if( !this._labelAttr ) {
-				this._labelAttr = this.store._labelAttr;
+			if (!this.labelAttr) {
+				this.labelAttr = this.store._labelAttr;
 			}
-			return this._labelAttr;
+			return this.labelAttr;
 		},
 
-		set: function (/*String*/ attribute, /*anytype*/ value ){
+		set: function (/*String*/ attribute, /*anytype*/ value){
 			// summary:
 			//		Provide the setter capabilities for the model.
 			// attribute:
 			//		Name of property to set
 
 			if (lang.isString(attribute)){
-				var func = this._getFuncNames( "", attribute );
-				if ( lang.isFunction( this[func.set] )) {
+				var func = this._getFuncNames("", attribute);
+				if (lang.isFunction(this[func.set])) {
 					return this[func.set](value);
 				}
 			}
-			throw new Error( this.declaredClass+"::set(): Invalid attribute or property is read-only" );
+			throw new Error(this.declaredClass+"::set(): Invalid attribute or property is read-only");
 		},
 
-		_setQueryAttr: function ( value ) {
+		_setQueryAttr: function (value) {
 			// summary:
 			//		Hook for the set("query",value) calls.
 			// value:
 			//		New query object.
+			// tag:
+			//		private
 			if (lang.isObject(value)){
-				if( this.query !== value ){
+				if (this.query !== value){
 					this.query = value;
 					this._requeryTop();
 				}
 				return this.query;
 			} else {
-				throw new Error( this.declaredClass+"::set(): query argument must of type object" );
+				throw new Error(this.declaredClass+"::set(): query argument must of type object");
 			}
 		},
 
-		_setCheckedStrictAttr: function ( value ){
+		_setCheckedStrictAttr: function (value){
 			// summary:
 			//		Hook for the set("checkedStrict",value) calls. Note: A full store
 			//		re-evaluation is only kicked off when the current value is false 
 			//		and the new value is true.
 			// value:
 			//		New value applied to 'checkedStrict'. Any value is converted to a boolean.
+			// tag:
+			//		private
+
 			value = value ? true : false;
 			if (this.checkedStrict !== value) {
 				this.checkedStrict = value;
@@ -592,18 +613,18 @@ define([
 
 			var attr = (attribute == this.checkedAttr ? "checked" : attribute);
 
-			if( this.isItem( storeItem ) || storeItem === this.root) {
-				var func = this._getFuncNames( "Item", attr );
-				if ( lang.isFunction( this[func.get] )) {
+			if (this.isItem(storeItem) || storeItem === this.root) {
+				var func = this._getFuncNames("Item", attr);
+				if (lang.isFunction(this[func.get])) {
 					return this[func.get](storeItem);
 				} else {
-					if ( storeItem !== this.root ){
-						return this.store.getValue( storeItem, attr )
+					if (storeItem !== this.root){
+						return this.store.getValue(storeItem, attr)
 					}
 					return this.root[attr];
 				}
 			}
-			throw new Error( this.declaredClass+"::getItemAttr(): argument is not a valid store item.");
+			throw new Error(this.declaredClass+"::getItemAttr(): argument is not a valid store item.");
 		},
 
 		_getItemCheckedAttr: function (/*dojo.data.Item*/ storeItem) {
@@ -633,19 +654,19 @@ define([
 
 			var checked;
 			
-			if ( storeItem !== this.root ) {
+			if (storeItem !== this.root) {
 				checked = this.store.getValue(storeItem, this.checkedAttr);
-				if ( checked === undefined )
+				if (checked === undefined)
 				{
-					if ( this.checkedAll) {
-						this._setCheckedState( storeItem, this.checkedState );
+					if (this.checkedAll) {
+						this._setCheckedState(storeItem, this.checkedState);
 						checked = this.checkedState;
 					}
 				}
 			} 
 			else // Fake tree root. (the root is NOT a dojo.data.item).
 			{	
-				if ( this.checkedRoot ) {
+				if (this.checkedRoot) {
 					checked = this.root.checked;
 				}
 			}
@@ -662,13 +683,13 @@ define([
 			// tag:
 			//		private
 
-			if ( storeItem !== this.root ){
+			if (storeItem !== this.root){
 				return this.store.getIdentity(storeItem);	// Object
 			}
 			return this.root.id;
 		},
 
-		_getItemLabelAttr: function ( storeItem ){
+		_getItemLabelAttr: function (storeItem){
 			// summary:
 			//		Provide the hook for getItemAttr(storeItem,"label") calls. The getItemAttr()
 			//		interface is the preferred method over the legacy getLabel() method.
@@ -677,7 +698,7 @@ define([
 			// tag:
 			//		private
 
-			if ( storeItem !== this.root ){
+			if (storeItem !== this.root){
 				if (this.labelAttr){
 					return this.store.getValue(storeItem,this.labelAttr);	// String
 				}else{
@@ -687,7 +708,7 @@ define([
 			return this.root.label;
 		},
 
-		setItemAttr: function (/*dojo.data.item*/ storeItem, /*String*/ attribute, /*anytype*/ value ) {
+		setItemAttr: function (/*dojo.data.item*/ storeItem, /*String*/ attribute, /*anytype*/ value) {
 			// summary:
 			//		Provide the setter capabilities for store items thru the model.
 			//		The setItemAttr() method strictly operates on store items not
@@ -699,24 +720,24 @@ define([
 			// value:
 			//		Value to be applied.
 			
-			if (this._writeEnabled ) {
+			if (this._writeEnabled) {
 				var attr = (attribute == this.checkedAttr ? "checked" : attribute);
-				if (this.isItem( storeItem )) {
-					var func = this._getFuncNames( "Item", attr );
-					if ( lang.isFunction( this[func.set] )) {
+				if (this.isItem(storeItem)) {
+					var func = this._getFuncNames("Item", attr);
+					if (lang.isFunction(this[func.set])) {
 						return this[func.set](storeItem,value);
 					} else {
-						return this.store.setValue( storeItem, attr, value );
+						return this.store.setValue(storeItem, attr, value);
 					}
 				} else {
-					throw new Error( this.declaredClass+"::setItemAttr(): argument is not a valid store item.");
+					throw new Error(this.declaredClass+"::setItemAttr(): argument is not a valid store item.");
 				}
 			} else {
-				throw new Error( this.declaredClass+"::setItemAttr(): store is not write enabled.");
+				throw new Error(this.declaredClass+"::setItemAttr(): store is not write enabled.");
 			}
 		},
 		 
-	 _setItemCheckedAttr: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState ) {
+	 _setItemCheckedAttr: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState) {
 			// summary:
 			//		Update the checked state for the store item and the associated parents
 			//		and children, if any. This is the hook for setItemAttr(item,"checked",value).
@@ -732,25 +753,25 @@ define([
 			// tags:
 			//		private
 			//	example:
-			//		model.set( item,"checked",newState );
+			//		model.set(item,"checked",newState);
 			
-			if ( !this.checkedStrict ) {
-				this._setCheckedState( storeItem, newState );		// Just update the checked state
+			if (!this.checkedStrict) {
+				this._setCheckedState(storeItem, newState);		// Just update the checked state
 			} else {
-				this._updateCheckedChild( storeItem, newState ); // Update children and parent(s).
+				this._updateCheckedChild(storeItem, newState); // Update children and parent(s).
 			}
 		},
 
-		_setItemIdentityAttr: function (storeItem, value ){
+		_setItemIdentityAttr: function (storeItem, value){
 			// summary:
 			//		Hook for setItemAttr(storeItem,"identity",value) calls. However, changing 
 			//		the identity of a store item is NOT allowed.
 			// tags:
 			//		private
-			throw new Error( this.declaredClass+"::setItemAttr(): Identity attribute cannot be changed" );
+			throw new Error(this.declaredClass+"::setItemAttr(): Identity attribute cannot be changed");
 		},
 
-		_setItemLabelAttr: function ( storeItem, value ){
+		_setItemLabelAttr: function (storeItem, value){
 			// summary:
 			//		Hook for setItemAttr(storeItem,"label",value) calls. However, changing
 			//		the label value is only allowed if the label attribute isn't the same
@@ -762,13 +783,13 @@ define([
 			// tags:
 			//		private
 			
-			var labelAttr = this.labelAttr ? this.labelAttr : this.store._labelAttr;
+			var labelAttr = this.get("labelAttr");
 
-			if ( labelAttr ){
+			if (labelAttr){
 				if (labelAttr != this.store.getIdentifierAttr()){
-					return this.store.setValue( storeItem, labelAttr, value );
+					return this.store.setValue(storeItem, labelAttr, value);
 				}
-				throw new Error( this.declaredClass+"::setItemAttr(): Label attribute {"+labelAttr+"} cannot be changed" );
+				throw new Error(this.declaredClass+"::setItemAttr(): Label attribute {"+labelAttr+"} cannot be changed");
 			}
 		},
 
@@ -813,12 +834,12 @@ define([
 		// =======================================================================
 		// Inspecting items
 
-		fetchItem: function ( /*String|Object*/ args, /*String?*/ identAttr ){
+		fetchItem: function (/*String|Object*/ args, /*String?*/ identAttr){
 			// summary:
 			// args:
 			// identAttr:
 			var identifier = this.store.getIdentifierAttr();
-			var idQuery		= this._anyToQuery( args, identAttr );
+			var idQuery		= this._anyToQuery(args, identAttr);
 
 			if (idQuery){
 				if (idQuery[identifier] != this.root.id){
@@ -843,7 +864,7 @@ define([
 			}
 		},
 
-		fetchItemsWithChecked: function (/*String|Object*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
+		fetchItemsWithChecked: function (/*String|Object*/ query, /*Callback*/ onComplete, /*Context*/ scope) {
 			// summary:
 			//		Get the list of store items that match the query and have a checked 
 			//		state, that is, a checkedAttr property.
@@ -858,7 +879,7 @@ define([
 			//	onComplete:
 			//		 User specified callback method which is called on completion with an
 			//		array of store items that matched the query argument. Method onComplete
-			//		is called as: onComplete( storeItems ) in the context of scope if scope
+			//		is called as: onComplete(storeItems) in the context of scope if scope
 			//		is specified otherwise in the active context (this).
 			//	scope:
 			//		If a scope object is provided, the function onComplete will be invoked
@@ -869,27 +890,27 @@ define([
 			var storeItems = [];
 				
 			if (lang.isObject(query)){
-				this.store.fetch( {	
+				this.store.fetch({	
 					query: query,
 					//	Make sure ALL items are searched, not just top level items.
 					queryOptions: { deep: true },
-					onItem: function ( storeItem, request ) {
+					onItem: function (storeItem, request) {
 						// Make sure the item has the appropriate attribute so we don't inadvertently
 						// start adding checked state properties.
-						if ( this.store.hasAttribute( storeItem, this.checkedAttr )) {
-							storeItems.push( storeItem );
+						if (this.store.hasAttribute(storeItem, this.checkedAttr)) {
+							storeItems.push(storeItem);
 						}
 					},
 					onComplete: function () {
-						if ( onComplete ) {
-							onComplete.call( (scope ? scope : this ), storeItems );
+						if (onComplete) {
+							onComplete.call((scope ? scope : this), storeItems);
 						}
 					},
 					onError: this.onError,
 					scope: this
 				});
 			} else {
-				throw new Error( this.declaredClass+"::fetchItemsWithChecked(): query must be of type object.");
+				throw new Error(this.declaredClass+"::fetchItemsWithChecked(): query must be of type object.");
 			}
 		},
 
@@ -919,29 +940,28 @@ define([
 			//		or the tree root.
 			// tags:
 			//		extension
-			if ( something !== this.root ){
+			if (something !== this.root){
 				this.store.isItem(something);
 			}
 			return true;
 		},
 
-		isRootItem: function (/*AnyType*/ something ){
+		isRootItem: function (/*AnyType*/ something){
 			// summary:
 			//		Returns true if 'something' is a top level item in the store otherwise false.
 			// item:
 			//		A valid dojo.data.store item.
 
-			if ( something !== this.root ){
-				return this.store.isRootItem( something );
+			if (something !== this.root){
+				return this.store.isRootItem(something);
 			}
 			return true;
 		},
 
-
 		// =======================================================================
 		// Write interface
 
-		addReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem ){
+		addReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem){
 			// summary:
 			//		Add an existing item to the parentItem by reference.
 			// childItem:
@@ -951,52 +971,52 @@ define([
 			// tag:
 			//		extension
 
-			if ( this.store.addReference(childItem, parentItem, this.childrenAttrs[0]) ){
-				this._updateCheckedParent( childItem );
+			if (this.store.addReference(childItem, parentItem, this.childrenAttrs[0])){
+				this._updateCheckedParent(childItem);
 			}
 		},
 
-		attachToRoot: function (/*dojo.data.item*/ storeItem ){
+		attachToRoot: function (/*dojo.data.item*/ storeItem){
 			// summary:
 			//		Promote a store item to a top level item.
 			// storeItem:
 			//		A valid dojo.data.store item.
 
-			if ( storeItem !== this.root ){
+			if (storeItem !== this.root){
 				this.store.attachToRoot(storeItem);
 			}
 		},
 		
-		check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
+		check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope) {
 			// summary:
 			//		Check all store items that match the query.
 			// description:
 			//		See description _checkOrUncheck()
 			//	example:
-			//		model.check( { name: "John" } ); 
-			//	| model.check( "John", myCallback, this );
+			//		model.check({ name: "John" }); 
+			//	| model.check("John", myCallback, this);
 
-			this._checkOrUncheck( query, true, onComplete, scope );
+			this._checkOrUncheck(query, true, onComplete, scope);
 		},
 		
-		deleteItem: function (/*dojo.data.Item*/ storeItem ){
+		deleteItem: function (/*dojo.data.Item*/ storeItem){
 			// summary:
 			//		Delete a store item.
 			// storeItem:
 			//		The store item to be delete.
 
-			return this.store.deleteItem( storeItem );
+			return this.store.deleteItem(storeItem);
 		},
 
-		detachFromRoot: function (/*dojo.data.item*/ storeItem ) {
+		detachFromRoot: function (/*dojo.data.item*/ storeItem) {
 			// summary:
 			//		Detach item from the root by removing it from the stores top level item
 			//		list
 			// storeItem:
 			//		A valid dojo.data.store item.
 
-			if ( storeItem !== this.root ){
-				this.store.detachFromRoot( storeItem );
+			if (storeItem !== this.root){
+				this.store.detachFromRoot(storeItem);
 			}
 		},
 		
@@ -1018,7 +1038,7 @@ define([
 			// parent:
 			//		Optional, a valid store item that will serve as the parent of the new
 			//		item.	 If ommitted,	the new item is automatically created as a top
-			//		level item in the store. (see also: newReferenceItem() )
+			//		level item in the store. (see also: newReferenceItem())
 			// insertIndex:
 			//		If specified the location in the parents list of child items.
 			
@@ -1026,16 +1046,16 @@ define([
 					newItem;
 
 			if (parent !== this.root){
-				if ( this.isItem( parent )) {
+				if (this.isItem(parent)) {
 					pInfo = {parent: parent, attribute: this.childrenAttrs[0]};
 				} else {
 				}
 			}
 
-			this._mapIdentifierAttr( args, false );
+			this._mapIdentifierAttr(args, false);
 			try {
-				newItem = this.store.itemExist( args );	 // Write store extension...
-				if ( newItem ) {
+				newItem = this.store.itemExist(args);	 // Write store extension...
+				if (newItem) {
 					this.pasteItem(newItem, null, parent, true, insertIndex);
 				} else {
 					newItem = this.store.newItem(args, pInfo);
@@ -1045,7 +1065,7 @@ define([
 					}
 				}
 			} catch(err) {
-				throw new Error( this.declaredClass+"::newItem(): " + err );
+				throw new Error(this.declaredClass+"::newItem(): " + err);
 			} 
 			return newItem;
 		},
@@ -1067,8 +1087,8 @@ define([
 
 			var newItem;
 
-			newItem = this.newItem( args, parent, insertIndex );
-			if ( newItem ) {
+			newItem = this.newItem(args, parent, insertIndex);
+			if (newItem) {
 				this.store.attachToRoot(newItem); // Make newItem a top level item.
 			}
 			return newItem;
@@ -1083,7 +1103,7 @@ define([
 			//		extension
 
 			if (oldParentItem === this.root){
-				if(!bCopy){
+				if (!bCopy){
 					// It's onLeaveRoot()'s responsibility to modify the item so it no longer matches
 					// this.query... thus triggering an onChildrenChange() event to notify the Tree
 					// that this element is no longer a child of the root node
@@ -1096,10 +1116,10 @@ define([
 				bCopy,
 				insertIndex
 			]);
-			this._updateCheckedParent( childItem );
+			this._updateCheckedParent(childItem);
 		},
 
-		removeReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem ){
+		removeReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem){
 			// summary:
 			//		Remove a child reference from its parent. Only the references are
 			//		removed, the childItem is not delete.
@@ -1110,28 +1130,28 @@ define([
 			// tag:
 			//		extension
 			
-			if ( this.store.removeReference( childItem, parentItem, this.childrenAttrs[0]) ){
+			if (this.store.removeReference(childItem, parentItem, this.childrenAttrs[0])){
 				// If any children are left get the first and update the parent checked state.
 				this.getChildren(parentItem, lang.hitch(this,
 					function (children){
-						if ( children.length ) {
-							this._updateCheckedParent( children[0] );
+						if (children.length) {
+							this._updateCheckedParent(children[0]);
 						}
 					})
 				); /* end getChildren() */
 			}
 		},
 		
-		uncheck: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope ) {
+		uncheck: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope) {
 			// summary:
 			//		Uncheck all store items that match the query.
 			// description:
 			//		See description _checkOrUncheck()
 			//	example:
-			//		uncheck( { name: "John" } );
-			//	| uncheck( "John", myCallback, this );
+			//		uncheck({ name: "John" });
+			//	| uncheck("John", myCallback, this);
 
-			this._checkOrUncheck( query, false, onComplete, scope );
+			this._checkOrUncheck(query, false, onComplete, scope);
 		},
 
 		// =======================================================================
@@ -1150,7 +1170,7 @@ define([
 					
 			this.inherited(arguments);
 
-			this._updateCheckedParent( storeItem, backupRef );
+			this._updateCheckedParent(storeItem, backupRef);
 		},
 
 		onNewItem: function (/*dojo.data.item*/ storeItem, /*Object*/ parentInfo){
@@ -1162,7 +1182,7 @@ define([
 			// tags:
 			//		extension
 
-			this._updateCheckedParent( storeItem );
+			this._updateCheckedParent(storeItem);
 			this.inherited(arguments);
 		},
 
@@ -1184,13 +1204,13 @@ define([
 			// tag:
 			//		callback, public
 
-			if ( evt.attach || (array.indexOf(this.root.children, storeItem) != -1) ){
+			if (evt.attach || (array.indexOf(this.root.children, storeItem) != -1)){
 				this._requeryTop();
 			}
 		},
 		
 		onSetItem: function (/*dojo.data.item*/ storeItem, /*string*/ attribute, /*AnyType*/ oldValue, 
-												 /*AnyType*/ newValue ){
+												  /*AnyType*/ newValue){
 			// summary:
 			//		Updates the tree view according to changes in the data store.
 			// description:
@@ -1200,11 +1220,13 @@ define([
 			//		Store item
 			// attribute: 
 			//		attribute-name-string
-			// oldValue: object | array
-			// newValue: object | array
+			// oldValue:
+			//		
+			// newValue:
+			//		
 			// tags:
 			//		extension
-		 
+
 			if (array.indexOf(this.childrenAttrs, attribute) != -1){
 				// Store item's children list changed
 				this.getChildren(storeItem, lang.hitch(this, function (children){
@@ -1214,10 +1236,16 @@ define([
 			}else{
 				// If the attribute is any of the attributes used in the store query
 				// requery the store.
-				if ( this._queryAttrs.length && array.indexOf( this._queryAttrs, attribute ) != -1 ) {
+				if (this._queryAttrs.length && array.indexOf(this._queryAttrs, attribute) != -1) {
 					this._requeryTop();
 				}
-				this.onChange(storeItem, attribute, newValue );
+				// In case the onSetItem() event was triggered by another model operating
+				// on the same store we need to update the root that is associated with
+				// this model as well.
+				if (this.checkedRoot && this.isRootItem(storeItem)) {
+					this._updateCheckedRoot(storeItem);
+				}
+				this.onChange(storeItem, attribute, newValue);
 			}
 		},
 
@@ -1231,28 +1259,28 @@ define([
 		// =======================================================================
 		// Model callbacks
 
-		onError: function (/*Object*/ err ) {
+		onError: function (/*Object*/ err) {
 			// summary:
 			//		Callback when an error occurred.
 			// tags:
 			//		callback
-			console.err( this, err );
+			console.err(this, err);
 		},
 
 		// =======================================================================
 		// Misc Private Methods
 
-		_anyToQuery: function (/*String|Object*/ args, /*String?*/ attribute ){
+		_anyToQuery: function (/*String|Object*/ args, /*String?*/ attribute){
 			var identAttr = this.store.getIdentifierAttr();
 					
-			if ( identAttr ){
+			if (identAttr){
 				var objAttr = attribute ? attribute : identAttr,
 						query = {};
 				if (lang.isString(args)) {
 					query[identAttr] = args;
 					return query;
 				} else if (lang.isObject(args)){
-					if ( args[objAttr] ) {
+					if (args[objAttr]) {
 						query[identAttr] = args[objAttr]
 						return query;
 					}
@@ -1261,7 +1289,7 @@ define([
 			return null;
 		},
 
-		_getFuncNames: function (/*String*/ prefix, /*String*/ name ) {
+		_getFuncNames: function (/*String*/ prefix, /*String*/ name) {
 			// summary:
 			//		Helper function for the get() and set() methods. Returns the function names
 			//		in lowerCamelCase for the get and set functions associated with the 'name'
@@ -1276,10 +1304,10 @@ define([
 				var fncSet = { set: "_set"+prefix+cc+"Attr", get: "_get"+prefix+cc+"Attr" };
 				return fncSet;
 			}
-			throw new Error( this.declaredClass+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be of type string.");
+			throw new Error(this.declaredClass+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be of type string.");
 		},
 
-		_mapIdentifierAttr: function (/*Object*/ args, /*Boolean?*/ delMappedAttr ) {
+		_mapIdentifierAttr: function (/*Object*/ args, /*Boolean?*/ delMappedAttr) {
 			// summary:
 			//		Map the 'newItemIdAttr' property of a new item to the store identifier
 			//		attribute. Return true if the mapping was made.
@@ -1298,17 +1326,17 @@ define([
 			
 			var identifierAttr = this.store.getIdentifierAttr();
 			
-			if ( identifierAttr ) {
-				if ( !args[identifierAttr] && (this.newItemIdAttr && args[this.newItemIdAttr])) {
+			if (identifierAttr) {
+				if (!args[identifierAttr] && (this.newItemIdAttr && args[this.newItemIdAttr])) {
 					args[identifierAttr] = args[this.newItemIdAttr];
-					if ( delMappedAttr ) {
+					if (delMappedAttr) {
 						delete args[this.newItemIdAttr];
 					}
 					return true;
 				}
 			}
 			// Check if checked state needs adding.
-			if ( this.checkedAll && !args[this.checkedAttr] ) {
+			if (this.checkedAll && !args[this.checkedAttr]) {
 				args[this.checkedAttr] = this.checkedState;
 			}
 			return false;
@@ -1332,7 +1360,7 @@ define([
 								return newChildren[idx] != item;
 							})) {
 						this.onChildrenChange(this.root, newChildren);
-						this._updateCheckedParent( newChildren[0] );
+						this._updateCheckedParent(newChildren[0]);
 					}
 				}) /* end hitch() */
 			}); /* end fetch() */
