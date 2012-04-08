@@ -4,10 +4,19 @@
   <head> 
     <title>Dijit Tree with Checkboxes and custom Icons</title>     
 
-    <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
+ 		<style type="text/css">
+			@import "../../dijit/themes/claro/claro.css";
+			@import "../../dijit/themes/claro/document.css";
+			@import "../../dijit/tests/css/dijitTests.css";
+			@import "../themes/claro/claro.css";
+			@import "../icons/networkIcons.css";
+		</style>
+
+<!--
+   <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
     <link rel="stylesheet" href="../themes/claro/claro.css" />
     <link rel="stylesheet" href="../icons/networkIcons.css" />
-
+-->
 		<script type="text/javascript">
 			var dojoConfig = {
             async: true,
@@ -28,6 +37,7 @@
   </head>
     
   <body class="claro">
+    <h1>Dijit Tree with Checkboxes and Custom Icons</h1>
     <div id="CheckboxTree">	
       <script type="text/javascript">
 

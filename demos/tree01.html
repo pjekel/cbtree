@@ -3,21 +3,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head> 
     <title>Dijit Tree with Checkboxes </title>     
-<!--
-    NOTE:  When changing themes, the <body class=xxx> MUST change accordingly.
-    
-    <link rel="stylesheet" href="../../dijit/themes/soria/soria.css" />
-    <link rel="stylesheet" href="../themes/soria/soria.css" />
-
-    <link rel="stylesheet" href="../../dijit/themes/tundra/tundra.css" />
-    <link rel="stylesheet" href="../themes/tundra/tundra.css" />
-
-    <link rel="stylesheet" href="../../dijit/themes/nihilo/nihilo.css" />
-    <link rel="stylesheet" href="../themes/nihilo/nihilo.css" />
-
--->
-    <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
-    <link rel="stylesheet" href="../themes/claro/claro.css" />
+		<style type="text/css">
+			@import "../../dijit/themes/claro/claro.css";
+			@import "../../dijit/tests/css/dijitTests.css";
+			@import "../../dijit/themes/claro/document.css";
+			@import "../themes/claro/claro.css";
+		</style>
 
     <script type="text/javascript">
       var dojoConfig = {
@@ -38,8 +29,8 @@
   </head>
     
   <body class="claro">
+		<h1 class="DemoTitle">Dijit CheckBox Tree</h1>
     <div id="CheckboxTree">  
-      <h2>Click a checkbox</h2>
       <script type="text/javascript">
 
       require([
@@ -88,5 +79,6 @@
         });
       </script>
     </div>
+    <h2>Click a checkbox</h2>
   </body> 
 </html>

@@ -8,9 +8,13 @@
   is turned off allowing ALL checkboxes to cycle thru all possible states.
 -->
 
-    <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
-    <link rel="stylesheet" href="../../cbtree/themes/claro/claro.css" />
-    <link rel="stylesheet" href="../../dojox/form/resources/TriStateCheckBox.css" />
+ 		<style type="text/css">
+			@import "../../dijit/themes/claro/claro.css";
+			@import "../../dijit/themes/claro/document.css";
+			@import "../../dijit/tests/css/dijitTests.css";
+			@import "../../dojox/form/resources/TriStateCheckBox.css";
+			@import "../themes/claro/claro.css";
+		</style>
 
 		<script type="text/javascript">
 			var dojoConfig = {
@@ -30,8 +34,8 @@
   </head>
     
   <body class="claro">
+		<h1>Third Party Widget &lt;TriStateCheckBox&gt; mixed in</h1>
     <div id="CheckboxTree">	
-			<h4>Third Party Widget &lt;TriStateCheckBox&gt; mixed in</h4>
       <script type="text/javascript">
 
       require([
