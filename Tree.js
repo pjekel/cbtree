@@ -276,7 +276,7 @@ define([
 		// _modelAttrMap: [private] array of strings
 		//		List of additional events (attribute names) the onItemChange() method
 		//		will act upon besides the _checkedAttr property value.	 Any internal
-		//		events are pre- and suffixed with an underscore like '_icon_'
+		//		events are pre- and suffixed with an underscore like '_styling_'
 		_modelAttrMap: {},
 
 		// _writeEnabled: [private]
@@ -312,7 +312,7 @@ define([
 
 			var item = nodeWidget.item;
 				
-			this._publish("execute", { item: item, node: nodeWidget, evt: evt});
+			this._publish("checkbox", { item: item, node: nodeWidget, state: newState, evt: evt});
 			// Generate events incase any listeners are tuned in...
 			this.onCheckBoxClick(item, nodeWidget, evt);
 			this.onClick(nodeWidget.item, nodeWidget, evt);
@@ -492,7 +492,6 @@ define([
 				this._writeEnabled = has("tree-model-setItemAttr");
 				this._treeStyling  = has("tree-custom-styling");
 				if (this._treeStyling) {
-  					this.mapModelAttr("_icon_", "icon");
 						this.mapModelAttr("_styling_", "styling");
 					if (this.iconAttr) {
 						this.mapModelAttr(this.iconAttr, "icon");
