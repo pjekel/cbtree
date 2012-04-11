@@ -1,0 +1,39 @@
+/*
+ *  Sample cbtree custom node icon CSS
+ *
+ *  Usage:  See README
+ *
+ */
+
+.simpsonsIcons {
+	background-image: url('images/simpsons.gif'); /* Node icons sprite image */
+	background-repeat: no-repeat;
+	width: 32px;
+	height: 32px;
+	margin: 0;
+	padding: 0;
+}
+
+.lisa {
+	background-position: -0px;
+}
+
+.bart {
+	background-position: -32px;
+}
+
+.homer {
+	background-position: -64px;
+}
+.marge {
+	background-position: -96px;
+}
+
+.maggie {
+	background-position: -128px;
+}
+
+.abe {
+	background-position: -160px;
+}
+
