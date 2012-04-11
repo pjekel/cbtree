@@ -29,5 +29,6 @@
     { name:'Flanders', type:'parent', hair:'none', checked:true,
         children:[{_reference:'Rod'}, {_reference:'Todd'}]
     }
-]}
+	]
+}
 

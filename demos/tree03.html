@@ -7,6 +7,7 @@
 			@import "../../dijit/themes/claro/claro.css";
 			@import "../../dijit/themes/claro/document.css";
 			@import "../../dijit/tests/css/dijitTests.css";
+			@import "../../cbtree/icons/cbtreeIcons.css";
 			@import "../themes/claro/claro.css";
 		</style>
 
@@ -77,7 +78,8 @@
         "}</pre></div>",
 
         // Text for 'addChildren()'
-        "<p>Fetch all children with a 'checked' state attribute and add a reference to the parent item for each child.</p>" +
+        "<p>Fetch all children with a 'checked' state attribute and add a reference to the parent item for each child. " +
+        "Note, the model was created with the property 'checkedAll' set therefore every child has a checkbox by now.</p>" +
         "<div id=\"code\"><pre>" +
         "function <strong>addChildren()</strong>{<br/>" +
         TAB + "model.fetchItemsWithChecked( { type:'child' }, function(children) {<br/>" +
@@ -91,7 +93,7 @@
         // Text for 'removeLisa()'
         "<p>The parent Homer now has 2 references to child Lisa. The first because she was " +
         "explicitly created with Homer as a parent reference. Second, she was added in " +
-        "addChildren() because she had a 'checked' state attribute. Remove the reference " +
+        "addChildren() because she had a 'checked' state attribute. Remove one reference " +
         "from Homer and add a new reference to Marge.</p>" +
         "<div id=\"code\"><pre>" +
         "function <strong>removeLisa()</strong> {<br/>" +
@@ -104,14 +106,16 @@
        
         // Text for 'addChildrenLisa()' 
         "<p>Child 'Lisa' was created with a parent reference therefore she is not a top level (root) item in the store. " +
-        "Lets add some children to Lisa.</p>" +
+        "Lets add some children to Lisa and give her some custom styling.</p>" +
         "<div id=\"code\"><pre>" +
         "function <strong>addChildrenLisa</strong>() {<br/>" +
         TAB + "var newParent = model.fetchItem( 'Lisa' );<br/>" +
         TAB + "if( newParent ) {<br/>" +
         TAB + TAB + "model.newItem( {name:'Carl', hair:'red', type: 'child' }, newParent );<br/>" +
         TAB + TAB + "model.newItem( {name:'Ralph', hair:'blond', type: 'child', female: true }, newParent );<br/>" +
-        TAB + TAB + "model.newItem( {name:'Todd', hair:'red', type: 'child' }, newParent );<br/>" +
+        TAB + TAB + "model.newItem( {name:'Todd', hair:'red', type: 'child' }, newParent );<br/><br/>" +
+        TAB + TAB + "tree.set( 'icon', {iconClass:'simpsonsIcons', fixed:'lisa'}, newParent );<br/>" +
+        TAB + TAB + "tree.set( 'labelStyle', {color:'green'}, newParent );<br/>" +
         TAB + "}<br/>" +
         "}</pre></div>",
 
@@ -256,6 +260,8 @@
               model.newItem( {name:'Carl', hair:'red', type: 'child' }, newParent );
               model.newItem( {name:'Ralph', hair:'blond', type: 'child', female: true }, newParent );
               model.newItem( {name:'Todd', hair:'red', type: 'child' }, newParent );
+							tree.set( 'icon', {iconClass:'simpsonsIcons', fixed:'lisa'}, newParent );
+							tree.set( 'labelStyle', {color:'green'}, newParent );
             } else {
               throw new Error( "addChildrenLisa(): Unable to fetch 'Lisa'");
             }
@@ -404,7 +410,7 @@
           </div>
         </div>
         <div style="margin:5px;">
-          <p>Demonstrate the use of API functions</p>
+          <p>Demonstrate the use of Store Model and Tree Styling API's.</p>
           <button id="but" data-dojo-type="dijit.form.Button" type="button" value=0 onClick="buttonClicked(value);">Continue</button>
         </div>
       </div>
