@@ -15,6 +15,7 @@ define([
 	"dojo/_base/array",
 	"dojo/_base/declare",
 	"dojo/_base/event",
+	"dojo/_base/kernel", 
 	"dojo/_base/lang", 
 	"dojo/_base/window",
 	"dojo/dom-construct",
@@ -23,9 +24,10 @@ define([
 	"dijit/registry",
 	"dijit/Tree",
 	"./CheckBox",
-	"./StoreModel"
-], function (array, declare, event, lang, win, domConstruct, has, NodeTemplate, registry, Tree, 
-							 CheckBox, StoreModel) {
+	"./models/TreeStoreModel",
+	"./models/ForestStoreModel"
+], function (array, declare, event, kernel, lang, win, domConstruct, has, NodeTemplate, registry, Tree, 
+							CheckBox, TreeStoreModel, ForestStoreModel) {
 
 	var TreeNode = declare([Tree._TreeNode], {
 		// templateString: String
@@ -84,7 +86,7 @@ define([
 			// tags:
 			//		private
 
-			var checked = this.tree.model.getItemAttr(this.item, "checked");
+			var checked = this.tree.model.getChecked(this.item);
 			if (checked !== undefined) {
 				// Initialize the default checkbox/widget attributes.
 				this._widgetArgs.multiState = multiState;
@@ -109,7 +111,7 @@ define([
 			//		private
 			
 			if (this._checkBox) {
-				return this.tree.model.getItemAttr(this.item, "checked");
+				return this.tree.model.getChecked(this.item);
 			}
 		},
 
@@ -127,7 +129,7 @@ define([
 
 			if (evt.target.nodeName == (this._widgetArgs.target || 'INPUT')) {
 				var newState = this._checkBox.get("checked");
-				this.tree.model.setItemAttr(this.item, "checked", newState);
+				this.tree.model.setChecked(this.item, newState);
 				this.tree._onCheckBoxClick(this, newState, evt);
 			} else {
 				this.tree._onClick(this, evt);
@@ -145,7 +147,7 @@ define([
 			//		private
 
 			if (this._checkBox) {
-				return this.tree.model.setItemAttr(this.item, "checked", newState);
+				return this.tree.model.setChecked(this.item, newState);
 			}
 		},
 
@@ -179,7 +181,7 @@ define([
 					oldState = this._checkBox.get("checked");
 					newState = (oldState == "mixed" ? true : !oldState);
 				}
-				this.tree.model.setItemAttr(this.item, "checked", newState);
+				this.tree.model.setChecked(this.item, newState);
 			}
 			return newState;
 		},
@@ -232,6 +234,10 @@ define([
 
 
 	return declare([Tree], {
+
+		//==============================
+		// Parameters to constructor
+
 		// branchIcons: Boolean
 		//		Determines if the FolderOpen/FolderClosed icon or their custom equivalent
 		//		is displayed.
@@ -250,6 +256,9 @@ define([
 		// nodeIcons: Boolean
 		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
 		nodeIcons: true,
+
+		// End Parameters to constructor
+		//==============================
 
 		// _labelAttr:	[private] String
 		//		Identifies the label attribute used by the model, that is, if available.
@@ -278,11 +287,6 @@ define([
 		//		will act upon besides the _checkedAttr property value.	 Any internal
 		//		events are pre- and suffixed with an underscore like '_styling_'
 		_modelAttrMap: {},
-
-		// _writeEnabled: [private]
-		//		Indicate if the underlying model support tree.model.setItemAttr operations.
-		_writeEnabled: false,
-		
 	 
 		_createTreeNode: function (args) {
 			// summary:
@@ -380,8 +384,10 @@ define([
 			//		Handler called when the model has completed the validation of the
 			//		unlying data store. Get the name of what is considered the label
 			//		attribute and add it to the attribute mapping list.
+			// tags:
+			//		private
 			
-			this._labelAttr = this.model.get("labelAttr");
+			this._labelAttr = this.model.labelAttr;
 			this.mapModelAttr((this._labelAttr || "label"), "label");
 		},
 		
@@ -473,11 +479,19 @@ define([
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
 
-			var model = this.model;
+			var model;
+			
+			if(!this.model) {
+				this._store2model()
+			}
+			if (!this._modelOk() && (this.checkboxStyle !== "none")) {
+				throw new Error(this.declaredClass+"::postCreate(): model does not support getChecked() and/or setChecked().");
+			}
+			model = this.model;
 
 			if (this.checkboxStyle !== "none") {
-				this._multiState   = model.get("multiState");
-				this._checkedAttr  = model.get("checkedAttr");
+				this._multiState   = model.multiState;
+				this._checkedAttr  = model.checkedAttr;
 
 				// Add item attributes and other attributes of interest to the mapping
 				// table. Checkbox checked events from the model are mapped to the 
@@ -488,8 +502,7 @@ define([
 				this.mapModelAttr((this._checkedAttr || "checked"), "_checked_");
 				this.mapModelAttr("label", "label");
 
-				// Test available feature sets...
-				this._writeEnabled = has("tree-model-setItemAttr");
+				// Test additional feature sets...
 				this._treeStyling  = has("tree-custom-styling");
 				if (this._treeStyling) {
 						this.mapModelAttr("_styling_", "styling");
@@ -497,13 +510,8 @@ define([
 						this.mapModelAttr(this.iconAttr, "icon");
 					}
 				}
-				
-				if (!this._writeEnabled) {
-					console.warn(this.declaredClass+"::postCreate(): store model is not write enabled.");
-				} else {
-					this.connect(model, "onStoreComplete", "_onModelValidated");
-					model._validateData();
-				}
+				this.connect(model, "onDataValidated", "_onModelValidated");
+				model.validateData();
 			}
 			this.inherited(arguments);
 		},
@@ -522,6 +530,57 @@ define([
 			if (lang.isString(attr) && lang.isString(mapping)) {
 				this._modelAttrMap[attr] = mapping;
 			}
+		},
+
+		_modelOk: function () {
+			// summary:
+			//		Test if the model has the minimum required feature set, that is,
+			//		model.getChecked() and model.setChecked().
+			// tags:
+			//		private
+
+			if ((this.model.getChecked && lang.isFunction( this.model.getChecked )) &&
+					(this.model.setChecked && lang.isFunction( this.model.setChecked ))) {
+				return true;
+			}
+			return false;
+		},
+		
+		_store2model: function(){
+			// summary:
+			//		User specified a store&query rather than model, so create model from
+			//		store/query
+			//
+			//		NOTE:	This functionality is provided for compatability with the default
+			//					dijit tree and to pass unit testing only. (will be removed in 2.0). 
+			// tags:
+			//		private
+			
+			this._v10Compat = true;
+			kernel.deprecated(this.declaredClass+": from version 2.0, should specify a model object rather than a store/query");
+
+			var modelParams = {
+				id: this.id + "_ForestStoreModel",
+				store: this.store,
+				query: this.query,
+				childrenAttrs: this.childrenAttr
+			};
+
+			// Only override the model's mayHaveChildren() method if the user has specified an override
+			if(this.params.mayHaveChildren){
+				modelParams.mayHaveChildren = lang.hitch(this, "mayHaveChildren");
+			}
+
+			if(this.params.getItemChildren){
+				modelParams.getChildren = lang.hitch(this, function(item, onComplete, onError){
+					this.getItemChildren((this._v10Compat && item === this.model.root) ? null : item, onComplete, onError);
+				});
+			}
+			this.model = new ForestStoreModel(modelParams);
+
+			// For backwards compatibility, the visibility of the root node is controlled by
+			// whether or not the user has specified a label
+			this.showRoot = Boolean(this.label);
 		}
 		
 	});	/* end declare() Tree */
