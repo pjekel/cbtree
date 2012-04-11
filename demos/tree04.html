@@ -34,7 +34,7 @@
   </head>
     
   <body class="claro">
-		<h1>Third Party Widget &lt;TriStateCheckBox&gt; mixed in</h1>
+		<h1>Dijit CheckBox Tree - Mixin Widget: &lt;TriStateCheckBox&gt;</h1>
     <div id="CheckboxTree">	
       <script type="text/javascript">
 
@@ -48,7 +48,7 @@
         ], function( array, connect, dom, ItemFileWriteStore, TriStateCheckBox, cbtree ) {
 
           var store = new ItemFileWriteStore( { url: "../datastore/Simpsons.json" });
-          var model = new cbtree.StoreModel( {
+          var model = new cbtree.ForestStoreModel( {
                   store: store,
                   query: {type: 'parent'},
                   rootLabel: 'The Simpsons',

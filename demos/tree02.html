@@ -12,11 +12,6 @@
 			@import "../icons/networkIcons.css";
 		</style>
 
-<!--
-   <link rel="stylesheet" href="../../dijit/themes/claro/claro.css" />
-    <link rel="stylesheet" href="../themes/claro/claro.css" />
-    <link rel="stylesheet" href="../icons/networkIcons.css" />
--->
 		<script type="text/javascript">
 			var dojoConfig = {
             async: true,
@@ -49,7 +44,7 @@
         ], function( array, dom, ItemFileWriteStore, cbtree ) {
 
           var store = new ItemFileWriteStore( { url: "../datastore/Network-1.7.json" });
-          var model = new cbtree.StoreModel( {
+          var model = new cbtree.ForestStoreModel( {
                   store: store,
                   query: {type: 'computer'},
                   rootLabel: 'The Network',

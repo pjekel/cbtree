@@ -363,7 +363,7 @@
           
           // Create the cbtree store model... NOTE: we startof with strict parent-child
           // relationship disabled....
-          model = new cbtree.StoreModel( {
+          model = new cbtree.ForestStoreModel( {
                   store: new ItemFileWriteStore( { data: EmptyData }),
                   query: {type: 'parent'},
                   rootLabel: 'The Simpsons Tree',
@@ -391,7 +391,7 @@
   <body class="claro">
     <div id="appLayout" class="demoLayout" data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design: 'headline'">      
       <div class="edgePanel edgeTop" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'top'">
-        Dijit CheckBox Tree using the cbtree API
+        Building a Dijit CheckBox Tree using the TreeStoreModel API extensions
       </div>
       <div id="CheckboxTree" class="edgePanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'left', splitter: true" 
            style="width:25%;">

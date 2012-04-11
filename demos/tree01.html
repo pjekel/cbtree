@@ -1,12 +1,11 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
-         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head> 
     <title>Dijit Tree with Checkboxes </title>     
 		<style type="text/css">
 			@import "../../dijit/themes/claro/claro.css";
-			@import "../../dijit/tests/css/dijitTests.css";
 			@import "../../dijit/themes/claro/document.css";
+			@import "../../dijit/tests/css/dijitTests.css";
 			@import "../themes/claro/claro.css";
 		</style>
 
@@ -29,7 +28,7 @@
   </head>
     
   <body class="claro">
-		<h1 class="DemoTitle">Dijit CheckBox Tree</h1>
+		<h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
     <div id="CheckboxTree">  
       <script type="text/javascript">
 
@@ -38,8 +37,8 @@
         "dojo/_base/connect",
         "dojo/dom",
         "dojo/data/ItemFileWriteStore",
-        "cbtree"
-        ], function( array, connect, dom, ItemFileWriteStore, cbtree ) {
+        "cbtree"		// Load cbtree including extension
+        ], function( array, connect, dom, ItemFileWriteStore, cbTree) {
 
           function checkBoxClicked( item, nodeWidget, evt ) {
             var newState = nodeWidget.get("checked" );
@@ -56,7 +55,7 @@
           }
 
           var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
-          var model = new cbtree.StoreModel( {
+          var model = new cbTree.ForestStoreModel( {
                   store: store,
                   query: {type: 'parent'},
                   rootLabel: 'The Family',
@@ -65,7 +64,7 @@
                   checkedState: true,
                   checkedStrict: true
                   }); 
-          var tree = new cbtree.Tree( {
+          var tree = new cbTree.Tree( {
                   model: model,
                   id: "MenuTree",
                   branchReadOnly: false,
