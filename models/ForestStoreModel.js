@@ -50,6 +50,8 @@ define([
 		// End of parameters to constructor
 		//=================================
 		
+		moduleName: "cbTree/ForestStoreModel",
+
 		constructor: function (params) {
 			// summary:
 			//		Sets up variables, etc.

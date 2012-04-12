@@ -205,6 +205,13 @@ declare("cbtree.models.model", null,
 		//		of this item.
 		// tags:
 		//		callback
+	},
+
+	onLabelChange: function (value){
+		// summary:
+		//		Callback when label attribute changed.
+		// tags:
+		//		callback
 	}
 
 });

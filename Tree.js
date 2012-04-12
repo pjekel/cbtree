@@ -34,6 +34,8 @@ define([
 		//		Specifies the HTML template to be used.
 		templateString: NodeTemplate,
 
+		moduleName: "cbTree/_TreeNode",
+		
 		// _checkBox: [private] widget 
 		//		Checkbox or custome widget instance.
 		_checkBox: null,
@@ -212,7 +214,8 @@ define([
 			if (tree.checkboxStyle !== "none") {
 				this._createCheckBox(tree._multiState);
 			}
-			// See is Tree styling is loaded...
+			// See if Tree styling is enabled and if we need to look for a custom icon
+			// amongst the item attributes.
 			if (tree._treeStyling && tree.iconAttr) {
 				var itemIcon = tree.get("icon", this.item);
 				if (!itemIcon || !itemIcon.baseClass) {
@@ -260,10 +263,8 @@ define([
 		// End Parameters to constructor
 		//==============================
 
-		// _labelAttr:	[private] String
-		//		Identifies the label attribute used by the model, that is, if available.
-		_labelAttr: null,
-		
+		moduleName: "cbTree/Tree",
+
 		// _multiState: [private] Boolean
 		//		Determines if the checked state needs to be maintained as multi state or
 		//		or as a dual state. ({"mixed",true,false} vs {true,false}). Its value is
@@ -282,11 +283,11 @@ define([
 		//		both the get() and set() methods.
 		_customWidget: null,
 
-		// _modelAttrMap: [private] array of strings
+		// _eventAttrMap: [private] String[]
 		//		List of additional events (attribute names) the onItemChange() method
 		//		will act upon besides the _checkedAttr property value.	 Any internal
 		//		events are pre- and suffixed with an underscore like '_styling_'
-		_modelAttrMap: {},
+		_eventAttrMap: {},
 	 
 		_createTreeNode: function (args) {
 			// summary:
@@ -345,7 +346,7 @@ define([
 			// tags:
 			//		private extension
  
-			var nodeProp = this._modelAttrMap[attr];
+			var nodeProp = this._eventAttrMap[attr];
 			if (nodeProp) {
 				var identity = this.model.getIdentity(item),
 						nodes = this._itemNodesMap[identity],
@@ -379,16 +380,14 @@ define([
 			this.inherited(arguments);	/* Pass it on to the parent tree... */
 		},
 
-		_onModelValidated: function () {
+		_onLabelChange: function (/*String*/ oldValue, /*String*/ newValue) {
 			// summary:
-			//		Handler called when the model has completed the validation of the
-			//		unlying data store. Get the name of what is considered the label
-			//		attribute and add it to the attribute mapping list.
+			//		Handler called when the model changed its label attribute property.
+			//		Map the new label attribute to "label"
 			// tags:
 			//		private
-			
-			this._labelAttr = this.model.labelAttr;
-			this.mapModelAttr((this._labelAttr || "label"), "label");
+
+			this.mapEventToAttr(oldValue, newValue, "label");
 		},
 		
 		_setWidgetAttr: function (/*function|object*/ widget) {
@@ -437,7 +436,7 @@ define([
 			} else {
 				message = "Object is missing required widget property";
 			}
-			throw new Error(this.declaredClass+"::_setWidgetAttr(): " + message);
+			throw new Error(this.moduleName+"::_setWidgetAttr(): " + message);
 		},
 
 		onCheckBoxClick: function (/*data.item*/ item, /*treeNode*/ treeNode, /*Event*/ evt) {
@@ -479,19 +478,15 @@ define([
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
 
-			var model;
-			
-			if(!this.model) {
-				this._store2model()
-			}
-			if (!this._modelOk() && (this.checkboxStyle !== "none")) {
-				throw new Error(this.declaredClass+"::postCreate(): model does not support getChecked() and/or setChecked().");
-			}
-			model = this.model;
+			// For backward compatability with dijit Tree only.
+			var model = this.model || this._store2model();
 
 			if (this.checkboxStyle !== "none") {
-				this._multiState   = model.multiState;
-				this._checkedAttr  = model.checkedAttr;
+				if (!this._modelOk()) {
+					throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and/or setChecked().");
+				}
+				this._multiState  = model.multiState;
+				this._checkedAttr = model.checkedAttr;
 
 				// Add item attributes and other attributes of interest to the mapping
 				// table. Checkbox checked events from the model are mapped to the 
@@ -499,36 +494,49 @@ define([
 				// events coming from the model and those coming from the API like
 				// set("checked",true)
 				
-				this.mapModelAttr((this._checkedAttr || "checked"), "_checked_");
-				this.mapModelAttr("label", "label");
+				this.mapEventToAttr(null,(this._checkedAttr || "checked"), "_checked_");
 
-				// Test additional feature sets...
-				this._treeStyling  = has("tree-custom-styling");
+				// See is Tree styling (./TreeStyling.js) is loaded...
+				this._treeStyling = has("tree-custom-styling");
 				if (this._treeStyling) {
-						this.mapModelAttr("_styling_", "styling");
+					this.mapEventToAttr(null, "_styling_", "styling");
 					if (this.iconAttr) {
-						this.mapModelAttr(this.iconAttr, "icon");
+						this.mapEventToAttr(null, this.iconAttr, "icon");
 					}
 				}
-				this.connect(model, "onDataValidated", "_onModelValidated");
 				model.validateData();
 			}
+			// Monitor any changes to the models label attribute and add the current
+			// label attribute to the mapping table.
+			this.connect(model, "onLabelChange", "_onLabelChange");
+			this.mapEventToAttr(null,(model.getLabelAttr() || ""), "label");
+
 			this.inherited(arguments);
 		},
 		
 		// =======================================================================
 		// Misc helper functions/methods
 
-		mapModelAttr: function (/*String*/ attr, /*String*/ mapping) {
+		mapEventToAttr: function (/*String*/ oldAttr, /*String*/ attr, /*String*/ mapping) {
 			// summary:
-			//		Append attribute mapping to the mapping table.
+			//		Add an event mapping to the mapping table.   Any special attributes from
+			//		the model such as: 'labelAttr' or 'checkedAttr', and any internal events
+			//		like '_styling_' must be mapped to one of the Tree node attributes.
+			// oldAttr:
+			//		Original attribute name. If present in the mapping table it is deleted
+			//		and replace with 'attr'.
 			// attr:
-			//		Original attribute name
+			//		Attribute name being mapped.
 			// mapping:
 			//		Mapped attribute name
 			
 			if (lang.isString(attr) && lang.isString(mapping)) {
-				this._modelAttrMap[attr] = mapping;
+				if (attr.length && mapping.length) {
+					if (oldAttr) {
+						delete this._eventAttrMap[oldAttr];
+					}
+					this._eventAttrMap[attr] = mapping;
+				}
 			}
 		},
 
@@ -557,7 +565,7 @@ define([
 			//		private
 			
 			this._v10Compat = true;
-			kernel.deprecated(this.declaredClass+": from version 2.0, should specify a model object rather than a store/query");
+			kernel.deprecated(this.moduleName+": from version 2.0, should specify a model object rather than a store/query");
 
 			var modelParams = {
 				id: this.id + "_ForestStoreModel",
@@ -581,6 +589,7 @@ define([
 			// For backwards compatibility, the visibility of the root node is controlled by
 			// whether or not the user has specified a label
 			this.showRoot = Boolean(this.label);
+			return this.model;
 		}
 		
 	});	/* end declare() Tree */

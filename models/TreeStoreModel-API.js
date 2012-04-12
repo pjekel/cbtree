@@ -90,26 +90,18 @@ define([
 				if (typeof this[attribute] !== "undefined" && attribute.charAt(0) != '_') {
 					return this[attribute];
 				}
-				throw new Error(this.declaredClass+"::get(): Invalid property: "+attribute);
+				throw new Error(this.moduleName+"::get(): Invalid property: "+attribute);
 			}
-			throw new Error(this.declaredClass+"::get(): Attribute must be of type string");
+			throw new Error(this.moduleName+"::get(): Attribute must be of type string");
 		},
 
 		_getLabelAttrAttr: function() {
 			// summary:
 			//		Return the label attribute associated with the store, if available.
-			//
-			//		KNOWN ISSUE:	The label cannot be retrieved until the store is actually
-			//									loaded but there is no onLoad() event for the store. The
-			//									handler _onStoreComplete() will set the label but the handler
-			//									is only called if store validation has been requested.
 			// tag:
 			//		private
 
-			if (!this.labelAttr) {
-				this.labelAttr = this.store._labelAttr;
-			}
-			return this.labelAttr;
+			return this.getLabelAttr();
 		},
 
 		set: function (/*String*/ attribute, /*anytype*/ value){
@@ -126,7 +118,18 @@ define([
 					return this[func.set](value);
 				}
 			}
-			throw new Error(this.declaredClass+"::set(): Invalid attribute or property is read-only");
+			throw new Error(this.moduleName+"::set(): Invalid attribute or property is read-only");
+		},
+
+		_setLabelAttrAttr: function (/*String*/ value) {
+			// summary:
+			//		Set the labelAttr property. This method is the hook for set("labelAttr", ...)
+			// value:
+			//		New labelAttr value.
+			// tags:
+			//		private
+
+			return this.setLabelAttr(value);
 		},
 
 		_setQueryAttr: function (value) {
@@ -144,7 +147,7 @@ define([
 				}
 				return this.query;
 			} else {
-				throw new Error(this.declaredClass+"::set(): query argument must of type object");
+				throw new Error(this.moduleName+"::set(): query argument must of type object");
 			}
 		},
 
@@ -198,7 +201,7 @@ define([
 					return this.root[attr];
 				}
 			}
-			throw new Error(this.declaredClass+"::getItemAttr(): argument is not a valid store item.");
+			throw new Error(this.moduleName+"::getItemAttr(): argument is not a valid store item.");
 		},
 
 		_getItemCheckedAttr: function (/*dojo.data.Item*/ storeItem) {
@@ -278,10 +281,10 @@ define([
 						return this.store.setValue(storeItem, attr, value);
 					}
 				} else {
-					throw new Error(this.declaredClass+"::setItemAttr(): argument is not a valid store item.");
+					throw new Error(this.moduleName+"::setItemAttr(): argument is not a valid store item.");
 				}
 			} else {
-				throw new Error(this.declaredClass+"::setItemAttr(): store is not write enabled.");
+				throw new Error(this.moduleName+"::setItemAttr(): store is not write enabled.");
 			}
 		},
 		 
@@ -312,7 +315,7 @@ define([
 			//		the identity of a store item is NOT allowed.
 			// tags:
 			//		private
-			throw new Error(this.declaredClass+"::setItemAttr(): Identity attribute cannot be changed");
+			throw new Error(this.moduleName+"::setItemAttr(): Identity attribute cannot be changed");
 		},
 
 		_setItemLabelAttr: function (storeItem, value){
@@ -333,7 +336,7 @@ define([
 				if (labelAttr != this.store.getIdentifierAttr()){
 					return this.store.setValue(storeItem, labelAttr, value);
 				}
-				throw new Error(this.declaredClass+"::setItemAttr(): Label attribute {"+labelAttr+"} cannot be changed");
+				throw new Error(this.moduleName+"::setItemAttr(): Label attribute {"+labelAttr+"} cannot be changed");
 			}
 		},
 
@@ -406,7 +409,7 @@ define([
 					scope: this
 				});
 			} else {
-				throw new Error(this.declaredClass+"::fetchItemsWithChecked(): query must be of type object.");
+				throw new Error(this.moduleName+"::fetchItemsWithChecked(): query must be of type object.");
 			}
 		},
 
@@ -598,7 +601,7 @@ define([
 				var fncSet = { set: "_set"+prefix+cc+"Attr", get: "_get"+prefix+cc+"Attr" };
 				return fncSet;
 			}
-			throw new Error(this.declaredClass+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be of type string.");
+			throw new Error(this.moduleName+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be of type string.");
 		}
 
 	});	/* end lang.extend() */

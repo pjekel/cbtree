@@ -120,6 +120,8 @@ define([
 		// End Parameters to constructor
 		//==============================
 		
+		moduleName: "cbTree/TreeStoreModel",
+
 		// hasFakeRoot: Boolean
 		//		Indicates if the model has a fabricated root item. (this is not a constructor 
 		//		parameter).	Typically set to true by models like the TreeForestModel.
@@ -156,12 +158,12 @@ define([
 			var store = this.store;
 
 			if(!store.getFeatures()['dojo.data.api.Identity']){
-				throw new Error(this.declaredClass+"constructor(): store must support dojo.data.Identity");
+				throw new Error(this.moduleName+"constructor(): store must support dojo.data.Identity");
 			}
 
 			has.add("tree-model-getChecked", 1);
 			if (!store.getFeatures()['dojo.data.api.Write']){
-				console.warn(this.declaredClass+"::constructor(): store is not write enabled.");
+				console.warn(this.moduleName+"::constructor(): store is not write enabled.");
 				this._writeEnabled = false;
 			} else {
 				has.add("tree-model-setChecked", 1);
@@ -171,10 +173,11 @@ define([
 			// if the store supports Notification, subscribe to the notification events
 			if(store.getFeatures()['dojo.data.api.Notification']){
 				this.connects = this.connects.concat([
+					aspect.after(store, "onLoaded", lang.hitch(this, "onStoreLoaded"), true),
 					aspect.after(store, "onNew", lang.hitch(this, "onNewItem"), true),
 					aspect.after(store, "onDelete", lang.hitch(this, "onDeleteItem"), true),
 					aspect.after(store, "onSet", lang.hitch(this, "onSetItem"), true),
-					aspect.after(store, "onRoot", lang.hitch(this, "onRootChange"), true)
+					aspect.after(store, "onRoot", lang.hitch(this, "onRootChange"), true),
 				]);
 			}
 			// Compose a list of attribute names included in the store query.
@@ -206,7 +209,7 @@ define([
 					query: this.query,
 					onComplete: lang.hitch(this, function(items){
 						if(items.length != 1){
-							throw new Error(this.declaredClass + ": query " + json.stringify(this.query) + " returned " + items.length +
+							throw new Error(this.moduleName + ": query " + json.stringify(this.query) + " returned " + items.length +
 							 	" items, but must return exactly one item");
 						}
 						this.root = items[0];
@@ -406,7 +409,7 @@ define([
 						return true;
 					}
 				} else {
-					throw new TypeError(this.declaredClass+"::_setChecked(): invalid item specified.");
+					throw new TypeError(this.moduleName+"::_setChecked(): invalid item specified.");
 				}
 			}
 			return false;
@@ -563,9 +566,7 @@ define([
 					})
 				);
 			}
-			if (!this.labelAttr) {
-				this.labelAttr = this.store._labelAttr;
-			}
+			this.store.setValidated(true);
 			this.onDataValidated();
 		},
 		
@@ -613,7 +614,7 @@ define([
 						return this.root[this.checkedAttr];
 					}
 				} else {
-					throw new TypeError(this.declaredClass+"::getChecked(): invalid item specified.");
+					throw new TypeError(this.moduleName+"::getChecked(): invalid item specified.");
 				}
 			}
 			return checked;	// the current checked state (true/false or undefined)
@@ -652,18 +653,24 @@ define([
 			//		private
 		
 			if (this.checkedStrict) {
-				try {
-					this.store._forceLoad();		// Try a forced synchronous load
-				} catch(e) { 
-					console.log(e);
-				}
-				if (has("tree-model-setChecked")) {
-					this.getRoot( lang.hitch(this, function (rootItem) {
-							this.getChildren(rootItem, lang.hitch(this, this._validateChildren), this.onError)
-						}), this.onError)
+				// In case multiple models operate on the same store, the store may have
+				// already been validated.
+				if (!this.store.isValidated()) {
+					// Force a store load.
+					if (this.store.loadStore()) {
+						if (has("tree-model-setChecked")) {
+							this.getRoot( lang.hitch(this, function (rootItem) {
+									this.getChildren(rootItem, lang.hitch(this, this._validateChildren), this.onError)
+								}), this.onError)
 
-				} else {
-					console.warn(this.declaredClass+"::validateData(): store is not write enabled.");
+						} else {
+							console.warn(this.moduleName+"::validateData(): store is not write enabled.");
+						}
+					}
+				} 
+				else  // Store already validated.
+				{
+					this.onDataValidated();
 				}
 			}
 		},
@@ -685,6 +692,7 @@ define([
 			if(this.labelAttr){
 				return this.store.getValue(item,this.labelAttr);	// String
 			}else{
+				this._setLabelAttrAttr(this.store.getLabelAttr());
 				return this.store.getLabel(item);	// String
 			}
 		},
@@ -734,7 +742,7 @@ define([
 					}
 				}
 			} catch(err) {
-				throw new Error(this.declaredClass+"::newItem(): " + err);
+				throw new Error(this.moduleName+"::newItem(): " + err);
 			} 
 			return newItem;
 		},
@@ -776,6 +784,38 @@ define([
 		},
 
 		// =======================================================================
+		// Label Attribute 
+
+		getLabelAttr: function () {
+			// summary:
+			//		Returns the labelAttr property.
+			// tags:
+			//		public
+			if (!this.labelAttr) {
+				this.setLabelAttr(this.store.getLabelAttr());
+			}
+			return this.labelAttr;
+		},
+
+		setLabelAttr: function (/*String*/ newValue) {
+			// summary:
+			//		Set the labelAttr property.
+			// newValue:
+			//		New labelAttr newValue.
+			// tags:
+			//		public
+			if (lang.isString(newValue) && newValue.length) {
+				if (this.labelAttr !== newValue) {
+					var oldValue   = this.labelAttr;
+					this.labelAttr = newValue;
+					// Signal the event.
+					this.onLabelChange(oldValue, newValue);
+				}
+				return this.labelAttr;
+			}
+		},
+
+		// =======================================================================
 		// Callbacks
 
 		onChange: function(/*dojo.data.item*/ /*===== item =====*/){
@@ -813,6 +853,13 @@ define([
 			// tags:
 			//		callback
 //			this.store.save();
+		},
+
+		onLabelChange: function (/*String*/ /*===== oldValue =====*//*String*/ /*===== value =====*/){
+			// summary:
+			//		Callback when label attribute property changed.
+			// tags:
+			//		callback
 		},
 
 		// =======================================================================
@@ -903,6 +950,15 @@ define([
 				}
 				this.onChange(storeItem, attribute, newValue);
 			}
+		},
+
+		onStoreLoaded: function() {
+			// summary:
+			//		Update the current labelAttr property by fetching it from the store.
+			// tag:
+			//		callback
+
+			this.getLabelAttr();
 		},
 
 		onRootChange: function (/*dojo.data.item*/ storeItem, /*Object*/ evt) {
