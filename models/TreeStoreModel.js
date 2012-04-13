@@ -81,6 +81,10 @@ define([
 		// 		fully loaded item should contain the label and info about having children.
 		deferItemLoadingUntilExpand: false,
 
+		// iconAttr: String
+		//		If specified, get the icon from an item using this attribute name.
+		iconAttr: "",
+
 		// labelAttr: String
 		//		If specified, get label for tree node from this attribute, rather
 		//		than by calling store.getLabel()
@@ -124,7 +128,7 @@ define([
 
 		// hasFakeRoot: Boolean
 		//		Indicates if the model has a fabricated root item. (this is not a constructor 
-		//		parameter).	Typically set to true by models like the TreeForestModel.
+		//		parameter).	Typically set by models like the TreeForestModel.
 		hasFakeRoot: false,
 
 	 	// root: [readonly] dojo.data.item
@@ -198,28 +202,6 @@ define([
 		// =======================================================================
 		// Methods for traversing hierarchy
 
-		getRoot: function(onItem, onError){
-			// summary:
-			//		Calls onItem with the root item for the tree, possibly a fabricated item.
-			//		Calls onError on error.
-			if(this.root){
-				onItem(this.root);
-			}else{
-				this.store.fetch({
-					query: this.query,
-					onComplete: lang.hitch(this, function(items){
-						if(items.length != 1){
-							throw new Error(this.moduleName + ": query " + json.stringify(this.query) + " returned " + items.length +
-							 	" items, but must return exactly one item");
-						}
-						this.root = items[0];
-						onItem(this.root);
-					}),
-					onError: onError
-				});
-			}
-		},
-
 		getChildren: function(/*dojo.data.item*/ parentItem, /*Function*/ onComplete, /*Function*/ onError){
 			// summary:
 			// 		Calls onComplete() with array of child items of given parent item,
@@ -285,6 +267,40 @@ define([
 			}
 		},
 
+		getParents: function (/*dojo.data.item*/ storeItem) {
+			// summary:
+			//		Get the parent(s) of a store item.	
+			// storeItem:
+			//		The dojo.data.item whose parent(s) will be returned.
+			// tags:
+			//		private
+			if (storeItem) {
+				return this.store.getParents(storeItem);
+			}
+		},
+
+		getRoot: function(onItem, onError){
+			// summary:
+			//		Calls onItem with the root item for the tree, possibly a fabricated item.
+			//		Calls onError on error.
+			if(this.root){
+				onItem(this.root);
+			}else{
+				this.store.fetch({
+					query: this.query,
+					onComplete: lang.hitch(this, function(items){
+						if(items.length != 1){
+							throw new Error(this.moduleName + ": query " + json.stringify(this.query) + " returned " + items.length +
+							 	" items, but must return exactly one item");
+						}
+						this.root = items[0];
+						onItem(this.root);
+					}),
+					onError: onError
+				});
+			}
+		},
+
 		mayHaveChildren: function(/*dojo.data.item*/ item){
 			// summary:
 			//		Tells if an item has or may have children.  Implementing logic here
@@ -302,46 +318,8 @@ define([
 		},
 
 		// =======================================================================
-		// Checked state handling
+		// Private Checked state handling
 		
-		_getParentsItem: function (/*dojo.data.item*/ storeItem, /*String?*/ parentRefMap) {
-			// summary:
-			//		Get the parent(s) of a dojo.data.item.	
-			// description:
-			//		Get the parent(s) of a dojo.data item. The '_reverseRefMap' entry of
-			//		the item is used to identify the parent(s). A child will have a parent
-			//		reference if the parent specified the '_reference' attribute. 
-			//		For example: children:[{_reference:'Mexico'}, {_reference:'Canada'}, ...
-			//
-			// storeItem:
-			//		The dojo.data.item whose parent(s) will be returned.
-			// parentRefMap:
-			//		Optional property name of the parent reference map for the store item.
-			//		If ommitted the default '_reverseRefMap' property of the store is used.
-			// tags:
-			//		private
-
-			var parents = [],
-					itemId;
-
-			if (storeItem && storeItem !== this.root) {
-				var references = storeItem[ (parentRefMap ? parentRefMap : this.store._reverseRefMap) ];
-				if (references) {
-					for(itemId in references) {
-						parents.push(this.store._getItemByIdentity(itemId));
-					}
-				} else {
-					// Determine if we have a root and, if so, if it is a fabricated one.
-					// In any event, by now we know the root is, or will be, updated.
-					if (this.hasFakeRoot) {
-						parents.push(this.root);
-					}
-					this._rootUpdated = true;
-				}
-			}
-			return parents // parent(s) of a dojo.data.item (Array of dojo.data.items)
-		},
-
 		_normalizeState: function (/*dojo.data.item*/ storeItem, /*Boolean|String*/ state) {
 			// summary:
 			//		Normalize the checked state value so we don't store an invalid state
@@ -365,6 +343,21 @@ define([
 			return state ? true : false;
 		},
 
+		_getParents: function (/*dojo.data.item*/ storeItem) {
+			// summary:
+			//		Get the parent(s) of a store item.	
+			// storeItem:
+			//		The dojo.data.item whose parent(s) will be returned.
+			// tags:
+			//		private
+			var parents = this.getParents(storeItem) || [];
+
+			if (!parents.length || parents[0] == this.root) {
+				this._rootUpdated = true;
+			}
+			return parents;
+		},
+		
 		_setChecked: function (/*dojo.data.item*/ storeItem, /*Boolean|String*/ newState) {
 			// summary:
 			//		Set/update the checked state on the dojo.data store. Returns true if
@@ -447,7 +440,7 @@ define([
 			this._setChecked(storeItem, newState);
 		},
 
-		_updateCheckedParent: function (/*dojo.data.item*/ storeItem, /*String?*/ reverseRefMap) {
+		_updateCheckedParent: function (/*dojo.data.item*/ storeItem) {
 			//	summary:
 			//		Update the parent checked state according to the state of all child
 			//		checked states.
@@ -469,7 +462,7 @@ define([
 			if (!this.checkedStrict) {
 				return;
 			}
-			var parents = this._getParentsItem(storeItem, reverseRefMap),
+			var parents = this._getParents(storeItem),
 					parentState,
 					newState;
 
@@ -682,6 +675,12 @@ define([
 			this.store.fetchItemByIdentity(keywordArgs);
 		},
 
+		getIcon: function(/* item */ item){
+			if (this.iconAttr) {
+				return this.store.getValue(item, this.iconAttr);
+			}
+		},
+
 		getIdentity: function(/* item */ item){
 			return this.store.getIdentity(item);	// Object
 		},
@@ -692,7 +691,7 @@ define([
 			if(this.labelAttr){
 				return this.store.getValue(item,this.labelAttr);	// String
 			}else{
-				this._setLabelAttrAttr(this.store.getLabelAttr());
+				this.setLabelAttr(this.store.getLabelAttr());
 				return this.store.getLabel(item);	// String
 			}
 		},
@@ -751,35 +750,24 @@ define([
 			// summary:
 			//		Move or copy an item from one parent item to another.
 			//		Used in drag & drop
-			var store = this.store,
-				parentAttr = this.childrenAttrs[0];	// name of "children" attr in parent item
-
+			var parentAttr = this.childrenAttrs[0],		// name of "children" attr in parent item
+					store = this.store,
+					firstChild;
+				
 			// remove child from source item, and record the attribute that child occurred in
 			if(oldParentItem){
 				array.forEach(this.childrenAttrs, function(attr){
 					if(store.containsValue(oldParentItem, attr, childItem)){
 						if(!bCopy){
-							var values = array.filter(store.getValues(oldParentItem, attr), function(x){
-								return x != childItem;
-							});
-							store.setValues(oldParentItem, attr, values);
+							store.removeReference(childItem, oldParentItem, attr);
 						}
 						parentAttr = attr;
 					}
-				});
+				}, this);
 			}
-
 			// modify target item's children attribute to include this item
 			if(newParentItem){
-				if(typeof insertIndex == "number"){
-					// call slice() to avoid modifying the original array, confusing the data store
-					var childItems = store.getValues(newParentItem, parentAttr).slice();
-					childItems.splice(insertIndex, 0, childItem);
-					store.setValues(newParentItem, parentAttr, childItems);
-				}else{
-					store.setValues(newParentItem, parentAttr,
-						store.getValues(newParentItem, parentAttr).concat(childItem));
-				}
+				store.addReference(childItem, newParentItem, parentAttr, insertIndex);
 			}
 		},
 
@@ -897,16 +885,11 @@ define([
 
 		onDeleteItem: function (/*dojo.data.item*/ storeItem){
 			// summary:
-			//		Handler for delete notifications from the store. At this point all
-			//		parent references for the item have already been removed therefore
-			//		we need to use the backup list to determine who the parents were
-			//		and update their checked state accordingly.
+			//		Handler for delete notifications from the store.
 			// storeItem:
 			//		The store item that was deleted.
 
-			var backupRef = "backup_" + this.store._reverseRefMap;
-					
-			this._updateCheckedParent(storeItem, backupRef);
+			this._updateCheckedParent(storeItem);
 			this.onDelete(storeItem);
 		},
 
@@ -940,6 +923,7 @@ define([
 				// Store item's children list changed
 				this.getChildren(storeItem, lang.hitch(this, function (children){
 					// See comments in onNewItem() about calling getChildren()
+					this._updateCheckedParent(children[0]);
 					this.onChildrenChange(storeItem, children);
 				}));
 			}else{

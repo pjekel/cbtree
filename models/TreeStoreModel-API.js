@@ -195,10 +195,10 @@ define([
 				if (lang.isFunction(this[func.get])) {
 					return this[func.get](storeItem);
 				} else {
-					if (storeItem !== this.root){
-						return this.store.getValue(storeItem, attr)
+					if (storeItem === this.root && this.hasFakeRoot) {
+						return this.root[attr];
 					}
-					return this.root[attr];
+					return this.store.getValue(storeItem, attr)
 				}
 			}
 			throw new Error(this.moduleName+"::getItemAttr(): argument is not a valid store item.");
@@ -255,6 +255,13 @@ define([
 				}
 			}
 			return this.root.label;
+		},
+
+		_getItemParentsAttr: function (storeItem) {
+			// summary:
+			// storeItem:
+			//		The store item whose parent(s) are returned.
+			return this.getParents(storeItem);
 		},
 
 		setItemAttr: function (/*dojo.data.item*/ storeItem, /*String*/ attribute, /*anytype*/ value) {
@@ -430,17 +437,19 @@ define([
 		// =======================================================================
 		// Write interface
 
-		addReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem){
+		addReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem, /*String*/ childrenAttr){
 			// summary:
 			//		Add an existing item to the parentItem by reference.
 			// childItem:
 			//		Child item to be added to the parents list of children.
 			// parentItem:
 			//		Parent item.
+			// childrenAttr:
 			// tag:
 			//		public
 
-			if (this.store.addReference(childItem, parentItem, this.childrenAttrs[0])){
+			var listAttr = childrenAttr || this.childrenAttrs[0];
+			if (this.store.addReference(childItem, parentItem, listAttr)){
 				this._updateCheckedParent(childItem);
 			}
 		},
@@ -523,7 +532,7 @@ define([
 			return newItem;
 		},
 
-		removeReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem){
+		removeReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem, /*String*/ childrenAttr){
 			// summary:
 			//		Remove a child reference from its parent. Only the references are
 			//		removed, the childItem is not delete.
@@ -531,10 +540,12 @@ define([
 			//		Child item to be removed from parents children list.
 			// parentItem:
 			//		Parent item.
+			// childrenAttr:
 			// tag:
 			//		public
 			
-			if (this.store.removeReference(childItem, parentItem, this.childrenAttrs[0])){
+			var listAttr = childrenAttr || this.childrenAttrs[0];
+			if (this.store.removeReference(childItem, parentItem, listAttr)){
 				// If any children are left get the first and update the parent checked state.
 				this.getChildren(parentItem, lang.hitch(this,
 					function (children){

@@ -10,6 +10,18 @@ define(["./TreeStoreModel"], function (TreeStoreModel) {
 	lang.extend(TreeStoreModel, {
 
 		// =======================================================================
+		// Methods for traversing hierarchy
+
+		getParents: function (item) {
+			// summary:
+			//		Get the parent(s) of an item.	
+			// storeItem:
+			//		The dojo.data.item whose parent(s) will be returned.
+			// tags:
+			//		public
+		},
+		
+		// =======================================================================
 		// Model getters and setters
 
 		get: function (attribute){

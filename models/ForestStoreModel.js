@@ -73,17 +73,6 @@ define([
 		// =======================================================================
 		// Methods for traversing hierarchy
 
-		mayHaveChildren: function(/*dojo.data.Item*/ item){
-			// summary:
-			//		Tells if an item has or may have children.  Implementing logic here
-			//		avoids showing +/- expando icon for nodes that we know don't have children.
-			//		(For efficiency reasons we may not want to check if an element actually
-			//		has children until user clicks the expando node)
-			// tags:
-			//		extension
-			return item === this.root || this.inherited(arguments);
-		},
-
 		getChildren: function(/*dojo.data.Item*/ parentItem, /*function(items)*/ callback, /*function*/ onError){
 			// summary:
 			// 		Calls onComplete() with array of child items of given parent item, all loaded.
@@ -106,12 +95,39 @@ define([
 			}
 		},
 
+		getParents: function (/*dojo.data.item*/ storeItem) {
+			// summary:
+			//		Get the parent(s) of a store item.	
+			// storeItem:
+			//		The dojo.data.item whose parent(s) will be returned.
+			// tags:
+			//		private
+			var parents = [];
+
+			if (storeItem) {
+				if (storeItem !== this.root) {
+					parents = this.store.getParents(storeItem);
+					if (!parents.length) {
+						return [this.root];
+					}
+				}
+				return parents;
+			}
+		},
+
+		mayHaveChildren: function(/*dojo.data.Item*/ item){
+			// summary:
+			//		Tells if an item has or may have children.  Implementing logic here
+			//		avoids showing +/- expando icon for nodes that we know don't have children.
+			//		(For efficiency reasons we may not want to check if an element actually
+			//		has children until user clicks the expando node)
+			// tags:
+			//		extension
+			return item === this.root || this.inherited(arguments);
+		},
+
 		// =======================================================================
 		// Inspecting items
-
-		isItem: function(/* anything */ something){
-			return (something === this.root) ? true : this.inherited(arguments);
-		},
 
 		fetchItemByIdentity: function(/* object */ keywordArgs){
 			if(keywordArgs.identity == this.root.id){
@@ -124,12 +140,25 @@ define([
 			}
 		},
 
+		getIcon: function(/* item */ item){
+			if (this.iconAttr) {
+				if (item !== this.root) {
+					return this.store.getValue(item, this.iconAttr);
+				}
+				return this.root[this.iconAttr];
+			}
+		},
+
 		getIdentity: function(/* item */ item){
 			return (item === this.root) ? this.root.id : this.inherited(arguments);
 		},
 
 		getLabel: function(/* item */ item){
 			return	(item === this.root) ? this.root.label : this.inherited(arguments);
+		},
+
+		isItem: function(/* anything */ something){
+			return (something === this.root) ? true : this.inherited(arguments);
 		},
 
 		// =======================================================================
@@ -170,7 +199,6 @@ define([
 				bCopy,
 				insertIndex
 			]);
-			this._updateCheckedParent(childItem);
 		},
 
 		// =======================================================================
@@ -234,7 +262,7 @@ define([
 				this._requeryTop();
 			}
 		},
-		
+
 		_requeryTop: function (){
 			// summary:
 			//		Reruns the query for the children of the root node, sending out an

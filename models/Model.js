@@ -79,6 +79,15 @@ declare("cbtree.models.model", null,
 		//		public
 	},
 
+	getIcon: function(item){
+		// summary:
+		//		Returns the custom icon for an item if available. This method is only
+		//		required when Tree Styling and the iconAttr property of the model are
+		//		supported.
+		// tags:
+		//		public
+	},
+
 	isItem: function(something){
 		// summary:
 		//		Returns true if *something* is an item and came from this model instance.
@@ -113,7 +122,7 @@ declare("cbtree.models.model", null,
 		// tag:
 		//		public
 	},
-	
+		
 	setChecked: function (item, newState) {
 		// summary:
 		//		Update the checked state for the store item and the associated parents
