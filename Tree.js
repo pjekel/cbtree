@@ -19,14 +19,13 @@ define([
 	"dojo/_base/lang", 
 	"dojo/_base/window",
 	"dojo/dom-construct",
-	"dojo/has",
 	"dojo/text!./templates/cbtreeNode.html",
 	"dijit/registry",
 	"dijit/Tree",
 	"./CheckBox",
 	"./models/TreeStoreModel",
 	"./models/ForestStoreModel"
-], function (array, declare, event, kernel, lang, win, domConstruct, has, NodeTemplate, registry, Tree, 
+], function (array, declare, event, kernel, lang, win, domConstruct, NodeTemplate, registry, Tree, 
 							CheckBox, TreeStoreModel, ForestStoreModel) {
 
 	var TreeNode = declare([Tree._TreeNode], {
@@ -216,10 +215,10 @@ define([
 			}
 			// See if Tree styling is enabled and if we need to look for a custom icon
 			// amongst the item attributes.
-			if (tree._treeStyling && tree.iconAttr) {
+			if (tree._hasStyling && tree._iconAttr) {
 				var itemIcon = tree.get("icon", this.item);
 				if (!itemIcon || !itemIcon.baseClass) {
-					itemIcon = tree.model.getItemAttr(this.item, tree.iconAttr);
+					itemIcon = tree.model.getIcon(this.item);
 					if (itemIcon) {
 						this.tree.set("icon", itemIcon, this.item);
 					}
@@ -483,25 +482,24 @@ define([
 
 			if (this.checkboxStyle !== "none") {
 				if (!this._modelOk()) {
-					throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and/or setChecked().");
+					throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and setChecked().");
 				}
 				this._multiState  = model.multiState;
 				this._checkedAttr = model.checkedAttr;
 
 				// Add item attributes and other attributes of interest to the mapping
 				// table. Checkbox checked events from the model are mapped to the 
-				// internal '_checked_' event so we are able to distinguesh between
-				// events coming from the model and those coming from the API like
-				// set("checked",true)
+				// internal '_checked_' event so a Tree node is able to distinguesh
+				// between events coming from the model and those coming from the API
+				// like set("checked",true)
 				
 				this.mapEventToAttr(null,(this._checkedAttr || "checked"), "_checked_");
 
 				// See is Tree styling (./TreeStyling.js) is loaded...
-				this._treeStyling = has("tree-custom-styling");
-				if (this._treeStyling) {
+				if (this._hasStyling) {
 					this.mapEventToAttr(null, "_styling_", "styling");
-					if (this.iconAttr) {
-						this.mapEventToAttr(null, this.iconAttr, "icon");
+					if (this._iconAttr) {
+						this.mapEventToAttr(null, this._iconAttr, "icon");
 					}
 				}
 				model.validateData();
@@ -509,7 +507,7 @@ define([
 			// Monitor any changes to the models label attribute and add the current
 			// label attribute to the mapping table.
 			this.connect(model, "onLabelChange", "_onLabelChange");
-			this.mapEventToAttr(null,(model.getLabelAttr() || ""), "label");
+			this.mapEventToAttr(null,(model.labelAttr || ""), "label");
 
 			this.inherited(arguments);
 		},
@@ -543,12 +541,25 @@ define([
 		_modelOk: function () {
 			// summary:
 			//		Test if the model has the minimum required feature set, that is,
-			//		model.getChecked() and model.setChecked().
+			//		model.getChecked() and model.setChecked(). In addition,  if Tree
+			//		Styling is enabled and the model has its 'iconAttr' property set
+			//		the model must also provide support for getIcon().
 			// tags:
 			//		private
 
 			if ((this.model.getChecked && lang.isFunction( this.model.getChecked )) &&
 					(this.model.setChecked && lang.isFunction( this.model.setChecked ))) {
+
+				// If styling is enabled and the model specified an icon attribute it
+				// must also provide support for the getIcon() method.
+				this._iconAttr = this.model.iconAttr;
+
+				if (this._hasStyling && this._iconAttr) {
+					if (!this.model.getIcon || !lang.isFunction(this.model.getIcon)) {
+						console.warn(this.moduleName+"::_modelOk(): model has 'iconAttr' set but does not provide support for getIcon().");
+						this._iconAttr = null;
+					}
+				}
 				return true;
 			}
 			return false;
