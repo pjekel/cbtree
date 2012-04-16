@@ -279,10 +279,15 @@ define([
 			}
 		},
 
-		getRoot: function(onItem, onError){
+		getRoot: function(/*Function*/ onItem, /*Function*/ onError){
 			// summary:
 			//		Calls onItem with the root item for the tree, possibly a fabricated item.
 			//		Calls onError on error.
+			// onItem:
+			//		Function called with the root item for the tree.
+			// onError:
+			//		Function called in case an error occurred.
+			
 			if(this.root){
 				onItem(this.root);
 			}else{
@@ -806,7 +811,7 @@ define([
 		// =======================================================================
 		// Callbacks
 
-		onChange: function(/*dojo.data.item*/ /*===== item =====*/){
+		onChange: function(/*===== item, attribute, newValue =====*/){
 			// summary:
 			//		Callback whenever an item has changed, so that Tree
 			//		can update the label, icon, etc.   Note that changes
@@ -832,7 +837,7 @@ define([
 			//		callback
 		},
 
-		onDelete: function(/*dojo.data.item*/ /*===== item =====*/){
+		onDelete: function(/*===== item =====*/){
 			// summary:
 			//		Callback when an item has been deleted.
 			// description:
@@ -843,7 +848,7 @@ define([
 //			this.store.save();
 		},
 
-		onLabelChange: function (/*String*/ /*===== oldValue =====*//*String*/ /*===== value =====*/){
+		onLabelChange: function (/*===== oldValue, newValue =====*/){
 			// summary:
 			//		Callback when label attribute property changed.
 			// tags:
