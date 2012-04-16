@@ -6,8 +6,9 @@ declare("cbtree.models.model", null,
 	//		Contract for any data provider object for the Dijit CheckBox Tree.
 	// description:
 	//		Tree passes in values to the constructor to specify the callbacks.
-	//		"item" is typically a dojo.data.Item but it's just a black box so
-	//		it could be anything.
+	//		In a store implementation "item" is typically a dojo.data.Item but
+	//		it's just a black box so it could be anything. The generic type of
+	//		an item is therefore referred to as 'data.Item'
 	//
 	//		This (like `dojo.data.api.Read`) is just documentation, and not 
 	//		meant to be used.
@@ -22,20 +23,21 @@ declare("cbtree.models.model", null,
 	// =======================================================================
 	// Methods for traversing hierarchy
 
-	getRoot: function(onItem){
-		// summary:
-		//		Calls onItem with the root item for the tree, possibly a fabricated item.
-		//		Throws exception on error.
-		// tags:
-		//		public
-	},
-
 	getChildren: function(parentItem, onComplete){
 		// summary:
 		// 		Calls onComplete() with array of child items of given parent item, all loaded.
 		//		Throws exception on error.
-		// parentItem: dojo.data.Item
+		// parentItem: data.Item
 		// onComplete: function(items)
+		// tags:
+		//		public
+	},
+
+	getRoot: function(onItem){
+		// summary:
+		//		Calls onItem with the root item for the tree, possibly a fabricated item.
+		//		Throws exception on error.
+		// onItem: function(item)
 		// tags:
 		//		public
 	},
@@ -46,7 +48,7 @@ declare("cbtree.models.model", null,
 		//		avoids showing +/- expando icon for nodes that we know don't have children.
 		//		(For efficiency reasons we may not want to check if an element actually
 		//		has children until user clicks the expando node)
-		// item: dojo.data.Item
+		// item: data.Item
 		// tags:
 		//		public
 	},
@@ -68,6 +70,7 @@ declare("cbtree.models.model", null,
 	getIdentity: function(item){
 		// summary:
 		//		Returns identity for an item
+		// item: data.Item
 		// tags:
 		//		public
 	},
@@ -75,6 +78,7 @@ declare("cbtree.models.model", null,
 	getLabel: function(item){
 		// summary:
 		//		Get the label for an item
+		// item: data.Item
 		// tags:
 		//		public
 	},
@@ -84,6 +88,7 @@ declare("cbtree.models.model", null,
 		//		Returns the custom icon for an item if available. This method is only
 		//		required when Tree Styling and the iconAttr property of the model are
 		//		supported.
+		// item: data.Item
 		// tags:
 		//		public
 	},
@@ -179,13 +184,14 @@ declare("cbtree.models.model", null,
 	// =======================================================================
 	// Callbacks
 
-	onChange: function(item){
+	onChange: function(item, attribute, newValue){
 		// summary:
-		//		Callback whenever an item has changed, so that Tree
-		//		can update the label, icon, etc.   Note that changes
-		//		to an item's children or parent(s) will trigger an
-		//		onChildrenChange() so you can ignore those changes here.
-		// item: dojo.data.Item
+		//		Callback whenever an item has changed, so that Tree can update the label,
+		//		icon, etc. Note that changes to an item's children or parent(s) will
+		//		trigger an onChildrenChange() so you can ignore those changes here.
+		// item: data.Item
+		// attribute: string
+		// newValue: any type allowed for an object property.
 		// tags:
 		//		callback
 	},
@@ -193,8 +199,8 @@ declare("cbtree.models.model", null,
 	onChildrenChange: function(parent, newChildrenList){
 		// summary:
 		//		Callback to do notifications about new, updated, or deleted items.
-		// parent: dojo.data.Item
-		// newChildrenList: dojo.data.Item[]
+		// parent: data.Item
+		// newChildrenList: data.Item[]
 		// tags:
 		//		callback
 	},
@@ -212,13 +218,16 @@ declare("cbtree.models.model", null,
 		// description:
 		//		Note that there will also be an onChildrenChange() callback for the parent
 		//		of this item.
+		// item: data.Item
 		// tags:
 		//		callback
 	},
 
-	onLabelChange: function (value){
+	onLabelChange: function (oldValue, newValue){
 		// summary:
 		//		Callback when label attribute changed.
+		// oldValue: string
+		// newValue: string
 		// tags:
 		//		callback
 	}
