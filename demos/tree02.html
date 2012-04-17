@@ -40,11 +40,13 @@
         "dojo/_base/array",
         "dojo/dom",
         "dojo/data/ItemFileWriteStore",
-        "cbtree"
-        ], function( array, dom, ItemFileWriteStore, cbtree ) {
+        "cbtree/Tree",                    // Checkbox Tree
+        "cbtree/TreeStyling",             // Tree styling extensions
+        "cbtree/models/ForestStoreModel"  // Forest Store Model
+        ], function( array, dom, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel ) {
 
           var store = new ItemFileWriteStore( { url: "../datastore/Network-1.7.json" });
-          var model = new cbtree.ForestStoreModel( {
+          var model = new ForestStoreModel( {
                   store: store,
                   query: {type: 'computer'},
                   rootLabel: 'The Network',
@@ -53,7 +55,7 @@
                   checkedState: true,
                   checkedStrict: true
                   }); 
-          var tree = new cbtree.Tree( {
+          var tree = new Tree( {
                   model: model,
                   id: "MenuTree",
                   checkboxMultiState: true,

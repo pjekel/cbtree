@@ -37,12 +37,14 @@
         "dojo/_base/connect",
         "dojo/dom",
         "dojo/data/ItemFileWriteStore",
-        "cbtree"		// Load cbtree including extension
-        ], function( array, connect, dom, ItemFileWriteStore, cbTree) {
+        "cbtree/Tree",										// Checkbox tree
+        "cbtree/TreeStyling",							// Tree styling extensions
+        "cbtree/models/ForestStoreModel"	// ForestStoreModel
+        ], function( array, connect, dom, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel) {
 
           function checkBoxClicked( item, nodeWidget, evt ) {
             var newState = nodeWidget.get("checked" );
-            var  label    = this.getItemAttr(item,"label");
+            var  label    = this.getLabel(item);
             
             if( newState ) {
               tree.set("iconStyle", {border:"solid"}, item );
@@ -55,7 +57,7 @@
           }
 
           var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
-          var model = new cbTree.ForestStoreModel( {
+          var model = new ForestStoreModel( {
                   store: store,
                   query: {type: 'parent'},
                   rootLabel: 'The Family',
@@ -64,7 +66,7 @@
                   checkedState: true,
                   checkedStrict: true
                   }); 
-          var tree = new cbTree.Tree( {
+          var tree = new Tree( {
                   model: model,
                   id: "MenuTree",
                   branchReadOnly: false,

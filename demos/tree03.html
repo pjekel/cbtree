@@ -206,8 +206,11 @@
                 "dojo/_base/lang",
                 "dojo/dom",
                 "dojo/data/ItemFileWriteStore",
-                "cbtree"
-              ], function( array, connect, lang, dom, ItemFileWriteStore, cbtree ) {
+                "cbtree/Tree",											// Checkbox Tree
+                "cbtree/TreeStyling",								// Tree Styling extensions
+                "cbtree/models/ForestStoreModel",		// Forest Store Model
+                "cbtree/models/TreeStoreModel-API"	// Store Model API extensions
+              ], function( array, connect, lang, dom, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel, TreeAPI ) {
 
         // Declare an empty JSON data object (an empty store).
         var EmptyData = { identifier: 'name', label:'name', items:[] };
@@ -369,7 +372,7 @@
           
           // Create the cbtree store model... NOTE: we startof with strict parent-child
           // relationship disabled....
-          model = new cbtree.ForestStoreModel( {
+          model = new ForestStoreModel( {
                   store: new ItemFileWriteStore( { data: EmptyData }),
                   query: {type: 'parent'},
                   rootLabel: 'The Simpsons Tree',
@@ -380,7 +383,7 @@
 
           // Create the tree (which will be empty). Make sure 'autoExpand' is enabled otherwise
           // you will miss alot of the action...
-          tree = new cbtree.Tree( {
+          tree = new Tree( {
                   model: model,
                   id: "MenuTree",
                   autoExpand: true

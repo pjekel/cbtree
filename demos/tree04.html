@@ -44,18 +44,19 @@
         "dojo/dom",
         "dojo/data/ItemFileWriteStore",
         "dojox/form/TriStateCheckbox",
-        "cbtree"
-        ], function( array, connect, dom, ItemFileWriteStore, TriStateCheckBox, cbtree ) {
+        "cbtree/Tree",                      // CheckBox Tree							
+        "cbtree/models/ForestStoreModel"    // Tree Forest Store Model
+        ], function( array, connect, dom, ItemFileWriteStore, TriStateCheckBox, Tree, ForestStoreModel ) {
 
           var store = new ItemFileWriteStore( { url: "../datastore/Simpsons.json" });
-          var model = new cbtree.ForestStoreModel( {
+          var model = new ForestStoreModel( {
                   store: store,
                   query: {type: 'parent'},
                   rootLabel: 'The Simpsons',
                   checkedRoot: true,
                   normalize: false
                   }); 
-          var tree = new cbtree.Tree( {
+          var tree = new Tree( {
                   model: model,
                   id: "MenuTree",
                   widget: { widget: TriStateCheckBox, attr: { states:['mixed', true, false] }}
