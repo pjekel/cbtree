@@ -210,7 +210,7 @@ define([
 					itemIcon = null,
 					nodeIcon;
 
-			if (tree.checkboxStyle !== "none") {
+			if (tree.checkBoxes === true) {
 				this._createCheckBox(tree._multiState);
 			}
 			// See if Tree styling is enabled and if we need to look for a custom icon
@@ -250,10 +250,10 @@ define([
 		//		check/uncheck every child checkbox individually. 
 		branchReadOnly: false,
 		
-		// checkboxStyle: String
-		//		Sets the style of the checkbox to be used. Currently only "none" has
-		//		any impact. 
-		checkboxStyle: null,
+		// checkBoxes: String
+		//		If true each tree node will get a checkbox otherwise the tree is created
+		//		without checkboxes.
+		checkBoxes: true,
 
 		// nodeIcons: Boolean
 		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
@@ -298,7 +298,7 @@ define([
 
 			args["widget"] = this._customWidget;		/* Mixin the custom widget */
 			if (this._treeStyling) {
-				args["icon"]   = this._icon;
+				args["icon"] = this._icon;
 			}
 			return new TreeNode(args);
 		},
@@ -331,7 +331,7 @@ define([
 			// description:
 			//		Processes notification of a change to a data item's scalar values like
 			//		label or checkbox state.  In addition, it also handles internal events
-			//		that effect the presentation of an item.
+			//		that effect the presentation of an item (see TreeStyling.js)
 			//		The model, or internal, attribute name is mapped to a tree node property,
 			//		only if a mapping is available is the event passed on to the appropriate
 			//		tree node otherwise the event is considered of no impact to the tree
@@ -477,12 +477,12 @@ define([
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
 
-			// For backward compatability with dijit Tree only.
+			// For backward compatability with dijit Tree V1.0 only.
 			var model = this.model || this._store2model();
 
-			if (this.checkboxStyle !== "none") {
+			if (this.checkBoxes === true) {
 				if (!this._modelOk()) {
-					throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and setChecked().");
+					throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and/or setChecked().");
 				}
 				this._multiState  = model.multiState;
 				this._checkedAttr = model.checkedAttr;
