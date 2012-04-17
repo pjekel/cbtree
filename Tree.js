@@ -251,8 +251,9 @@ define([
 		branchReadOnly: false,
 		
 		// checkBoxes: String
-		//		If true each tree node will get a checkbox otherwise the tree is created
-		//		without checkboxes.
+		//		If true it enables the creation of checkboxes, If a tree node actually
+		//		gets a checkbox depends on the configuration of the model. If false no
+		// 		checkboxes will be created regardless of the model configuration.
 		checkBoxes: true,
 
 		// nodeIcons: Boolean
