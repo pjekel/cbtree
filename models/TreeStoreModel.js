@@ -429,6 +429,10 @@ define([
 			//	tag:
 			//		private
 
+			// Set the (maybe) parent first. The order in which any child checked states
+			// are set is important to optimize _updateCheckedParent() performance.
+			this._setChecked(storeItem, newState);
+
 			if (this.mayHaveChildren(storeItem)) {
 				this.getChildren(storeItem, lang.hitch(this, 
 						function (children) {
@@ -442,7 +446,6 @@ define([
 					this.onError 
 				); // end getChildren()
 			}
-			this._setChecked(storeItem, newState);
 		},
 
 		_updateCheckedParent: function (/*dojo.data.item*/ storeItem) {
@@ -467,39 +470,42 @@ define([
 			if (!this.checkedStrict) {
 				return;
 			}
-			var parents = this._getParents(storeItem),
-					parentState,
+			var parents    = this._getParents(storeItem),
+					childState = this.getChecked(storeItem),
 					newState;
 
 			array.forEach(parents, function (parentItem) {
-				parentState = this.getChecked(parentItem);
-				this.getChildren(parentItem, lang.hitch(this,
-					function (children) {
-						var hasChecked	 = false,
-								hasUnchecked = false,
-								isMixed      = false,
-								state;
-						array.some(children, function (child) {
-							state = this.getChecked(child);
-							isMixed |= (state == "mixed");
-							switch(state) {	// ignore 'undefined' state
-								case true:
-									hasChecked = true;
-									break;
-								case false: 
-									hasUnchecked = true;
-									break;
+				// Only process a parent update if the current child state differs from
+				// its parent otherwise the parent is already up-to-date.
+				if( childState !== this.getChecked(parentItem) ) {
+					this.getChildren(parentItem, lang.hitch(this,
+						function (children) {
+							var hasChecked	 = false,
+									hasUnchecked = false,
+									isMixed      = false,
+									state;
+							array.some(children, function (child) {
+								state = this.getChecked(child);
+								isMixed |= (state == "mixed");
+								switch(state) {	// ignore 'undefined' state
+									case true:
+										hasChecked = true;
+										break;
+									case false: 
+										hasUnchecked = true;
+										break;
+								}
+								return isMixed;
+							}, this);
+							// At least one checked/unchecked required to change parent state.
+							if (isMixed || hasChecked || hasUnchecked) {
+								isMixed |= !(hasChecked ^ hasUnchecked);
+								newState = (isMixed ? "mixed" : hasChecked ? true: false);
 							}
-							return isMixed;
-						}, this);
-						// At least one checked/unchecked required to change parent state.
-						if (isMixed || hasChecked || hasUnchecked) {
-							isMixed |= !(hasChecked ^ hasUnchecked);
-							newState = (isMixed ? "mixed" : hasChecked ? true: false);
-						}
-						this._setChecked(parentItem, newState);
-					}),
-					this.onError);
+							this._setChecked(parentItem, newState);
+						}),
+						this.onError); /* end getChildren() */
+				}						
 			}, this); /* end forEach() */
 		},
 		
