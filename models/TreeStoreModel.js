@@ -448,7 +448,7 @@ define([
 			}
 		},
 
-		_updateCheckedParent: function (/*dojo.data.item*/ storeItem) {
+		_updateCheckedParent: function (/*dojo.data.item*/ storeItem, /*Boolean*/ forceUpdate) {
 			//	summary:
 			//		Update the parent checked state according to the state of all child
 			//		checked states.
@@ -464,6 +464,9 @@ define([
 			//
 			//	storeItem:
 			//		The store item whose parent state requires updating.
+			//  forceUpdate:
+			//		Force an update of the parent(s) regardless of the current checked
+			//		state of the child.
 			//	tag:
 			//		private
 			
@@ -477,7 +480,7 @@ define([
 			array.forEach(parents, function (parentItem) {
 				// Only process a parent update if the current child state differs from
 				// its parent otherwise the parent is already up-to-date.
-				if( childState !== this.getChecked(parentItem) ) {
+				if ((childState !== this.getChecked(parentItem)) || forceUpdate) {
 					this.getChildren(parentItem, lang.hitch(this,
 						function (children) {
 							var hasChecked	 = false,
@@ -538,8 +541,10 @@ define([
 				}, 
 				this
 			);
-			if (!hasGrandChild && ownChild) {	// Found a child on the lowest branch ?
-				this._updateCheckedParent(ownChild);
+			// When a child on the lowest branch, that is, farthest from the root is
+			// located work our way back to the root forcing an update of the parent.
+			if (!hasGrandChild && ownChild) {
+				this._updateCheckedParent(ownChild, true);
 			}
 			// If the validation count drops to zero we're done.
 			this._validating -= 1;
@@ -562,9 +567,11 @@ define([
 				this.getRoot( lang.hitch( this, 
 					function (rootItem) {
 						if (this.mayHaveChildren(rootItem)) {
-							var child = rootItem[this.childrenAttrs][0];
+							var list  = this.childrenAttrs[0];
+							var child = rootItem[list][0];
 							if (child) {
-								this._updateCheckedParent(child);
+								// Force an update of the tree root.
+								this._updateCheckedParent(child, true);
 							}
 						}
 					})
@@ -711,6 +718,19 @@ define([
 			return this.store.isItem(something);	// Boolean
 		},
 
+		isTreeRootChild: function (/*dojo.data.item*/ item) {
+			if (this.root && this.childrenAttrs) {
+				var isRootChild = false;
+				array.some(this.childrenAttrs, function (attribute) {
+						if (array.indexOf( this.root[attribute],item) !== -1) {
+							return (isRootChild = true);
+						}
+					},
+					this );
+				return isRootChild;
+			}
+		},
+		
 		// =======================================================================
 		// Write interface
 
@@ -876,7 +896,7 @@ define([
 			// tags:
 			//		extension
 
-			this._updateCheckedParent(item);
+			this._updateCheckedParent(item, false);
 			
 			// We only care about the new item if it has a parent that corresponds to a TreeNode
 			// we are currently displaying
@@ -900,7 +920,7 @@ define([
 			// storeItem:
 			//		The store item that was deleted.
 
-			this._updateCheckedParent(storeItem);
+			this._updateCheckedParent(storeItem, false);
 			this.onDelete(storeItem);
 		},
 
@@ -934,14 +954,14 @@ define([
 				// Store item's children list changed
 				this.getChildren(storeItem, lang.hitch(this, function (children){
 					// See comments in onNewItem() about calling getChildren()
-					this._updateCheckedParent(children[0]);
+					this._updateCheckedParent(children[0], false);
 					this.onChildrenChange(storeItem, children);
 				}));
 			}else{
 				// If the attribute is the attribute associated with the checked state
 				// go update the store items parent.
 				if (attribute == this.checkedAttr) {
-					this._updateCheckedParent(storeItem);
+					this._updateCheckedParent(storeItem, false);
 				}
 				this.onChange(storeItem, attribute, newValue);
 			}
