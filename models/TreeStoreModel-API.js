@@ -376,7 +376,7 @@ define([
 			//		Get the list of store items that match the query and have a checked 
 			//		state, that is, a checkedAttr property.
 			// description:
-			//		Get the list of store items that match the query and have a checkbed
+			//		Get the list of store items that match the query and have a checked
 			//		state. This method provides a simplified interface to the data stores
 			//		fetch() method.
 			//	 query:
