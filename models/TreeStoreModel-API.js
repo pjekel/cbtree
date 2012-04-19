@@ -166,12 +166,15 @@ define([
 				this.checkedStrict = value;
 				if (this.checkedStrict) {
 					this.getRoot( lang.hitch(this, function (rootItem) {
-							this.getChildren(rootItem, lang.hitch(this, this._validateChildren))
+							this.getChildren(rootItem, lang.hitch(this, function(children) {
+									this._validateChildren(rootItem, children);
+								}))
 						}))
 				}
 			}
 			return this.checkedStrict;
 		},
+
 		
 		// =======================================================================
 		// Data store item getters and setters
