@@ -141,10 +141,6 @@ define([
 		//		changed value.
 		_queryAttrs: [],
 
-		// _rootUpdated:
-		//		Indicates if the root items checked state has been updated.
-		_rootUpdated: false,
-		
 		// _validating: [private] Number
 		//		If not equal to zero it indicates store validation is on going.
 		_validating: 0,
@@ -351,7 +347,10 @@ define([
 		_getCompositeState: function (/*dojo.data.item[]*/ children) {
 			// summary:
 			//		Compile the composite state based on the checked state of a group
-			//		of children.
+			//		of children.  If any child has a mixed state, the composite state
+			//		will always be mixed, on the other hand, if none of the children
+			//		has a checked state the composite state will be undefined.
+			//
 			// children: 
 			//		Array of dojo.data items
 			// tags:
@@ -382,22 +381,6 @@ define([
 				newState = (isMixed ? "mixed" : hasChecked ? true: false);
 			}
 			return newState;
-		},
-		
-
-		_getParents: function (/*dojo.data.item*/ storeItem) {
-			// summary:
-			//		Get the parent(s) of a store item.	
-			// storeItem:
-			//		The dojo.data.item whose parent(s) will be returned.
-			// tags:
-			//		private
-			var parents = this.getParents(storeItem) || [];
-
-			if (!parents.length || parents[0] == this.root) {
-				this._rootUpdated = true;
-			}
-			return parents;
 		},
 		
 		_setChecked: function (/*dojo.data.item*/ storeItem, /*Boolean|String*/ newState) {
@@ -487,20 +470,10 @@ define([
 
 		_updateCheckedParent: function (/*dojo.data.item*/ storeItem, /*Boolean*/ forceUpdate) {
 			//	summary:
-			//		Update the parent checked state according to the state of all child
-			//		checked states.
-			//	description:
-			//		Update the parent checked state according to the state of all of its
-			//		child states. The parent checked state automatically changes if ALL
-			//		child states are true or false.
-			//
-			//		NOTE: If any of the children has a mixed state, the parent will
-			//					also get a mixed state. On the other hand, if none of the
-			//					children has a checked state the parent retains is current
-			//					state.
-			//
+			//		Update the parent checked state according to the state of all its
+			//		children checked states.
 			//	storeItem:
-			//		The store item whose parent state requires updating.
+			//		The store item (child) whose parent state requires updating.
 			//  forceUpdate:
 			//		Force an update of the parent(s) regardless of the current checked
 			//		state of the child.
@@ -510,20 +483,27 @@ define([
 			if (!this.checkedStrict || !storeItem) {
 				return;
 			}
-			var parents    = this._getParents(storeItem),
+			var parents    = this.getParents(storeItem),
 					childState = this.getChecked(storeItem),
 					newState;
 
 			array.forEach(parents, function (parentItem) {
-				// Only process a parent update if the current child state differs from
-				// its parent otherwise the parent is already up-to-date.
-				if ((childState !== this.getChecked(parentItem)) || forceUpdate) {
-					this.getChildren(parentItem, lang.hitch(this,
-						function (children) {
-							newState = this._getCompositeState(children);
-							this._setChecked(parentItem, newState);
-						}),
-						this.onError); /* end getChildren() */
+				// Test if the storeItem is actually a child in the context of this model.
+				// The child may have been added to a different childrens list in another
+				// model.
+				if( this.isChildOf(parentItem, storeItem)) {
+					// Only process a parent update if the current child state differs from
+					// its parent otherwise the parent is already up-to-date.
+					if ((childState !== this.getChecked(parentItem)) || forceUpdate) {
+						this.getChildren(parentItem, lang.hitch(this,
+							function (children) {
+								newState = this._getCompositeState(children);
+								if(newState !== undefined) {
+									this._setChecked(parentItem, newState);
+								}
+							}),
+							this.onError); /* end getChildren() */
+					}
 				}						
 			}, this); /* end forEach() */
 		},
@@ -706,6 +686,8 @@ define([
 		},
 
 		isTreeRootChild: function (/*dojo.data.item*/ item) {
+			// summary:
+			//		Returns true if the item is a tree root child.
 			if (this.root && this.childrenAttrs) {
 				var isRootChild = false;
 				array.some(this.childrenAttrs, function (attribute) {
@@ -716,6 +698,18 @@ define([
 					this );
 				return isRootChild;
 			}
+		},
+		
+		isChildOf: function (parent,item) {
+			// summary:
+			//		Returns true if item is a child of parent otherwise false.
+			var i;
+			for(i=0; i<this.childrenAttrs.length; i++) {
+				if (array.indexOf(parent[this.childrenAttrs[i]],item) !== -1) {
+					return true;
+				}
+			}
+			return false;
 		},
 		
 		// =======================================================================
