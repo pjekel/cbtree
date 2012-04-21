@@ -73,7 +73,8 @@ define([
 		// =======================================================================
 		// Methods for traversing hierarchy
 
-		getChildren: function(/*dojo.data.Item*/ parentItem, /*function(items)*/ callback, /*function*/ onError){
+		getChildren: function(/*dojo.data.Item*/ parentItem, /*function(items)*/ callback, /*function*/ onError, 
+                           /*(String|String[])?*/ childrenLists ){
 			// summary:
 			// 		Calls onComplete() with array of child items of given parent item, all loaded.
 			if(parentItem === this.root){
@@ -161,10 +162,20 @@ define([
 			return (something === this.root) ? true : this.inherited(arguments);
 		},
 
+		isChildOf: function (/*dojo.data.item*/ parent,/*dojo.data.item*/ item) {
+			if (parent === this.root) {
+				if (array.indexOf(this.root.children,item) !== -1) {
+					return true;
+				}
+			} else {
+				return this.inherited(arguments);
+			}			
+		},
+		
 		// =======================================================================
 		// Write interface
 
-		newItem: function(/* dojo.dnd.Item */ args, /*Item*/ parent, /*int?*/ insertIndex){
+		newItem: function(/* dojo.dnd.Item */ args, /*Item*/ parent, /*int?*/ insertIndex, /*String?*/ childrenAttr){
 			// summary:
 			//		Creates a new item.   See dojo.data.api.Write for details on args.
 			//		Used in drag & drop when item from external source dropped onto tree.
@@ -178,7 +189,7 @@ define([
 		},
 
 		pasteItem: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ oldParentItem, /*dojo.data.item*/ newParentItem, 
-												 /*Boolean*/ bCopy, /*int?*/ insertIndex){
+												 /*Boolean*/ bCopy, /*int?*/ insertIndex, /*String?*/ childrenAttr){
 			// summary:
 			//		Move or copy an item from one parent item to another.
 			//		Used in drag & drop
@@ -187,9 +198,6 @@ define([
 
 			if (oldParentItem === this.root){
 				if (!bCopy){
-					// It's onLeaveRoot()'s responsibility to modify the item so it no longer matches
-					// this.query... thus triggering an onChildrenChange() event to notify the Tree
-					// that this element is no longer a child of the root node
 					this.store.detachFromRoot(childItem);
 				}
 			}
@@ -197,7 +205,8 @@ define([
 				oldParentItem === this.root ? null : oldParentItem,
 				newParentItem === this.root ? null : newParentItem,
 				bCopy,
-				insertIndex
+				insertIndex,
+				childrenAttr
 			]);
 		},
 

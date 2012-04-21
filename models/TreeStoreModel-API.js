@@ -440,7 +440,7 @@ define([
 		// =======================================================================
 		// Write interface
 
-		addReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem, /*String*/ childrenAttr){
+		addReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem, /*String?*/ childrenAttr){
 			// summary:
 			//		Add an existing item to the parentItem by reference.
 			// childItem:
@@ -535,7 +535,7 @@ define([
 			return newItem;
 		},
 
-		removeReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem, /*String*/ childrenAttr){
+		removeReference: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ parentItem, /*String?*/ childrenAttr){
 			// summary:
 			//		Remove a child reference from its parent. Only the references are
 			//		removed, the childItem is not delete.

@@ -66,7 +66,7 @@ define([
 		//		'checkedAll' if one will be created automatically and if so, its initial
 		//		state will be set as specified by 'checkedState'. 
 		checkedAttr: "checked",
-
+		
 		// childrenAttrs: String[]
 		//		One or more attribute names (attributes in the dojo.data item) that specify
 		//		that item's children
@@ -81,6 +81,12 @@ define([
 		// 		fully loaded item should contain the label and info about having children.
 		deferItemLoadingUntilExpand: false,
 
+		// excludeChildrenAttrs: String[]
+		//		If multiple childrenAttrs have been specified excludeChildrenAttrs determines
+		//		which of those childrenAttrs are excluded from: a) getting a checked state.
+		//		b) compiling the composite state of a parent item.
+		excludeChildrenAttrs: null,
+		
 		// iconAttr: String
 		//		If specified, get the icon from an item using this attribute name.
 		iconAttr: "",
@@ -135,6 +141,13 @@ define([
 		//		Pointer to the root item (read only, not a parameter)
 		root: null,
 
+		// _checkedChildrenAttrs: string[]
+		//		The list of childrenAttrs to be included in any of the checked state operations.
+		//		Only store items which are a member of any of the _checkedChildrenAttrs will get
+		//		a checked state and are included in compiling the composite parent state.
+		//		_checkedChildrenAttrs is defined as (childrenAttrs - excludeChildrenAttrs)
+		_checkedChildrenAttrs: null,
+
 		// _queryAttrs: String[]
 		//		A list of attribute names included in the query. The list is used to determine
 		//		if a re-query of the store is required after a property of a store item has
@@ -180,6 +193,7 @@ define([
 					aspect.after(store, "onRoot", lang.hitch(this, "onRootChange"), true),
 				]);
 			}
+			this._checkedChildrenAttrs = this._diffArrays( this.childrenAttrs, this.excludeChildrenAttrs );
 			// Compose a list of attribute names included in the store query.
 			if (this.query) {
 				var attr;
@@ -198,7 +212,8 @@ define([
 		// =======================================================================
 		// Methods for traversing hierarchy
 
-		getChildren: function(/*dojo.data.item*/ parentItem, /*Function*/ onComplete, /*Function*/ onError){
+		getChildren: function(/*dojo.data.item*/ parentItem, /*Function*/ onComplete, /*Function*/ onError, 
+                           /*String[]?*/ childrenLists ){
 			// summary:
 			// 		Calls onComplete() with array of child items of given parent item,
 			//		all loaded.
@@ -209,6 +224,9 @@ define([
 			//		as the argument.
 			// onError:
 			//		Callback function, called in case an error occurred.
+			// childrenLists:
+			//		Specifies the childrens list(s) from which the children are retrieved.
+			//		If ommitted, childrenAttrs is used instead returning all children.
 			// tags:
 			//		public
 			
@@ -228,12 +246,21 @@ define([
 				return;
 			}
 			// get children of specified item
-			var childItems = [];
-			for(var i=0; i<this.childrenAttrs.length; i++){
-				var vals = store.getValues(parentItem, this.childrenAttrs[i]);
-				childItems = childItems.concat(vals);
+			var childItems = [], vals, i;
+			if (!childrenLists) {
+				for(i=0; i<this.childrenAttrs.length; i++){
+					vals = store.getValues(parentItem, this.childrenAttrs[i]);
+					childItems = childItems.concat(vals);
+				}
+			} 
+			else // Get children from specfied list(s) only.
+			{
+				var lists = lang.isArray(childrenLists) ? childrenLists : [childrenLists];
+				for(i=0; i<lists.length; i++){
+					vals = store.getValues(parentItem, lists[i]);
+					childItems = childItems.concat(vals);
+				}
 			}
-
 			// count how many items need to be loaded
 			var _waitCount = 0;
 			if(!this.deferItemLoadingUntilExpand){
@@ -350,7 +377,6 @@ define([
 			//		of children.  If any child has a mixed state, the composite state
 			//		will always be mixed, on the other hand, if none of the children
 			//		has a checked state the composite state will be undefined.
-			//
 			// children: 
 			//		Array of dojo.data items
 			// tags:
@@ -463,8 +489,8 @@ define([
 							);
 						}
 					), // end hitch()
-					this.onError 
-				); // end getChildren()
+					this.onError,
+					this._checkedChildrenAttrs); // end getChildren()
 			}
 		},
 
@@ -502,13 +528,14 @@ define([
 									this._setChecked(parentItem, newState);
 								}
 							}),
-							this.onError); /* end getChildren() */
+							this.onError,
+							this._checkedChildrenAttrs); /* end getChildren() */
 					}
 				}						
 			}, this); /* end forEach() */
 		},
 
-		_validateChildren: function ( parent, items) {
+		_validateChildren: function ( parent, children, childrenLists) {
 			// summary:
 			//		Validate/normalize the parent(s) checked state in the dojo.data store.
 			// description:
@@ -516,24 +543,35 @@ define([
 			//		the actual state(s) of their children. This will potentionally overwrite
 			//		whatever was specified for the parent in the dojo.data store. This will
 			//		garantee the tree is in a consistent state after startup. 
-			//	items:
-			//		Either the tree root or a list of child items
+			//	parent:
+			//		The parent item of children.
+			//	children:
+			//		Either the tree root or a list of child children
+			//	childrenLists:
+			//		Array of list attributes to be included in the validation. See definition
+			//		of _checkedChildrenAttrs for details.
 			//	tag:
 			//		private
 
-			var children,	newState;
+			var children,	currState, newState;
 			this._validating += 1;
 					
-			children = lang.isArray(items) ? items : [items];
-			newState = this._getCompositeState(children);
-			this._setChecked(parent, newState);
+			children  = lang.isArray(children) ? children : [children];
+			newState  = this._getCompositeState(children);
+			currState = this.getChecked(parent);
 
+			if (currState !== undefined && newState !== undefined) {
+				this._setChecked(parent, newState);
+			}
+			
 			array.forEach(children, 
 				function (child) {
 					if (this.mayHaveChildren(child)) {
 						this.getChildren( child, lang.hitch(this, function(children) {
-								this._validateChildren( child, children);
-							}),	this.onError);
+								this._validateChildren( child, children, childrenLists);
+							}),	
+							this.onError, 
+							childrenLists);
 					}
 				}, 
 				this
@@ -573,6 +611,11 @@ define([
 
 			var checked;
 			
+			if (this.excludeChildrenAttrs) {
+				if (this.isMemberOf(storeItem, this.excludeChildrenAttrs)) {
+					return;
+				}
+			}
 			if (this.store.isItem(storeItem)) {
 				checked = this.store.getValue(storeItem, this.checkedAttr);
 				if (checked === undefined)
@@ -637,7 +680,7 @@ define([
 						if (has("tree-model-setChecked")) {
 							this.getRoot( lang.hitch(this, function (rootItem) {
 									this.getChildren(rootItem, lang.hitch(this, function(children) {
-											this._validateChildren(rootItem, children);
+											this._validateChildren(rootItem, children, this._checkedChildrenAttrs);
 										}), this.onError)
 								}), this.onError)
 
@@ -656,17 +699,17 @@ define([
 		// =======================================================================
 		// Inspecting items
 
-		fetchItemByIdentity: function(/* object */ keywordArgs){
+		fetchItemByIdentity: function(/*object*/ keywordArgs){
 			this.store.fetchItemByIdentity(keywordArgs);
 		},
 
-		getIcon: function(/* item */ item){
+		getIcon: function(/*item*/ item){
 			if (this.iconAttr) {
 				return this.store.getValue(item, this.iconAttr);
 			}
 		},
 
-		getIdentity: function(/* item */ item){
+		getIdentity: function(/*item*/ item){
 			return this.store.getIdentity(item);	// Object
 		},
 
@@ -681,28 +724,27 @@ define([
 			}
 		},
 	
-		isItem: function(/* anything */ something){
+		isItem: function(/*anything*/ something){
 			return this.store.isItem(something);	// Boolean
 		},
 
 		isTreeRootChild: function (/*dojo.data.item*/ item) {
 			// summary:
 			//		Returns true if the item is a tree root child.
-			if (this.root && this.childrenAttrs) {
-				var isRootChild = false;
-				array.some(this.childrenAttrs, function (attribute) {
-						if (array.indexOf( this.root[attribute],item) !== -1) {
-							return (isRootChild = true);
-						}
-					},
-					this );
-				return isRootChild;
+			if (this.root) {
+				return this.isChildOf(this.root, item);
 			}
 		},
 		
-		isChildOf: function (parent,item) {
+		isChildOf: function (/*dojo.data.item*/ parent,/*dojo.data.item*/ item) {
 			// summary:
-			//		Returns true if item is a child of parent otherwise false.
+			//		Returns true if item is a child of parent in the context of this model
+			//		otherwise false. 
+			//
+			//		Note: An item may have been added as a child by another model with
+			//		      a different set of 'childrenAttrs'. Therefore, item may be a
+			//					valid child in the other model it does not quarentee it is a
+			//					valid child in the context of this model.
 			var i;
 			for(i=0; i<this.childrenAttrs.length; i++) {
 				if (array.indexOf(parent[this.childrenAttrs[i]],item) !== -1) {
@@ -711,19 +753,35 @@ define([
 			}
 			return false;
 		},
+
+		isMemberOf: function (/*dojo.data.item*/ item, /*string|string[]*/childrenLists ) {
+			// summary:
+			//		Returns true if the item is a member of any of the childrenLists.
+			//		(See isChildOf() note)
+			if (this.isItem(item)) {
+				var parents  = this.getParents(item);
+				var lists    = childrenLists ? (lang.isArray(childrenLists) ? childrenLists : [childrenLists]) : [];
+				var isMember = false;
+				var i;
+				array.some(parents, function(parent){
+						for (i=0; i<lists.length; i++) {
+							if (array.indexOf(parent[lists[i]],item) != -1) {
+								return (isMember = true);
+							}
+						}
+					}, this);
+			}
+			return isMember;
+		},
 		
 		// =======================================================================
 		// Write interface
 
-		newItem: function (/*dojo.dnd.Item*/ args, /*dojo.data.item*/ parent, /*int?*/ insertIndex){
+		newItem: function (/*dojo.dnd.Item*/ args, /*dojo.data.item*/ parent, /*int?*/ insertIndex, /*String?*/ childrenAttr){
 			// summary:
 			//		Creates a new item.	 See `dojo.data.api.Write` for details on args.
 			//		Used in drag & drop when item from external source dropped onto tree
 			//		or can be called programmatically.
-			// description:
-			//		Developers will need to override this method if new items get added
-			//		to parents with multiple children attributes, in order to define which
-			//		children attribute points to the new item.
 			//
 			//		NOTE: Whenever a parent is specified the underlaying store method
 			//					newItem() will NOT create args as a top level item a.k.a a
@@ -736,8 +794,11 @@ define([
 			//		level item in the store. (see also: newReferenceItem())
 			// insertIndex:
 			//		If specified the location in the parents list of child items.
+			// childrenAttr:
+			//		If specified the childrens list attribute to which the new item will
+			//		be added.
 			
-			var pInfo = {parent: parent, attribute: this.childrenAttrs[0]},
+			var pInfo = {parent: parent, attribute: (childrenAttr ? childrenAttr : this.childrenAttrs[0])},
 					newItem;
 
 			this._mapIdentifierAttr(args, false);
@@ -758,11 +819,12 @@ define([
 			return newItem;
 		},
 
-		pasteItem: function(/*Item*/ childItem, /*Item*/ oldParentItem, /*Item*/ newParentItem, /*Boolean*/ bCopy, /*int?*/ insertIndex){
+		pasteItem: function(/*Item*/ childItem, /*Item*/ oldParentItem, /*Item*/ newParentItem, /*Boolean*/ bCopy, 
+												 /*int?*/ insertIndex, /*String?*/ childrenAttr){
 			// summary:
 			//		Move or copy an item from one parent item to another.
 			//		Used in drag & drop
-			var parentAttr = this.childrenAttrs[0],		// name of "children" attr in parent item
+			var parentAttr = childrenAttr ? childrenAttr : this.childrenAttrs[0],	// name of "children" attr in parent item
 					store = this.store,
 					firstChild;
 				
@@ -993,7 +1055,7 @@ define([
 			//		If true, it determines when a mapping was made, if the mapped attribute
 			//		is to be removed from the new item properties.
 			// tags:
-			//		private, extension
+			//		private
 			
 			var identifierAttr = this.store.getIdentifierAttr();
 			
@@ -1011,6 +1073,27 @@ define([
 				args[this.checkedAttr] = this.checkedState;
 			}
 			return false;
+		},
+		
+		_diffArrays: function (/*array*/ orgArray, /*array*/ elements) {
+			// summary:
+			//		Returns a new array which is 'orgArray' with all 'elements' removed.
+			// tags:
+			//		private
+
+			var elemList = elements ? (lang.isArray(elements) ? elements : [elements]) :[];
+			var newArray = orgArray.slice(0);
+			var index, i;
+			
+			if (newArray.length && elemList.length) {
+				for(i=0; i<elemList.length; i++) {
+					index = array.indexOf(newArray, elemList[i]);
+					if (index != -1) {
+						newArray.splice(index,1);
+					}
+				}
+			}
+			return newArray;
 		}
 
 	});

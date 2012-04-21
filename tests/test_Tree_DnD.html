@@ -196,7 +196,7 @@
 				Can also move items within this tree. The drag threshold is set to 8, between threshold is set to 5, so you have a few pixels
 				of buffer before drag operations start.
 			</p>
-			<div data-dojo-id="itemModel" data-dojo-type="cbtree.models.TreeStoreModel" data-dojo-props='store:myStore, query:{id: "0"}, childrenAttrs:["items", "children"]'></div>
+			<div data-dojo-id="itemModel" data-dojo-type="cbtree.models.TreeStoreModel" data-dojo-props='store:myStore, query:{id: "0"}, childrenAttrs:["items", "children"], excludeChildrenAttrs:["items"]'></div>
 			<div id="itemTree" data-dojo-type="cbtree.Tree" data-dojo-props='"class":"container", model:itemModel,
 				checkAcceptance:dndAccept, checkItemAcceptance:itemTreeCheckItemAcceptance,
 				dragThreshold:8,
