@@ -47,8 +47,8 @@
 
 		dojo.ready(function(){
 
-			// Map numberOfItems event to a _TreeNode.set("label")
-			dijit.byId("collectionsTree").mapEventToAttr(null, "numberOfItems", "label");
+			// Map numberOfItems property event to a _TreeNode.set("label",catTreeCustomLabel)
+			dijit.byId("collectionsTree").mapEventToAttr(null, "numberOfItems", "label", catTreeCustomLabel);
 			
 			//record the selection from tree 1
 			dojo.subscribe("collectionsTree", null, function(message){
@@ -204,7 +204,8 @@
 				dragThreshold:8,
 				betweenThreshold:5,
 				getIconClass:getIcon,
-				persist:false'></div>
+				persist:false'>
+			</div>
 		</td>
 	</tr>
 	</table>

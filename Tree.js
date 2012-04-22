@@ -167,15 +167,6 @@ define([
 			}
 		},
 
-		_setLabelAttr: function () {
-			// summary:
-			//		Set the tree node label text
-			// tags:
-			//		private
-			var label = this.tree.getLabel(this.item);
-			domProp.set(this.labelNode, "innerHTML", label );
-		},
-		
 		_toggleCheckBox: function (){
 			// summary:
 			//		Toggle the current checkbox checked attribute and update the model
@@ -350,7 +341,7 @@ define([
 			// item:
 			//		A valid data item
 			// attr:
-			//		Attribute name
+			//		Attribute/event name
 			// value:
 			//		New value of the item attribute
 			// tags:
@@ -359,11 +350,19 @@ define([
 			var nodeProp = this._eventAttrMap[attr];
 			if (nodeProp) {
 				var identity = this.model.getIdentity(item),
-						nodes = this._itemNodesMap[identity],
-						request = {};
+						nodes    = this._itemNodesMap[identity],
+						request  = {};
 
 				if (nodes){
-					request[nodeProp] = value;
+					if (nodeProp.value) {
+						if (lang.isFunction(nodeProp.value)) {
+							request[nodeProp.attribute] = nodeProp.value(item, nodeProp.attribute, value);
+						} else {
+							request[nodeProp.attribute] = nodeProp.value;
+						}
+					} else {
+						request[nodeProp.attribute] = value;
+					}
 					array.forEach(nodes, function (node){
 							node.set(request);
 						}, this);
@@ -480,6 +479,39 @@ define([
 			return style;
 		},
 
+		mixinEvent: function (/*data.Item*/ item, /*String*/ event, /*AnyType*/ value) {
+			// summary:
+			//		Mixin a user generated event into the tree event stream. This method
+			//		allows users to inject events as if they came from the model.
+			// item:
+			//		A valid data item
+			// event:
+			//		Event/attribute name. An entry in the event mapping table must be present.
+			//		(see mapEventToAttr())
+			// value:
+			//		Value to be assigned to the mapped _TreeNode attribute.
+			// tag:
+			//		public
+			
+			if (this.model.isItem(item) && this._eventAttrMap[event]) {
+				this._onItemChange(item, event, value);
+				this.onEvent(item, event, value);
+			}
+		},
+
+		onEvent: function (/*===== item, event, value =====*/) {
+			// summary:
+			//		Callback when an event was succesfully mixed in.
+			// item:
+			//		A valid data item
+			// event:
+			//		Event/attribute name.
+			// value:
+			//		Value assigned to the mapped _TreeNode attribute.
+			// tags:
+			//		callback
+		},
+		
 		postCreate: function () {
 			// summary:
 			//		Handle any specifics related to the tree and model after the
@@ -526,25 +558,34 @@ define([
 		// =======================================================================
 		// Misc helper functions/methods
 
-		mapEventToAttr: function (/*String*/ oldAttr, /*String*/ attr, /*String*/ mapping) {
+		mapEventToAttr: function (/*String*/ oldAttr, /*String*/ attr, /*String*/ nodeAttr, /*anything?*/ value) {
 			// summary:
-			//		Add an event mapping to the mapping table.   Any special attributes from
-			//		the model such as: 'labelAttr' or 'checkedAttr', and any internal events
-			//		like '_styling_' must be mapped to one of the Tree node attributes.
+			//		Add an event mapping to the mapping table.
+			//description:
+			//		Any event, triggered by the model or some other extension, can be
+			//		mapped to a _TreeNode attribute resulting a 'set' request for the
+			//		associated _TreeNode attribute.
 			// oldAttr:
 			//		Original attribute name. If present in the mapping table it is deleted
 			//		and replace with 'attr'.
 			// attr:
-			//		Attribute name being mapped.
-			// mapping:
-			//		Mapped attribute name
+			//		Attribute/event name that needs mapping.
+			// nodeAttr:
+			//		Name of a _TreeNode attribute to which 'attr' is mapped.
+			// value:
+			//		If specified the value to be assigned to the _TreeNode attribute. If
+			//		value is a function the function is called as: 
+			//
+			//			function(item, nodeAttr, newValue)
+			//
+			//		and the result returned is assigned to the _TreeNode attribute.
 			
-			if (lang.isString(attr) && lang.isString(mapping)) {
-				if (attr.length && mapping.length) {
+			if (lang.isString(attr) && lang.isString(nodeAttr)) {
+				if (attr.length && nodeAttr.length) {
 					if (oldAttr) {
 						delete this._eventAttrMap[oldAttr];
 					}
-					this._eventAttrMap[attr] = mapping;
+					this._eventAttrMap[attr] = {attribute: nodeAttr, value: value};
 				}
 			}
 		},
