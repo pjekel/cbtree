@@ -47,19 +47,22 @@
 
 		dojo.ready(function(){
 
+			// Map numberOfItems event to a _TreeNode.set("label")
+			dijit.byId("collectionsTree").mapEventToAttr(null, "numberOfItems", "label");
+			
 			//record the selection from tree 1
-			dojo.subscribe("myTree", null, function(message){
+			dojo.subscribe("collectionsTree", null, function(message){
 				if(message.event=="execute"){
-					console.log("Tree1 Select: ",dijit.byId("myTree").store.getLabel(message.item));
-					lastSelected=selected["myTree"]=message.item;
+					console.log("Tree1 Select: ",dijit.byId("collectionsTree").model.getLabel(message.item));
+					lastSelected=selected["collectionsTree"]=message.item;
 				}
 			});
 
 			//record the selection from tree 2
-			dojo.subscribe("myTree2", null, function(message){
+			dojo.subscribe("itemTree", null, function(message){
 				if(message.event=="execute"){
-					console.log("Tree2 Select: ",dijit.byId("myTree2").store.getLabel(message.item));
-					lastSelected=selected["myTree2"]=message.item;
+					console.log("Tree2 Select: ",dijit.byId("itemTree").model.getLabel(message.item));
+					lastSelected=selected["itemTree"]=message.item;
 				}
 			});
 
@@ -81,7 +84,6 @@
 					var currentTotal = myStore.getValues(p, "numberOfItems")[0];
 					myStore.setValue(p, "numberOfItems", ++currentTotal);
 				}
-
 			});
 		});
 
@@ -112,7 +114,7 @@
 		}
 
 		function dndAccept(source,nodes){
-			return this.tree.id != "myTree";
+			return this.tree.id != "collectionsTree";
 		}
 
 		function getIcon(item){
@@ -156,8 +158,8 @@
 		</td>
 		<td>
 			<h2>Items: </h2>
-			<p>List of Items to be categorized<p>
-				<div data-dojo-id="c2" data-dojo-type="dojo.dnd.Source" class="container" style="height:100px; overflow:auto;">
+			<p>List of Items to be categorized</p>
+			<div data-dojo-id="c2" data-dojo-type="dojo.dnd.Source" class="container" style="height:100px; overflow:auto;">
 				<div class="dojoDndItem" id="1001">Apple</div>
 				<div class="dojoDndItem" id="1002">Orange</div>
 				<div class="dojoDndItem" id="1003">Banana</div>
