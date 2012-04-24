@@ -51,6 +51,21 @@
 	background-position: -80px;
 }
 
+.nihilo .cbtreeCheckBoxReadOnly {
+	/* ReadOnly */
+	background-position: -64px;
+}
+
+.nihilo .cbtreeCheckBoxCheckedReadOnly {
+	/* ReadOnly but checked */
+	background-position: -48px;
+}
+
+.nihilo .cbtreeCheckBoxMixedReadOnly {
+	/* ReadOnly & mixed */
+	background-position: -80px;
+}
+
 .nihilo .cbtreeCheckBoxHover {
 	/* hovering over an unchecked enabled checkbox */
 	background-position: -112px;

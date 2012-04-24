@@ -51,6 +51,21 @@
 	background-position: -80px;
 }
 
+.tundra .cbtreeCheckBoxReadOnly {
+	/* ReadOnly */
+	background-position: -64px;
+}
+
+.tundra .cbtreeCheckBoxCheckedReadOnly {
+	/* readOnly but checked */
+	background-position: -48px;
+}
+
+.tundra .cbtreeCheckBoxMixedReadOnly {
+	/* ReadOnly & mixed */
+	background-position: -80px;
+}
+
 .tundra .cbtreeCheckBoxHover {
 	/* hovering over an unchecked enabled checkbox */
 	background-position: -112px;

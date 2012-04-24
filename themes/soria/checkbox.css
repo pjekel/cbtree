@@ -51,6 +51,21 @@
 	background-position: -80px;
 }
 
+.soria .cbtreeCheckBoxReadOnly {
+	/* ReadOnly */
+	background-position: -64px;
+}
+
+.soria .cbtreeCheckBoxCheckedReadOnly {
+	/* ReadOnly but checked */
+	background-position: -48px;
+}
+
+.soria .cbtreeCheckBoxMixedReadOnly {
+	/* ReadOnly & mixed */
+	background-position: -80px;
+}
+
 .soria .cbtreeCheckBoxHover {
 	/* hovering over an unchecked enabled checkbox */
 	background-position: -112px;

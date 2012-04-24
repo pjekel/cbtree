@@ -46,6 +46,21 @@
 	background-position: -48px;
 }
 
+.claro .cbtreeCheckBoxMixedReadOnly {
+	/* checked & mixed */
+	background-position: -80px;
+}
+
+.claro .cbtreeCheckBoxReadOnly {
+	/* disabled */
+	background-position: -64px;
+}
+
+.claro .cbtreeCheckBoxCheckedReadOnly {
+	/* disabled but checked */
+	background-position: -48px;
+}
+
 .claro .cbtreeCheckBoxMixedDisabled {
 	/* checked & mixed */
 	background-position: -80px;
@@ -65,19 +80,3 @@
 	/* checked & mixed */
 	background-position: -128px;
 }
-
-.claro .cbtreeCheckBoxReadOnly {
-	/* read-only */
-	background-position: -160px;
-}
-
-.claro .cbtreeCheckBoxCheckedReadOnly {
-	/* checked read-only */
-	background-position: -144px;
-}
-
-.claro .cbtreeCheckBoxMixedReadOnly {
-	/* read-only */
-	background-position: -176px;
-}
-
