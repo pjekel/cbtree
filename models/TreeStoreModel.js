@@ -190,7 +190,7 @@ define([
 					aspect.after(store, "onNew", lang.hitch(this, "onNewItem"), true),
 					aspect.after(store, "onDelete", lang.hitch(this, "onDeleteItem"), true),
 					aspect.after(store, "onSet", lang.hitch(this, "onSetItem"), true),
-					aspect.after(store, "onRoot", lang.hitch(this, "onRootChange"), true),
+					aspect.after(store, "onRoot", lang.hitch(this, "onRootChange"), true)
 				]);
 			}
 			this._checkedChildrenAttrs = this._diffArrays( this.childrenAttrs, this.excludeChildrenAttrs );
@@ -207,6 +207,8 @@ define([
 			var h;
 			while(h = this.connects.pop()){ h.remove(); }
 			// TODO: should cancel any in-progress processing of getRoot(), getChildren()
+
+			this.store = null;
 		},
 
 		// =======================================================================
@@ -693,6 +695,10 @@ define([
 				{
 					this.onDataValidated();
 				}
+			} 
+			else 
+			{
+				this.store.setValidated(false);
 			}
 		},
 
