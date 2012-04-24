@@ -135,18 +135,20 @@
 		and clicking or Double Clicking a leaf node will log a message to the console.
 	</p>
 
-	<div id="mytree3" data-dojo-type="cbtree.Tree" data-dojo-props='store:continentStore, query:{type:"continent"},
+	<div id="mytree3" data-dojo-type="cbtree.Tree" data-dojo-props='model:continentModel, query:{type:"continent"},
 		label:"Continents", openOnClick:false, openOnDblClick:true,
 		autoExpand:true, onLoad:function(){ console.log("loaded mytree3 (third tree)"); }'>
 		<script type="dojo/method" data-dojo-event="getLabelStyle" data-dojo-args="item,opened">
-			if(item && continentStore.getValue(item,"type") == "continent"){
-				return {color: "red"};
-			}else{
-				return {color: "green"};
+			if(!item.root) {
+				if(item && continentStore.getValue(item,"type") == "continent"){
+					return {color: "red"};
+				}else{
+					return {color: "green"};
+				}
 			}
 		</script>
 		<script type="dojo/method" data-dojo-event="getIconStyle" data-dojo-args="item,opened">
-			if(item && continentStore.getValue(item,"type") == "continent"){
+			if(item && !item.root && continentStore.getValue(item,"type") == "continent"){
 				return {
 					backgroundImage: "url('../../dijit/tests/images/flatScreen.gif')",
 					height: "32px",
@@ -157,10 +159,10 @@
 			}
 		</script>
 		<script type="dojo/method" data-dojo-event="getIconClass" data-dojo-args="item, opened">
-	       if(!item || continentStore.getValue(item, "type") != "continent")
+			if(!item || (item.root || continentStore.getValue(item, "type") != "continent"))
 				return (!item || this.model.mayHaveChildren(item)) ? (opened ? "dijitFolderOpened" : "dijitFolderClosed") : "dijitLeaf"
-	       	else
-	       		return "";
+			else
+				return "";
 		</script>
 		<script type="dojo/method" data-dojo-event="getTooltip" data-dojo-args="item,opened">
 			return item && ("Tooltip for " + this.model.getLabel(item));
