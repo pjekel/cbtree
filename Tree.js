@@ -15,7 +15,6 @@ define([
 	"dojo/_base/array",
 	"dojo/_base/declare",
 	"dojo/_base/event",
-	"dojo/_base/kernel", 
 	"dojo/_base/lang", 
 	"dojo/_base/window",
 	"dojo/dom-construct",
@@ -23,11 +22,9 @@ define([
 	"dojo/text!./templates/cbtreeNode.html",
 	"dijit/registry",
 	"dijit/Tree",
-	"./CheckBox",
-	"./models/TreeStoreModel",
-	"./models/ForestStoreModel"
-], function (array, declare, event, kernel, lang, win, domConstruct, domProp, NodeTemplate, registry, Tree, 
-							CheckBox, TreeStoreModel, ForestStoreModel) {
+	"./CheckBox"
+], function (array, declare, event, lang, win, domConstruct, domProp, NodeTemplate, registry, Tree, 
+							CheckBox) {
 
 	var TreeNode = declare([Tree._TreeNode], {
 		// templateString: String
@@ -194,6 +191,7 @@ define([
 			//
 			if (this._checkbox) {
 				this._checkbox.destroy();
+				this._checkbox = null;
 			}
 			this.inherited(arguments);
 		},
@@ -214,15 +212,12 @@ define([
 			if (tree.checkBoxes === true) {
 				this._createCheckBox(tree._multiState);
 			}
-			// See if Tree styling is enabled and if we need to look for a custom icon
-			// amongst the item attributes.
+			// If Tree styling is loaded and the model has its iconAttr set go see if
+			// there is a custom icon amongst the item attributes.
 			if (tree._hasStyling && tree._iconAttr) {
 				var itemIcon = tree.get("icon", this.item);
-				if (!itemIcon || !itemIcon.baseClass) {
-					itemIcon = tree.model.getIcon(this.item);
-					if (itemIcon) {
-						this.tree.set("icon", itemIcon, this.item);
-					}
+				if (itemIcon) {
+					this.set("_icon_",itemIcon);
 				}
 			}
 			// Just in case one is available, set the tooltip.
@@ -230,11 +225,7 @@ define([
 			this.inherited(arguments);
 		}
 
-		// =======================================================================
-		// Misc TreeNode helper functions/methods
-
 	});	/* end declare() _TreeNode*/
-
 
 	return declare([Tree], {
 
@@ -299,7 +290,7 @@ define([
 			//		private
 
 			args["widget"] = this._customWidget;		/* Mixin the custom widget */
-			if (this._treeStyling) {
+			if (this._hasStyling && this._icon) {
 				args["icon"] = this._icon;
 			}
 			return new TreeNode(args);
@@ -356,7 +347,7 @@ define([
 				if (nodes){
 					if (nodeProp.value) {
 						if (lang.isFunction(nodeProp.value)) {
-							request[nodeProp.attribute] = nodeProp.value(item, nodeProp.attribute, value);
+							request[nodeProp.attribute] = lang.hitch(this, nodeProp.value)(item, nodeProp.attribute, value);
 						} else {
 							request[nodeProp.attribute] = nodeProp.value;
 						}
@@ -448,11 +439,9 @@ define([
 			throw new Error(this.moduleName+"::_setWidgetAttr(): " + message);
 		},
 
-		onCheckBoxClick: function (/*data.item*/ item, /*treeNode*/ treeNode, /*Event*/ evt) {
-			// summary:
-			//		Callback when a checkbox on a tree node is clicked.
-			// tags:
-			//		callback
+		destroy: function() {
+			this.model = null;
+			this.inherited(arguments);
 		},
 		
 		getIconStyle:function (/*data.item*/ item, /*Boolean*/ opened) {
@@ -499,6 +488,13 @@ define([
 			}
 		},
 
+		onCheckBoxClick: function (/*data.item*/ item, /*treeNode*/ treeNode, /*Event*/ evt) {
+			// summary:
+			//		Callback when a checkbox on a tree node is clicked.
+			// tags:
+			//		callback
+		},
+		
 		onEvent: function (/*===== item, event, value =====*/) {
 			// summary:
 			//		Callback when an event was succesfully mixed in.
@@ -519,10 +515,8 @@ define([
 			// description:
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
-
-			// For backward compatability with dijit Tree V1.0 only.
-			var model = this.model || this._store2model();
-
+			var model = this.model;
+			
 			if (this.checkBoxes === true) {
 				if (!this._modelOk()) {
 					throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and/or setChecked().");
@@ -537,14 +531,6 @@ define([
 				// like set("checked",true)
 				
 				this.mapEventToAttr(null,(this._checkedAttr || "checked"), "_checked_");
-
-				// See is Tree styling (./TreeStyling.js) is loaded...
-				if (this._hasStyling) {
-					this.mapEventToAttr(null, "_styling_", "styling");
-					if (this._iconAttr) {
-						this.mapEventToAttr(null, this._iconAttr, "icon");
-					}
-				}
 				model.validateData();
 			}
 			// Monitor any changes to the models label attribute and add the current
@@ -593,68 +579,17 @@ define([
 		_modelOk: function () {
 			// summary:
 			//		Test if the model has the minimum required feature set, that is,
-			//		model.getChecked() and model.setChecked(). In addition,  if Tree
-			//		Styling is enabled and the model has its 'iconAttr' property set
-			//		the model must also provide support for getIcon().
+			//		model.getChecked() and model.setChecked().
 			// tags:
 			//		private
 
 			if ((this.model.getChecked && lang.isFunction( this.model.getChecked )) &&
 					(this.model.setChecked && lang.isFunction( this.model.setChecked ))) {
-
-				// If styling is enabled and the model specified an icon attribute it
-				// must also provide support for the getIcon() method.
-				this._iconAttr = this.model.iconAttr;
-
-				if (this._hasStyling && this._iconAttr) {
-					if (!this.model.getIcon || !lang.isFunction(this.model.getIcon)) {
-						console.warn(this.moduleName+"::_modelOk(): model has 'iconAttr' set but does not provide support for getIcon().");
-						this._iconAttr = null;
-					}
-				}
 				return true;
 			}
 			return false;
-		},
-		
-		_store2model: function(){
-			// summary:
-			//		User specified a store&query rather than model, so create model from
-			//		store/query
-			//
-			//		NOTE:	This functionality is provided for compatability with the default
-			//					dijit tree and to pass unit testing only. (will be removed in 2.0). 
-			// tags:
-			//		private
-			
-			this._v10Compat = true;
-			kernel.deprecated(this.moduleName+": from version 2.0, should specify a model object rather than a store/query");
-
-			var modelParams = {
-				id: this.id + "_ForestStoreModel",
-				store: this.store,
-				query: this.query,
-				childrenAttrs: this.childrenAttr
-			};
-
-			// Only override the model's mayHaveChildren() method if the user has specified an override
-			if(this.params.mayHaveChildren){
-				modelParams.mayHaveChildren = lang.hitch(this, "mayHaveChildren");
-			}
-
-			if(this.params.getItemChildren){
-				modelParams.getChildren = lang.hitch(this, function(item, onComplete, onError){
-					this.getItemChildren((this._v10Compat && item === this.model.root) ? null : item, onComplete, onError);
-				});
-			}
-			this.model = new ForestStoreModel(modelParams);
-
-			// For backwards compatibility, the visibility of the root node is controlled by
-			// whether or not the user has specified a label
-			this.showRoot = Boolean(this.label);
-			return this.model;
 		}
-		
+				
 	});	/* end declare() Tree */
 
 });	/* end define() */
