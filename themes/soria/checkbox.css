@@ -11,7 +11,7 @@
  *					hover 	 - checked
  *							 - unchecked
  *							 - mixed
-*/
+ */
 .soria .cbtreeCheckBox {
 	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
 	background-repeat: no-repeat;

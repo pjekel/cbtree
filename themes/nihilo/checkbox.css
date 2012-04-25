@@ -11,9 +11,10 @@
  *					hover 	 - checked
  *							 - unchecked
  *							 - mixed
-*/
+ */
+
 .nihilo .cbtreeCheckBox {
-	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
+ 	background-image: url('images/spriteCheckbox.gif');
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;

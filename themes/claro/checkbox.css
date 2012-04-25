@@ -46,7 +46,7 @@
 	background-position: -48px;
 }
 
-.claro .cbtreeCheckBoxMixedReadOnly {
+.claro .cbtreeCheckBoxMixedDisabled {
 	/* checked & mixed */
 	background-position: -80px;
 }
@@ -61,7 +61,7 @@
 	background-position: -48px;
 }
 
-.claro .cbtreeCheckBoxMixedDisabled {
+.claro .cbtreeCheckBoxMixedReadOnly {
 	/* checked & mixed */
 	background-position: -80px;
 }
