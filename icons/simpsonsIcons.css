@@ -1,7 +1,7 @@
 /*
  *  Sample cbtree custom node icon CSS
  *
- *  Usage:  See README
+ *  Usage:  See README.md
  *
  */
 
@@ -14,54 +14,54 @@
 	padding: 0;
 }
 
-.lisa {
+.simpsonsIcons.lisa {
 	background-position: -0px;
 }
 
-.bart {
+.simpsonsIcons.bart {
 	background-position: -32px;
 }
 
-.homer {
+.simpsonsIcons.homer {
 	background-position: -64px;
 }
-.marge {
+
+.simpsonsIcons.marge {
 	background-position: -96px;
 }
 
-.maggie {
+.simpsonsIcons.maggie {
 	background-position: -128px;
 }
 
-.abe {
+.simpsonsIcons.abe {
 	background-position: -160px;
 }
 
-.flanders {
+.simpsonsIcons.flanders {
 	background-position: -192px;
 }
 
-.rod {
+.simpsonsIcons.rod {
 	background-position: -224px;
 }
 
-.todd {
+.simpsonsIcons.todd {
 	background-position: -256px;
 }
 
-.selma {
+.simpsonsIcons.selma {
 	background-position: -288px;
 }
 
-.patty {
+.simpsonsIcons.patty {
 	background-position: -320px;
 }
 
-.jacqueline {
+.simpsonsIcons.jacqueline {
 	background-position: -352px;
 }
 
-.mona {
+.simpsonsIcons.mona {
 	background-position: -384px;
 }
-

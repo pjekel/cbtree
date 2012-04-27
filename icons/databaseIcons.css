@@ -1,7 +1,7 @@
 /*
  *  Sample cbtree custom node icon CSS
  *
- *  Usage:  See README
+ *  Usage:  See README.md
  */
 
 .databaseIcon {
@@ -13,14 +13,14 @@
 	padding: 0;
 }
 
-.databaseIconTerminal {
+.databaseIcon.databaseIconTerminal {
 	background-position: -0px;
 }
 
-.databaseIconCollapsed {
+.databaseIcon.databaseIconCollapsed {
 	background-position: -16px;
 }
 
-.databaseIconExpanded {
+.databaseIcon.databaseIconExpanded {
 	background-position: -32px;
 }

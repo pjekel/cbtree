@@ -1,7 +1,7 @@
 /*
  *  Sample cbtree custom node icon CSS
  *
- *  Usage:  See README
+ *  Usage:  See README.md
  *
  */
 
@@ -14,42 +14,42 @@
 	padding: 0;
 }
 
-.networkIconTerminal {
+.networkIcon.networkIconTerminal {
 	background-position: -0px;
 }
 
-.networkIconCollapsed {
+.networkIcon.networkIconCollapsed {
 	background-position: -16px;
 }
 
-.networkIconExpanded {
+.networkIcon.networkIconExpanded {
 	background-position: -32px;
 }
 
-.networkIconCollapsed_0,
-.networkIconExpanded_0 {
+.networkIcon.networkIconCollapsed_0,
+.networkIcon.networkIconExpanded_0 {
 	background-position: -48px;
 }
 
-.networkIconCollapsed_1 {
+.networkIcon.networkIconCollapsed_1 {
 	background-position: -64px;
 }
-.networkIconExpanded_1 {
+.networkIcon.networkIconExpanded_1 {
 	background-position: -80px;
 }
 
-.networkIconCollapsed_2 {
+.networkIcon.networkIconCollapsed_2 {
 	background-position: -96px;
 }
 
-.networkIconExpanded_2 {
+.networkIcon.networkIconExpanded_2 {
 	background-position: -112px;
 }
 
-.networkIconCollapsed_3 {
+.networkIcon.networkIconCollapsed_3 {
 	background-position: -16px;
 }
 
-.networkIconExpanded_3 {
+.networkIcon.networkIconExpanded_3 {
 	background-position: -32px;
 }

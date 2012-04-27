@@ -1,7 +1,7 @@
 /*
  *  Sample cbtree custom node icon CSS
  *
- *  Usage:  See README
+ *  Usage:  See README.md
  *
  */
 
@@ -14,14 +14,14 @@
 	padding: 0;
 }
 
-.indentIconTerminal {
+.indentIcon.indentIconTerminal {
 	background-position: -0px;
 }
 
-.indentIconCollapsed {
+.indentIcon.indentIconCollapsed {
 	background-position: -16px;
 }
 
-.indentIconExpanded {
+.indentIcon.indentIconExpanded {
 	background-position: -32px;
 }

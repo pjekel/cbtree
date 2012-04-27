@@ -1,7 +1,7 @@
 /*
  *  Sample cbtree custom node icon CSS
  *
- *  Usage:  See README
+ *  Usage:  See README.md
  *
  */
 
@@ -14,14 +14,14 @@
 	padding: 0;
 }
 
-.calendarIconTerminal {
+.calendarIcon.calendarIconTerminal {
 	background-position: -0px;
 }
 
-.calendarIconCollapsed {
+.calendarIcon.calendarIconCollapsed {
 	background-position: -16px;
 }
 
-.calendarIconExpanded {
+.calendarIcon.calendarIconExpanded {
 	background-position: -32px;
 }
