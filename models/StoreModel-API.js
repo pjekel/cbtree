@@ -19,9 +19,10 @@ define([
 ], function (array, lang, has, TreeStoreModel) {
 
 	// Add cbTree model API to the available features list 
-	has.add("cbTree-storeModel-API", true);
+	has.add("cbtree-storeModel-API", true);
 
 	lang.extend(TreeStoreModel, {
+
 		// =======================================================================
 		// Private Methods related to checked states
 
@@ -355,8 +356,15 @@ define([
 
 		fetchItem: function (/*String|Object*/ args, /*String?*/ identAttr){
 			// summary:
+			//		Get the store item that matches args. Parameter args is either an
+			//		object or a string.
 			// args:
+			//		An object or string used to query the store. If args is a string its
+			//		value is assigned to the store identifier property in the query.
 			// identAttr:
+			//		Optional attribute name. If specified, the attribute in args to be
+			//		used as the identifier otherwise the default store identifier is
+			//		used.
 			// tag:
 			//		public
 			
@@ -380,9 +388,9 @@ define([
 			//		state. This method provides a simplified interface to the data stores
 			//		fetch() method.
 			//	 query:
-			//		A query object or string. If query is a string the label attribute of
-			//		the store is used as the query attribute and the query string assigned
-			//		as the associated value.
+			//		A query object or string. If query is a string the identifier attribute
+			//		of the store is used as the query attribute and the string assigned as
+			//		the associated value.
 			//	onComplete:
 			//		 User specified callback method which is called on completion with an
 			//		array of store items that matched the query argument. Method onComplete
@@ -396,11 +404,12 @@ define([
 			// tag:
 			//		public
 			
+			var storeQuery = this._anyToQuery( query, null );
 			var storeItems = [];
 				
-			if (lang.isObject(query)){
+			if (lang.isObject(storeQuery)){
 				this.store.fetch({	
-					query: query,
+					query: storeQuery,
 					//	Make sure ALL items are searched, not just top level items.
 					queryOptions: { deep: true },
 					onItem: function (storeItem, request) {
@@ -444,10 +453,12 @@ define([
 			// summary:
 			//		Add an existing item to the parentItem by reference.
 			// childItem:
-			//		Child item to be added to the parents list of children.
+			//		Child item to be added to the parents childrens list by reference.
 			// parentItem:
 			//		Parent item.
 			// childrenAttr:
+			//		Property name of the parentItem identifying the childrens list to
+			//		which the reference is added.
 			// tag:
 			//		public
 
@@ -517,7 +528,8 @@ define([
 			//		new item as a top level item regardsless if a parent is specified or
 			//		not.
 			// args:
-			//		Object defining the new item properties.
+			//		A javascript object defining the initial content of the item as a set
+			//		of JavaScript 'property name: value' pairs.
 			// parent:
 			//		Optional, a valid store item that will serve as the parent of the new
 			//		item. (see also newItem())
@@ -579,6 +591,14 @@ define([
 
 		_anyToQuery: function (/*String|Object*/ args, /*String?*/ attribute){
 			// summary:
+			// args:
+			// 		Query object, if args is a string it value is assigned to the store
+			//		identifier property in the query.
+			// attribute:
+			//		Optional attribute name.  If specified, the attribute in args to be
+			//		used as its identifier. If an external item is dropped on the tree,
+			//		the new item may no have the same identifier property as all store
+			//		items do.
 			// tag:
 			//		private
 
@@ -590,11 +610,13 @@ define([
 				if (lang.isString(args)) {
 					query[identAttr] = args;
 					return query;
-				} else if (lang.isObject(args)){
+				} 
+				if (lang.isObject(args)){
+					lang.mixin( query, args );
 					if (args[objAttr]) {
 						query[identAttr] = args[objAttr]
-						return query;
 					}
+					return query;
 				}
 			}
 			return null;

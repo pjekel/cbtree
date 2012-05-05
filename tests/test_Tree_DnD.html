@@ -72,21 +72,14 @@
 					parent: lastSelected,
 					attribute: "children"
 				};
-
-				//store.newItem({name: dojo.byId('newCat').value, id:globalId++, numberOfItems:dojo.byId('numItems').value}, pInfo);
 				myStore.newItem({name: dojo.byId('newCat').value, numberOfItems:0,id:globalId++}, pInfo);
 			});
 
-			//since we don't have a server, we're going to connect to the store and do a few things the server/store combination would normal be taking care of for us
-			dojo.connect(myStore, "onNew", function(item, pInfo){
-				var p = pInfo && pInfo.item;
-				if(p){
-					var currentTotal = myStore.getValues(p, "numberOfItems")[0];
-					myStore.setValue(p, "numberOfItems", ++currentTotal);
-				}
+			dojo.connect(itemModel, "onChildrenChange", function(item, children){
+				var currentTotal = (item.children ? item.children.length : 0) + (item.items ? item.items.length : 0);
+				myStore.setValue(item, "numberOfItems", currentTotal);
 			});
 		});
-
 
 		//create a custom label for tree one consisting of the label property plus the value of the numberOfItems Column
 		function catTreeCustomLabel(item){
@@ -114,7 +107,7 @@
 		}
 
 		function dndAccept(source,nodes){
-			return this.tree.id != "collectionsTree";
+			return this.tree.id != "myTree";
 		}
 
 		function getIcon(item){
@@ -189,7 +182,8 @@
 			<div id="collectionsTree" data-dojo-type="cbtree.Tree" data-dojo-props='"class":"container", model:catModel,
 				getLabel:catTreeCustomLabel, betweenThreshold:5,
 				checkAcceptance:dndAccept, checkItemAcceptance:collectionTreeCheckItemAcceptance, getIconClass:getIcon,
-				persist:false'></div>
+				persist:false'>
+			</div>
 		</td>
 		<td>
 			<h2>Collection</h2>

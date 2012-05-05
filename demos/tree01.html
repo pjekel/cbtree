@@ -33,18 +33,16 @@
       <script type="text/javascript">
 
       require([
-        "dojo/_base/array",
         "dojo/_base/connect",
-        "dojo/dom",
         "dojo/data/ItemFileWriteStore",
         "cbtree/Tree",										// Checkbox tree
         "cbtree/TreeStyling",							// Tree styling extensions
         "cbtree/models/ForestStoreModel"	// ForestStoreModel
-        ], function( array, connect, dom, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel) {
+        ], function( connect, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel) {
 
           function checkBoxClicked( item, nodeWidget, evt ) {
             var newState = nodeWidget.get("checked" );
-            var  label    = this.getLabel(item);
+            var label    = this.getLabel(item);
             
             if( newState ) {
               tree.set("iconStyle", {border:"solid"}, item );

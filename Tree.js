@@ -41,35 +41,30 @@ define([
 		//		Indicates if the checkbox widget supports the toggle function.
 		_toggle: true,
 		
-		// _widget: [private] Function
+		// _widget: [private] Object
 		//		Specifies the widget to be instanciated for the tree node. The default
 		//		is the cbtree CheckBox widget.
-		_widget: CheckBox,
+		_widget: null,
 		
-		// _widgetArgs: [private] Object
-		//		Set of default attributes which will be passed to the checkbox or custom
-		//		widget constructor.
-		_widgetArgs: null,
-									 
 		constructor: function (args){
 			// summary:
 			//		If a custom widget is specified, it is used instead of the default
 			//		cbtree checkbox. Any optional arguments are appended to the default
-			//		widget argument list. (see _widgetArgs).
+			//		widget argument list.
 
-			var tree = args.tree;
-			
-			this._widgetArgs = { multiState: null, checked: true, value:'on' };
-			if (args.widget) {
-				this._widget = args.widget.widget;
-				if (args.widget.attr) {
-					for(var attr in args.widget.attr) {
-						this._widgetArgs[attr] = args.widget.attr[attr];
-					}
-				}
+			var checkBoxWidget = { type: CheckBox, target: 'INPUT', mixin: null, postCreate: null };
+			var widgetArgs     = { multiState: null, checked: undefined, value: 'on' };
+			var customWidget   = args.widget;
+
+			if (customWidget) {
+				lang.mixin( widgetArgs, customWidget.args );
+				lang.mixin(checkBoxWidget, customWidget);
 			}
+			checkBoxWidget.args = widgetArgs;
+			
 			// Test if the widget supports the toggle() method.
-			this._toggle = lang.isFunction (this._widget.prototype.toggle);
+			this._toggle = lang.isFunction (checkBoxWidget.type.prototype.toggle);
+			this._widget = checkBoxWidget;
 		},
 
 		_createCheckBox: function (/*Boolean*/ multiState) {
@@ -86,14 +81,26 @@ define([
 			//		private
 
 			var checked = this.tree.model.getChecked(this.item);
+			var widget  = this._widget;
+			var args    = widget.args;
+			
 			if (checked !== undefined) {
 				// Initialize the default checkbox/widget attributes.
-				this._widgetArgs.multiState = multiState;
-				this._widgetArgs.checked		= checked;
-				this._widgetArgs.value			= this.label;
-				
-				this._checkBox = new this._widget(this._widgetArgs);
-				domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
+				args.multiState = multiState;
+				args.checked		= checked;
+				args.value			= this.label;
+
+				if (lang.isFunction(widget.mixin)) {
+					lang.hitch(this, widget.mixin)(args);
+				}
+
+				this._checkBox = new widget.type( args );
+				if (this._checkBox) {
+					if (lang.isFunction(this._widget.postCreate)) {
+						lang.hitch(this._checkBox, this._widget.postCreate)(this);
+					}
+					domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
+				}
 			}
 			if (this._checkBox) {
 				if (this.isExpandable && this.tree.branchReadOnly) {
@@ -126,7 +133,7 @@ define([
 			// tags:
 			//		private extension
 
-			if (evt.target.nodeName == (this._widgetArgs.target || 'INPUT')) {
+			if (evt.target.nodeName == this._widget.target) {
 				var newState = this._checkBox.get("checked");
 				this.tree.model.setChecked(this.item, newState);
 				this.tree._onCheckBoxClick(this, newState, evt);
@@ -191,7 +198,7 @@ define([
 			//
 			if (this._checkbox) {
 				this._checkbox.destroy();
-				this._checkbox = null;
+				delete this._checkbox;
 			}
 			this.inherited(arguments);
 		},
@@ -279,7 +286,7 @@ define([
 		//		List of additional events (attribute names) the onItemChange() method
 		//		will act upon besides the _checkedAttr property value.	 Any internal
 		//		events are pre- and suffixed with an underscore like '_styling_'
-		_eventAttrMap: {},
+		_eventAttrMap: null,
 	 
 		_createTreeNode: function (args) {
 			// summary:
@@ -401,9 +408,11 @@ define([
 			// widget: 
 			//		An object or function. In case of an object, the object can have the
 			//		following properties:
-			//			widget:	 Function, the widget constructor.
-			//			attr:		 Object, arguments passed to the constructor (optional)
-			//			target:	 String, target nodename (optional)
+			//			type      :	Function, the widget constructor.
+			//			args      :	Object, arguments passed to the constructor (optional)
+			//			target    :	String, mouse click target nodename (optional)
+			//			mixin     :	Function, called prior to widget instantiation.
+			//			postCreate: Function, called after widget instantiation
 			// tag:
 			//		experimental
 			var customWidget = widget,
@@ -412,11 +421,11 @@ define([
 					proto;
 
 			if (lang.isString(widget)) {
-				return this._setWidgetAttr({ widget: widget });
+				return this._setWidgetAttr({ type: widget });
 			}
 
-			if (lang.isObject(widget) && widget.hasOwnProperty("widget")) {
-				customWidget = widget.widget;
+			if (lang.isObject(widget) && widget.hasOwnProperty("type")) {
+				customWidget = widget.type;
 				if (lang.isFunction (customWidget)) {
 					proto = customWidget.prototype;
 					if (proto && typeof proto[property] !== "undefined"){
@@ -434,7 +443,7 @@ define([
 					message = "argument is not a valid Widget";
 				}
 			} else {
-				message = "Object is missing required widget property";
+				message = "Object is missing required 'type' property";
 			}
 			throw new Error(this.moduleName+"::_setWidgetAttr(): " + message);
 		},
@@ -507,7 +516,14 @@ define([
 			// tags:
 			//		callback
 		},
-		
+
+		postMixInProperties: function(){
+			this._eventAttrMap = {};		/* Create event mapping object */
+			this._itemStyleMap = {};
+
+			this.inherited(arguments);
+		},
+
 		postCreate: function () {
 			// summary:
 			//		Handle any specifics related to the tree and model after the
@@ -516,7 +532,7 @@ define([
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
 			var model = this.model;
-			
+
 			if (this.checkBoxes === true) {
 				if (!this._modelOk()) {
 					throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and/or setChecked().");

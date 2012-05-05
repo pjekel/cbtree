@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head> 
+    <title>CheckBox Tree with Dijit ToogleButton </title>     
+<!--
+  This demo uses the dijit ToggleButton instead of the default cbtree multi-state
+  checkbox.
+-->
+
+     <style type="text/css">
+      @import "../../dijit/themes/claro/claro.css";
+      @import "../../dijit/themes/claro/document.css";
+      @import "../../dijit/tests/css/dijitTests.css";
+      @import "../themes/claro/claro.css";
+    </style>
+
+    <script type="text/javascript">
+      var dojoConfig = {
+            async: true,
+            parseOnLoad: true,
+            isDebug: false,
+            baseUrl: "../../",
+            packages: [
+              { name: "dojo",  location: "dojo" },
+              { name: "dijit", location: "dijit" },
+              { name: "cbtree",location: "cbtree" }
+            ]
+      };
+    </script>
+    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+  </head>
+    
+  <body class="claro">
+    <h1>Dijit CheckBox Tree - Mixin Widget: &lt;ToggleButton&gt;</h1>
+    <div id="CheckboxTree">  
+      <script type="text/javascript">
+        require([
+          "dojo/domReady",
+          "dojo/data/ItemFileWriteStore",
+          "dijit/form/ToggleButton",
+          "cbtree/Tree",                      // CheckBox Tree              
+          "cbtree/TreeStyling",               // CheckBox TreeStyling              
+          "cbtree/models/ForestStoreModel"    // Tree Forest Store Model
+          ], function( domReady, ItemFileWriteStore, ToggleButton, Tree, TreeStyling, ForestStoreModel ) {
+
+            var store = new ItemFileWriteStore( { url: "../datastore/Simpsons.json" });
+            var model = new ForestStoreModel( {
+                                store: store,
+                                query: {type: 'parent'},
+                                rootLabel: 'The Simpsons',
+                                checkedRoot: true
+                                }); 
+            var tree = new Tree( {  model: model,
+                                    id: "MyTree",
+                                    widget: { type: ToggleButton, 
+                                              args:{iconClass:'dijitCheckBoxIcon'}, 
+                                              mixin: function(args) {
+                                                        args['label'] = this.label;
+                                                      }
+                                            }
+                                    });
+            // Hide Labels and Icons for the entire tree.
+            tree.set("labelStyle", {display:'none'});
+            tree.set("iconStyle", {display:'none'});
+
+            domReady( function() {
+              tree.placeAt( "CheckboxTree" );
+            });
+          }
+        );
+      </script>
+    </div>
+  </body> 
+</html>

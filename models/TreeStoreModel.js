@@ -706,10 +706,18 @@ define([
 		// Inspecting items
 
 		fetchItemByIdentity: function(/*object*/ keywordArgs){
+			// summary:
+			//		Fetch a store item by identity
 			this.store.fetchItemByIdentity(keywordArgs);
 		},
 
 		getIcon: function(/*item*/ item){
+			// summary:
+			//		Get the icon for item from the store if the iconAttr property of the
+			//		model is set.
+			// item:
+			//		A valid dojo.data.store item.
+			
 			if (this.iconAttr) {
 				return this.store.getValue(item, this.iconAttr);
 			}
@@ -793,7 +801,8 @@ define([
 			//					newItem() will NOT create args as a top level item a.k.a a
 			//					root item.
 			// args:
-			//		Object defining the new item properties.
+			//		A javascript object defining the initial content of the item as a set
+			//		of JavaScript 'property name: value' pairs.
 			// parent:
 			//		Optional, a valid store item that will serve as the parent of the new
 			//		item.	 If ommitted,	the new item is automatically created as a top
@@ -802,7 +811,8 @@ define([
 			//		If specified the location in the parents list of child items.
 			// childrenAttr:
 			//		If specified the childrens list attribute to which the new item will
-			//		be added.
+			//		be added.   If ommitted, the first entry in the models childrenAttrs
+			//		property is used.
 			
 			var pInfo = {parent: parent, attribute: (childrenAttr ? childrenAttr : this.childrenAttrs[0])},
 					newItem;
@@ -907,7 +917,8 @@ define([
 
 		onDataValidated: function(){
 			// summary:
-			//		Callback for store validation completion.
+			//		Callback when store validation completion. Only called if strict
+			//		parent-child relationship is enabled.
 			// tag:
 			//		callback
 		},

@@ -21,7 +21,7 @@
       "dojo" : ">= 1.7",
       "dijit" : ">= 1.7"
   },
-  "keywords": [ "Dojo", "Dijit", "Tree", "Checkbox"],
+  "keywords": [ "Checkbox", "CheckboxTree", "Dijit", "Dojo", "Tree" ],
   "homepage": "http://thejekels.com",
   "dojoBuild": "cbtree.profile.js"
 }

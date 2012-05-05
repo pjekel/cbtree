@@ -59,7 +59,7 @@
           var tree = new Tree( {
                   model: model,
                   id: "MenuTree",
-                  widget: { widget: TriStateCheckBox, attr: { states:['mixed', true, false] }}
+                  widget: { type: TriStateCheckBox, args: { states:['mixed', true, false] }}
                   });
           tree.placeAt( "CheckboxTree" );
         });
