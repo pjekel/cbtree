@@ -30,5 +30,5 @@ it is important you read all the documentation provided as properties have been
 renamed and some properties have moved from the tree to the model and vice versa.
 
 <h2 id="basics">CheckBox Tree Documentaion</h2>
-The full [documentation set](./documentation/CheckBoxTree.md) can be found in the
+The full [documentation set](/documentation/CheckBoxTree.md) can be found in the
 documentation directory.
