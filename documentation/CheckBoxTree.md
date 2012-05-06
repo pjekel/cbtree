@@ -467,7 +467,7 @@ The following is a basic sample of how to create a model, associate the model
 with the tree and display the tree itself. In addition, the sample application
 connects the *onCheckBoxClick* event of the tree and as a result every time
 a checkbox is clicked the function *checkBoxClicked()* is called.
-```javascript
+```JavaScript
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
       <head> 
