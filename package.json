@@ -23,5 +23,6 @@
   },
   "keywords": [ "Checkbox", "CheckboxTree", "Dijit", "Dojo", "Tree" ],
   "homepage": "http://thejekels.com",
+  "icon":"http://thejekels.com/cbtree32.png",
   "dojoBuild": "cbtree.profile.js"
 }
