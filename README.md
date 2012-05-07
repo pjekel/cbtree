@@ -101,3 +101,8 @@ this new implementation it is important you read all the documentation provided
 as properties have been added, renamed and some properties have moved from the tree to
 the model and vice versa.
 
+<<<<<<< HEAD
+=======
+<h2 id="basics">CheckBox Tree Documentaion</h2>
+The full documentation set can be found in the /documentation directory. [test](documentation/CheckBoxTree.md)
+>>>>>>> cbtree/master
