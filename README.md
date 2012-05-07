@@ -100,4 +100,3 @@ features, properties and API's. If you plan on migrating from the old tree to
 this new implementation it is important you read all the documentation provided
 as properties have been added, renamed and some properties have moved from the tree to
 the model and vice versa.
-
