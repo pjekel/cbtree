@@ -10,7 +10,7 @@ The Store Model API can be loaded and used with both the TreeStoreModel as well 
 the ForestStoreModel.
 
 ### Loading the API ###
-The Store Model API is implemented as an extension to the [Store Models](./StoreModels.md)
+The Store Model API is implemented as an extension to the [Store Models](StoreModels.md)
 and as such needs to be loaded as a separate module. The following sample demonstrates how
 to load the Store Model API 
 
@@ -39,7 +39,7 @@ You can test the availability of the Store Model API using the command `has("cbt
       }
       
 
-<h2 id="apiFunctions">API Functions</h2>
+<h2 id="apiFunctions">Store Model API Functions</h2>
 ****************************************
 
 #### addReference( childItem, parentItem, childrenAttr ) ####
@@ -69,12 +69,15 @@ You can test the availability of the Store Model API using the command `has("cbt
 
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
-> the *query* argument is a string, the value is used to match store item
-> identifiers.
+> the *query* argument is a string, the value is used to match store items
+> identifier.
 
 *onComplete:* Function (optional)
 > If an onComplete callback is specified, the callback function will be called
-> just once, after the last storeItem has been updated as: *onComplete(matches, updates)*.
+> just once, after the last storeItem has been updated as: *onComplete(matches, updates)*
+> were *matches* equates to the total number of store items that matched the
+> query and *updates* equates to the number of store items that required an
+> update.
 
 *scope:* Object (optional)
 > If a scope object is provided, the function onComplete will be invoked in the
@@ -91,23 +94,23 @@ You can test the availability of the Store Model API using the command `has("cbt
 
 ******************************************
 #### detachFromRoot( storeItem ) ####
-> Detach item from the root by removing it from the stores top-level item list.
+> Detach item from the store root by removing it from the stores top-level item
+> list. Note: the store item is not deleted.
 
 *storeItem:* data.item
 > A valid dojo.data.store item.
 
 ******************************************
 #### fetchItem( query, identAttr ) ####
-> Get the store item that matches args. Parameter args is either an object or
-> a string.
+> Get the store item that matches *query*. Parameter *query* is either an object or a string.
 
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
-> the *query* argument is a string, the value is used to match store item
-> identifiers.
+> the *query* argument is a string, the value is used to match store items
+> identifier.
 
 *identAttr:* String (optional)
-> Attribute/property name. If specified and parameter *query* is an object,
+> Attribute/property name. If specified AND parameter *query* is an object,
 > the property in *query* to be used as the identifier otherwise the default
 > store identifier is used.
 
@@ -115,12 +118,12 @@ You can test the availability of the Store Model API using the command `has("cbt
 #### fetchItemsWithChecked( query, onComplete, scope ) ####
 > Get the list of store items that match the query and have a checked state,
 > that is, a property identified by the models *checkedAttr* property. 
-> (See [Model Properties](./StoreModels.md#properties))
+> (See [Model Properties](StoreModels.md#properties))
 
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
-> the *query* argument is a string, the value is used to match store item
-> identifiers.
+> the *query* argument is a string, the value is used to match store items
+> identifier.
 
 *onComplete:* Function (optional)
 > If an onComplete callback is specified, the callback function will be called
@@ -134,7 +137,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 
 ******************************************
 #### get( attribute ) ####
-> Provide the accessor/getter capabilities for the model.
+> Accessor, provide the getter capabilities for the model properties.
 
 *attribute:* String
 > The name of a model attribute/property whose value is to be returned.
@@ -142,7 +145,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 ******************************************
 #### getItemAttr( storeItem , attribute ) ####
 > Provide the getter capabilities for store items thru the model. The getItemAttr()
-> method strictly operates on store items not the model itself.
+> method strictly operates on store items not the model itself. Equivalent to *store.getValue()*
 
 *storeItem:* data.item
 > A valid dojo.data.store item.
@@ -153,12 +156,12 @@ You can test the availability of the Store Model API using the command `has("cbt
 ******************************************
 #### isRootItem( something ) ####
 > Returns true if *something* is a top-level item in the store otherwise false.
-> Please refer to section: [Store Root versus Tree Root](./StoreModels.md#storeRoot)
+> Please refer to section: [Store Root versus Tree Root](StoreModels.md#storeRoot)
 > for additional information.
 
 ******************************************
 #### newReferenceItem( args, parentItem, insertIndex, childrenAttr ) ####
-> Create a new top-level item and add it as a child to the parent by reference.
+> Create a new top-level item and add it as a child to the parentItem by reference.
 
 *args:*
 > A JavaScript object defining the initial content of the item as a set of
@@ -168,16 +171,16 @@ You can test the availability of the Store Model API using the command `has("cbt
 > A valid dojo.data.store item.
 
 *insertIndex:* Number (optional)
-> If specified, the location in the parents list of child items.
+> Zero based index, if specified the location in the parents list of child items.
 
 *childrenAttr:* String (optional)
-> Property name of the parentItem identifying the children's list from which the
-> reference is removed. If omitted, the first entry in the models *childrenAttrs*
+> Property name of the parentItem identifying the children's list to which the
+> new item is added. If omitted, the first entry in the models *childrenAttrs*
 > property is used.
 
 ******************************************
 #### removeReference( childItem, parentItem, childrenAttr ) ####
-> Remove a child reference from its parent. Only the references are removed,
+> Remove a child reference from its parent. Only the reference is removed,
 > the childItem is not delete.
 
 *childItem:* data.item
@@ -193,7 +196,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 
 ******************************************
 #### set( attribute, value ) ####
-> Provide the accessor/setter capabilities for the model.
+> Accessor, provide the setter capabilities for the model properties.
 
 *attribute:* String
 > The name of a model attribute/property whose value is to be updated.
@@ -204,7 +207,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 ******************************************
 #### setItemAttr( storeItem, attribute, value ) ####
 > Provide the setter capabilities for store items thru the model. The setItemAttr()
-> method strictly operates on store items not the model itself.
+> method strictly operates on store items not the model itself. Equivalent to *store.setValue()*
 
 *storeItem:* data.item
 > A valid dojo.data.store item.
@@ -221,12 +224,15 @@ You can test the availability of the Store Model API using the command `has("cbt
 
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
-> the *query* argument is a string, the value is used to match store item
-> identifiers.
+> the *query* argument is a string, the value is used to match store items
+> identifier.
 
 *onComplete:* Function (optional)
 > If an onComplete callback is specified, the callback function will be called
-> just once, after the last storeItem has been updated as: *onComplete(matches, updates)*.
+> just once, after the last storeItem has been updated as: *onComplete(matches, updates)*
+> were *matches* equates to the total number of store items that matched the
+> query and *updates* equates to the number of store items that required an
+> update.
 
 *scope:* Object (optional)
 > If a scope object is provided, the function onComplete will be invoked in the

@@ -142,7 +142,7 @@ In this example the store query returns all store items available.
 #### checkedRoot: ####
 > Boolean (false), If true, the root node will receive a checked state even
 > though it may not be a true entry in the store. This attribute is independent
-> of the showRoot attribute of the tree itself. If the tree attribute 'showRoot'
+> on the *showRoot* attribute of the tree itself. If the tree attribute *showRoot*
 > is set to false the checked state for the root will not show either.
 
 #### checkedStrict: ####
@@ -153,7 +153,7 @@ In this example the store query returns all store items available.
 > state. Note: If true, *deferItemLoadingUntilExpand* will be ignored.
 
 #### childrenAttrs: ####
-> String[] ('children'), One or more attribute names (attributes of a dojo.data item)
+> String[] ('children'), Array of one or more attribute names (attributes of a dojo.data item)
 > that specify that item's children.
 
 #### deferItemLoadingUntilExpand: ####
@@ -169,7 +169,7 @@ In this example the store query returns all store items available.
 
 #### iconAttr: ####
 > String (''), If set, identifies the data item attribute (property) whose value is
-> considered a tree node icon. (see [Tree Styling](./TreeStyling.md))
+> considered a tree node icon. (see [Tree Styling](TreeStyling.md))
 
 #### labelAttr: ####
 > String (''), If specified, get label for tree node from this attribute, rather
@@ -186,10 +186,11 @@ In this example the store query returns all store items available.
 #### normalize: ####
 > String (true), If true, the checked state of any non branch (leaf) checkbox is
 > normalized, that is, true or false. When normalization is enabled checkboxes
-> associated with tree leafs can never have a mixed state.
+> associated with tree leafs (e.g. nodes without children) can never have a mixed state.
 
 #### query: ####
-> Object (null), Specifies the set of children of the root item. For example: {type:'parent'}.
+> Object (null), A set of JavaScript 'property name: value' pairs used to identify
+> the children of the root item. For example: {type:'parent'}.
 > If not specified, the store identifier attribute is used to query the store.
 
 #### rootLabel: ####
@@ -205,7 +206,7 @@ In this example the store query returns all store items available.
 **************************************************
 The following is a list of the default functions available with the CheckBox Tree
 store models. 
-Additional functionality is available using the [Store Model API](./StoreModelAPI.md).
+Additional functionality is available using the [Store Model API](StoreModelAPI.md).
 
 *********************************************
 #### fetchItemByIdentity( keywordArgs ) ####
@@ -223,7 +224,7 @@ Additional functionality is available using the [Store Model API](./StoreModelAP
 *********************************************
 #### getChildren( parentItem, onComplete, onError, childrenLists  ) ####
 > Calls onComplete() with array of child items of given parent item,
-> all loaded.
+> all loaded. Note: Only the immediate descendents are returned.
 
 *parentItem:* data.item
 > A valid dojo.data.store item.
@@ -236,14 +237,14 @@ Additional functionality is available using the [Store Model API](./StoreModelAP
 > Called when an error occured.
 
 *childrenLists:* String[] (optional)
-> Array of property names of the *parentItem* identifying the childrens lists from
+> Array of property names of the *parentItem* identifying the children lists from
 > which the children are fetched. If omitted, all entries in the models *childrenAttrs*
 > property are used in which case all children are returned.
 
 *********************************************
 #### getIcon( item ) ####
-> Get the icon for item from the store if the *iconAttr* property of the model is
-> set.
+> If the *iconAttr* property of the model is set, get the icon for *item* from
+> the store otherwise *undefined* is returned.
 
 *item:* data.item
 > A valid dojo.data.store item.
@@ -266,7 +267,7 @@ Additional functionality is available using the [Store Model API](./StoreModelAP
 
 *********************************************
 #### getParents ( item ) ####
-> Get the parent(s) of a store item.	
+> Get the parent(s) of a store item. Returns an array of store items.	
 
 *item:* data.item
 > A valid dojo.data.store item.
@@ -285,12 +286,12 @@ Additional functionality is available using the [Store Model API](./StoreModelAP
 *********************************************
 #### isItem( something ) ####
 > Returns true is parameter *something* is a valid store item or, in case of a
-> Forest Store Model, the tree root.
+> Forest Store Model, the fabricated tree root.
 
 *********************************************
 #### isTreeRootChild ( item ) ####
-> Returns true if the item is a child of the tree root. Please refer to section: 
-> [Store Root versus Tree Root](./StoreModels.md#storeRoot) for additional
+> Returns true if the *item* is a child of the tree root. Please refer to section: 
+> [Store Root versus Tree Root](StoreModels.md#storeRoot) for additional
 > information.
 
 *item:* data.item
@@ -306,7 +307,7 @@ Additional functionality is available using the [Store Model API](./StoreModelAP
 *********************************************
 #### newItem ( args, parentItem, insertIndex, childrenAttr ) ####
 > Creates a new item. Note: Whenever a parentItem is specified the store will NOT
-> create *args* as a top-level store item. (See the [Store Model API](./StoreModelAPI.md#apiFunctions)
+> create *args* as a top-level store item. (See the [Store Model API](StoreModelAPI.md#apiFunctions)
 > function *newReferenceItem()* for additional information).
 
 *args:*
@@ -317,7 +318,7 @@ Additional functionality is available using the [Store Model API](./StoreModelAP
 > A valid dojo.data.store item.
 
 *insertIndex:* Number (optional)
-> If specified, the location in the parents list of child items.
+> Zero based index, If specified the location in the parents list of child items.
 
 *childrenAttr:* String (optional)
 > Property name of the parentItem identifying the childrens list to which the
@@ -326,25 +327,25 @@ Additional functionality is available using the [Store Model API](./StoreModelAP
 
 *********************************************
 #### setChecked ( item, newState ) ####
-> Update the checked state for a single store item and the associated
-> parent(s) and children, if any.
+> Update the checked state of a store item. If the property *checkedStrict* for
+> the model is true, the items parent(s) and children, if any, are updated accordingly.
 
 *item:* data.item
 > A valid dojo.data.store item.
 
 *newState:* Boolean | String
-> The new checked state. The state can be either a boolean (true|false) or a string ('mixed')
+> The new checked state. The state can be either a boolean (true | false) or a string ('mixed')
 
 <h2 id="storeCallback">Store Model Callbacks</h2>
 *************************************************
 
 #### onChange( item, attribute, newValue ) ####
-> Callback whenever an item has changed, so that Tree can update the label, icon,
+> Callback whenever a data item has changed, so that the Tree can update the label, icon,
 > etc. Note that changes to an item's children or parent(s) will trigger an
 > onChildrenChange() instead.
 
 #### onChildrenChange( parent, newChildrenList ) ####
-> Callback to do notifications about new, updated, or deleted items.
+> Callback to notify about new, updated, or deleted items.
  
 #### onDataValidated() ####
 > Callback when store validation completion. Only called if strict parent-child

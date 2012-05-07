@@ -134,7 +134,7 @@ define([
 
 		// hasFakeRoot: Boolean
 		//		Indicates if the model has a fabricated root item. (this is not a constructor 
-		//		parameter).	Typically set by models like the TreeForestModel.
+		//		parameter).	Typically set by models like the ForestStoreModel.
 		hasFakeRoot: false,
 
 	 	// root: [readonly] dojo.data.item
@@ -164,7 +164,7 @@ define([
 			// tags:
 			//		private
 
-			lang.mixin(this, args);
+			declare.safeMixin(this, args);
 
 			this.connects = [];
 
