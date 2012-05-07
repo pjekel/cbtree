@@ -85,10 +85,10 @@ and *getItemAttr()* methods. Some of the Store Model API functions are:
 The CheckBox Tree documentation set consists of the following documents located
 in the [/documentation](documentation) directory.
 
-* [The CheckBox Tree](documentation/CheckBoxTree.md)
-* [Tree Styling and Icons](documentation/TreeStyling.md)
-* [CheckBox Tree Store Models](documentation/StoreModels.md)
-* [Store Models API](documentation/StoreModelAPI.md)
+* [The CheckBox Tree](cbtree/documentation/CheckBoxTree.md)
+* [Tree Styling and Icons](cbtree/documentation/TreeStyling.md)
+* [CheckBox Tree Store Models](cbtree/documentation/StoreModels.md)
+* [Store Models API](cbtree/documentation/StoreModelAPI.md)
 
 Note: All documentation is written using the [markdown](http://daringfireball.net/projects/markdown/)
 format.
@@ -101,8 +101,3 @@ this new implementation it is important you read all the documentation provided
 as properties have been added, renamed and some properties have moved from the tree to
 the model and vice versa.
 
-<<<<<<< HEAD
-=======
-<h2 id="basics">CheckBox Tree Documentaion</h2>
-The full documentation set can be found in the /documentation directory. [test](documentation/CheckBoxTree.md)
->>>>>>> cbtree/master
