@@ -6,3 +6,4 @@ to create the tree using markup please refer to the /tests directory.
 * tree02.html - Custom Icons at different indent level using the tree 'icon' property.
 * tree03.html - Demostrate the Tree Model API features.
 * tree04.html - Use third party widget instead of the cbtree Multi State CheckBox
+* tree05.html - Use ToggleButton widget instead of the cbtree Multi State CheckBox
