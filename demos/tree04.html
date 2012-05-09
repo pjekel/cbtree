@@ -8,16 +8,16 @@
   is turned off allowing ALL checkboxes to cycle thru all possible states.
 -->
 
- 		<style type="text/css">
-			@import "../../dijit/themes/claro/claro.css";
-			@import "../../dijit/themes/claro/document.css";
-			@import "../../dijit/tests/css/dijitTests.css";
-			@import "../../dojox/form/resources/TriStateCheckBox.css";
-			@import "../themes/claro/claro.css";
-		</style>
+     <style type="text/css">
+      @import "../../dijit/themes/claro/claro.css";
+      @import "../../dijit/themes/claro/document.css";
+      @import "../../dijit/tests/css/dijitTests.css";
+      @import "../../dojox/form/resources/TriStateCheckBox.css";
+      @import "../themes/claro/claro.css";
+    </style>
 
-		<script type="text/javascript">
-			var dojoConfig = {
+    <script type="text/javascript">
+      var dojoConfig = {
             async: true,
             parseOnLoad: true,
             isDebug: false,
@@ -28,14 +28,14 @@
               { name: "dijit", location: "dijit" },
               { name: "cbtree",location: "cbtree" }
             ]
-			};
-		</script>
+      };
+    </script>
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
   </head>
     
   <body class="claro">
-		<h1>Dijit CheckBox Tree - Mixin Widget: &lt;TriStateCheckBox&gt;</h1>
-    <div id="CheckboxTree">	
+    <h1>Dijit CheckBox Tree - Mixin Widget: &lt;TriStateCheckBox&gt;</h1>
+    <div id="CheckboxTree">  
       <script type="text/javascript">
 
       require([
@@ -44,7 +44,7 @@
         "dojo/dom",
         "dojo/data/ItemFileWriteStore",
         "dojox/form/TriStateCheckbox",
-        "cbtree/Tree",                      // CheckBox Tree							
+        "cbtree/Tree",                      // CheckBox Tree              
         "cbtree/models/ForestStoreModel"    // Tree Forest Store Model
         ], function( array, connect, dom, ItemFileWriteStore, TriStateCheckBox, Tree, ForestStoreModel ) {
 

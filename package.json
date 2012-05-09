@@ -5,21 +5,21 @@
   "description": "Dijit Tree with Multi State Checkboxes and custom styling",
   "licenses": [
      {
-      "type": "BSD 2-Clause",
-      "url": "http://thejekels.com/js/cbtree/LICENSE"
+       "type": "BSD 2-Clause",
+       "url": "http://thejekels.com/js/cbtree/LICENSE"
      },
-		 {
-		 	 "type": "BSD",
-		 	 "url": "http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13"
-		 },
-		 {
-		 	 "type": "AFLv2.1",
-		 	 "url": "http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43"
-		 }
-	],
+     {
+       "type": "BSD",
+       "url": "http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13"
+     },
+     {
+       "type": "AFLv2.1",
+       "url": "http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43"
+     }
+  ],
   "dependencies": {
-      "dojo" : ">= 1.7",
-      "dijit" : ">= 1.7"
+    "dojo" : ">= 1.7",
+    "dijit" : ">= 1.7"
   },
   "keywords": [ "Checkbox", "CheckboxTree", "Dijit", "Dojo", "Tree" ],
   "homepage": "http://thejekels.com",

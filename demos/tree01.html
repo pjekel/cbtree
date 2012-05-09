@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head> 
     <title>Dijit Tree with Checkboxes </title>     
-		<style type="text/css">
-			@import "../../dijit/themes/claro/claro.css";
-			@import "../../dijit/themes/claro/document.css";
-			@import "../../dijit/tests/css/dijitTests.css";
-			@import "../themes/claro/claro.css";
-		</style>
+    <style type="text/css">
+      @import "../../dijit/themes/claro/claro.css";
+      @import "../../dijit/themes/claro/document.css";
+      @import "../../dijit/tests/css/dijitTests.css";
+      @import "../themes/claro/claro.css";
+    </style>
 
     <script type="text/javascript">
       var dojoConfig = {
@@ -28,16 +28,16 @@
   </head>
     
   <body class="claro">
-		<h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
     <div id="CheckboxTree">  
       <script type="text/javascript">
 
       require([
         "dojo/_base/connect",
         "dojo/data/ItemFileWriteStore",
-        "cbtree/Tree",										// Checkbox tree
-        "cbtree/TreeStyling",							// Tree styling extensions
-        "cbtree/models/ForestStoreModel"	// ForestStoreModel
+        "cbtree/Tree",                    // Checkbox tree
+        "cbtree/TreeStyling",              // Tree styling extensions
+        "cbtree/models/ForestStoreModel"  // ForestStoreModel
         ], function( connect, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel) {
 
           function checkBoxClicked( item, nodeWidget, evt ) {

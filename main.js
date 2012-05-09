@@ -19,15 +19,14 @@ define([
   "./models/StoreModel-API",
   "./TreeStyling"
   ], function( CheckBox, Tree, ForestStoreModel, TreeStoreModel, StoreModelAPI, TreeStyling ){
-	// Define the 'Dijit Tree With CheckBoxes' (cbtree) including the optional
-	// Tree store API and Tree Styling extensions.
-
-  var cbtree = { 
-        Tree: Tree, 
-        ForestStoreModel: ForestStoreModel,
-        TreeStoreModel: TreeStoreModel,
-        CheckBox: CheckBox 
-    };
-
-  return cbtree;
-});
+       // Define the 'Dijit CheckBox Tree' (cbtree) including the optional
+       // Tree store API and Tree Styling extensions.
+       var cbtree = { 
+            Tree: Tree, 
+            ForestStoreModel: ForestStoreModel,
+            TreeStoreModel: TreeStoreModel,
+            CheckBox: CheckBox 
+       };
+       return cbtree;
+    }
+);

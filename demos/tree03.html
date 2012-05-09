@@ -3,13 +3,13 @@
   <head> 
     <title>Dijit CheckBox Tree using the cbtree API</title>     
 
- 		<style type="text/css">
-			@import "../../dijit/themes/claro/claro.css";
-			@import "../../dijit/themes/claro/document.css";
-			@import "../../dijit/tests/css/dijitTests.css";
-			@import "../../cbtree/icons/cbtreeIcons.css";
-			@import "../themes/claro/claro.css";
-		</style>
+     <style type="text/css">
+      @import "../../dijit/themes/claro/claro.css";
+      @import "../../dijit/themes/claro/document.css";
+      @import "../../dijit/tests/css/dijitTests.css";
+      @import "../../cbtree/icons/cbtreeIcons.css";
+      @import "../themes/claro/claro.css";
+    </style>
 
     <style>
       html,body { 
@@ -38,8 +38,8 @@
       }
     </style>
 
-		<script type="text/javascript">
-			var dojoConfig = {
+    <script type="text/javascript">
+      var dojoConfig = {
             async: true,
             parseOnLoad: true,
             isDebug: true,
@@ -49,8 +49,8 @@
               { name: "dijit", location: "dijit" },
               { name: "cbtree",location: "cbtree" }
             ]
-			};
-		</script>
+      };
+    </script>
 
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
     <script>
@@ -206,10 +206,10 @@
                 "dojo/_base/lang",
                 "dojo/dom",
                 "dojo/data/ItemFileWriteStore",
-                "cbtree/Tree",											// Checkbox Tree
-                "cbtree/TreeStyling",								// Tree Styling extensions
-                "cbtree/models/ForestStoreModel",		// Forest Store Model
-                "cbtree/models/StoreModel-API"			// Store Model API extensions
+                "cbtree/Tree",                      // Checkbox Tree
+                "cbtree/TreeStyling",                // Tree Styling extensions
+                "cbtree/models/ForestStoreModel",    // Forest Store Model
+                "cbtree/models/StoreModel-API"      // Store Model API extensions
               ], function( array, connect, lang, dom, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel ) {
 
         // Declare an empty JSON data object (an empty store).
@@ -263,8 +263,8 @@
               model.newItem( {name:'Carl', hair:'red', type: 'child' }, newParent );
               model.newItem( {name:'Ralph', hair:'blond', type: 'child', female: true }, newParent );
               model.newItem( {name:'Todd', hair:'red', type: 'child' }, newParent );
-							tree.set( 'icon', {iconClass:'simpsonsIcons', fixed:'lisa'}, newParent );
-							tree.set( 'labelStyle', {color:'green'}, newParent );
+              tree.set( 'icon', {iconClass:'simpsonsIcons', fixed:'lisa'}, newParent );
+              tree.set( 'labelStyle', {color:'green'}, newParent );
             } else {
               throw new Error( "addChildrenLisa(): Unable to fetch 'Lisa'");
             }

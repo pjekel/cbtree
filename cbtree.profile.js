@@ -24,7 +24,7 @@ var profile = {
           "dojo/dojo",
           "dojo/_base/array",
           "dojo/data/ItemFileWriteStore",
-					"dojo/domReady",
+          "dojo/domReady",
           "dojo/dom",
           "dojo/i18n",
           "dojo/ready"
