@@ -1,7 +1,7 @@
 # The Dijit CheckBox Tree #
 
 The dijit CheckBox Tree, github project code ***cbtree***, was formerly published under
-the name [*Dijit Tree with Multi State Checkboxes*](http://thejekels.com). 
+the name [*Dijit Tree with Multi State Checkboxes*](http://thejekels.com/dojo/Dijit_Tree_MultiState_Chkbox.html). 
 Both the Tree and associated models are highly configurable providing support
 for, amongst others:
 
@@ -83,19 +83,19 @@ and *getItemAttr()* methods. Some of the Store Model API functions are:
 
 <h2 id="basics">CheckBox Tree Documentation</h2>
 The CheckBox Tree documentation set consists of the following documents located
-in the [/documentation](documentation) directory.
+in the /documentation directory.
 
-* [The CheckBox Tree](documentation/CheckBoxTree.md)
-* [Tree Styling and Icons](documentation/TreeStyling.md)
-* [CheckBox Tree Store Models](documentation/StoreModels.md)
-* [Store Models API](documentation/StoreModelAPI.md)
+* The CheckBox Tree
+* Tree Styling and Icons
+* CheckBox Tree Store Models
+* Store Models API
 
 Note: All documentation is written using the [markdown](http://daringfireball.net/projects/markdown/)
 format.
 
 <h2 id="basics">CheckBox Tree Migration</h2>
 The new CheckBox Tree implementation is a complete rewrite of the previous
-[*Dijit Tree with Multi State Checkboxes*](http://thejekels.com), adding new
+[*Dijit Tree with Multi State Checkboxes*](http://thejekels.com/dojo/Dijit_Tree_MultiState_Chkbox.html), adding new
 features, properties and API's. If you plan on migrating from the old tree to
 this new implementation it is important you read all the documentation provided
 as properties have been added, renamed and some properties have moved from the tree to

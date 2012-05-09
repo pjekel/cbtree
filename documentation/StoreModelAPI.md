@@ -1,5 +1,4 @@
 # Store Model API #
-*******************
 The Store Model API extends the functionality of the standard CheckBox Tree Store
 Models. The API allows the user to programmatically build and maintain checkbox
 trees. For example, you can create your store starting with an empty JSON dataset
@@ -39,8 +38,7 @@ You can test the availability of the Store Model API using the command `has("cbt
       }
       
 
-<h2 id="apiFunctions">Store Model API Functions</h2>
-****************************************
+<h2 id="store-model-api-functions">Store Model API Functions</h2>
 
 #### addReference( childItem, parentItem, childrenAttr ) ####
 > Add an existing store item (childItem) to the parentItem by reference.
@@ -118,7 +116,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 #### fetchItemsWithChecked( query, onComplete, scope ) ####
 > Get the list of store items that match the query and have a checked state,
 > that is, a property identified by the models *checkedAttr* property. 
-> (See [Model Properties](StoreModels.md#properties))
+> (See [Model Properties](StoreModels.md#store-model-properties))
 
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
@@ -156,7 +154,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 ******************************************
 #### isRootItem( something ) ####
 > Returns true if *something* is a top-level item in the store otherwise false.
-> Please refer to section: [Store Root versus Tree Root](StoreModels.md#storeRoot)
+> Please refer to section: [Store Root versus Tree Root](StoreModels.md#store-root-versus-tree-root)
 > for additional information.
 
 ******************************************
@@ -241,7 +239,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 > onComplete will be called in the context of the model.
 
 
-<h2 id="apiSample">Sample Application</h2>
+<h2 id="sample-application">Sample Application</h2>
 ****************************************
 The following sample application demonstrate the use of several of the Store Model
 API functions. A more elaborate demo can be found at /cbtree/demos/tree03.html

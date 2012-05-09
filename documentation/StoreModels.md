@@ -1,5 +1,4 @@
 # CheckBox Tree Store Models #
-******************************
 The CheckBox Tree comes with two store models, that is, a *Tree Store Model* and
 a *Forest Store Model*. The distinct differences are explained in the following 
 sections. Which store model to use primarily depends on:
@@ -7,8 +6,8 @@ sections. Which store model to use primarily depends on:
 1. How the data store is structured.
 2. How you are going to query the store.
 
-<h2 id="storeRoot">Store Root versus Tree Root</h2>
-***************************************************
+<h2 id="store-root-versus-tree-root">Store Root versus Tree Root</h2>
+
 Throughout the documentation references are made to both the tree root as well
 as the store root. It is important to know that they are **NOT** the same thing.
 Store root item(s) identify so called top-level entries in the data store, there
@@ -91,8 +90,8 @@ returned by the store query. The *TreeStoreModel* is used only if the store
 query is guaranteed to return a single store item, in all other cases the 
 *ForestStoreModel* is required.
 
-<h2 id="treeStoreModel">Tree Store Model</h2>
-*************************************************
+<h2 id="tree-store-model">Tree Store Model</h2>
+
 The Tree Store Model is used if, and only if, the store query is guaranteed to
 return a single data store item. The data store structure itself is of no
 importance. For example, the following example will use the sample reference
@@ -104,8 +103,8 @@ store (2) as listed above:
 In this case we known the query is guaranteed to return a single store item, 
 that is, 'Homer' therefore we can safely use the TreeStoreModel.
 
-<h2 id="forestStoreModel">Forest Store Model</h2>
-*************************************************
+<h2 id="forest-store-model">Forest Store Model</h2>
+
 The Forest Store Model is used whenever a store query could potentially return
 multiple store items in which case the model will fabricate a artificial root
 item. The fabricated root does not represent any store item and is merely used
@@ -120,8 +119,8 @@ to anchor the tree.
 
 In this example the store query returns all store items available.
 
-<h2 id="properties">Store Model Properties</h2>
-*************************************************
+<h2 id="store-model-properties">Store Model Properties</h2>
+
 #### checkedAll: ####
 > Boolean (true), If true, every store item will receive a 'checked' state property
 > regardless if the 'checked' attribute is specified in the dojo.data.store.
@@ -202,8 +201,8 @@ In this example the store query returns all store items available.
 #### store: ####
 > Object (null), The underlying dojo.data store.
 
-<h2 id="storeFunctions">Store Model Functions</h2>
-**************************************************
+<h2 id="store-model-functions">Store Model Functions</h2>
+
 The following is a list of the default functions available with the CheckBox Tree
 store models. 
 Additional functionality is available using the [Store Model API](StoreModelAPI.md).
@@ -291,7 +290,7 @@ Additional functionality is available using the [Store Model API](StoreModelAPI.
 *********************************************
 #### isTreeRootChild ( item ) ####
 > Returns true if the *item* is a child of the tree root. Please refer to section: 
-> [Store Root versus Tree Root](StoreModels.md#storeRoot) for additional
+> [Store Root versus Tree Root](StoreModels.md#store-root-versus-tree-root) for additional
 > information.
 
 *item:* data.item
@@ -307,7 +306,7 @@ Additional functionality is available using the [Store Model API](StoreModelAPI.
 *********************************************
 #### newItem ( args, parentItem, insertIndex, childrenAttr ) ####
 > Creates a new item. Note: Whenever a parentItem is specified the store will NOT
-> create *args* as a top-level store item. (See the [Store Model API](StoreModelAPI.md#apiFunctions)
+> create *args* as a top-level store item. (See the [Store Model API](StoreModelAPI.md#store-model-api-functions)
 > function *newReferenceItem()* for additional information).
 
 *args:*
@@ -336,8 +335,7 @@ Additional functionality is available using the [Store Model API](StoreModelAPI.
 *newState:* Boolean | String
 > The new checked state. The state can be either a boolean (true | false) or a string ('mixed')
 
-<h2 id="storeCallback">Store Model Callbacks</h2>
-*************************************************
+<h2 id="store-model-callbacks">Store Model Callbacks</h2>
 
 #### onChange( item, attribute, newValue ) ####
 > Callback whenever a data item has changed, so that the Tree can update the label, icon,
