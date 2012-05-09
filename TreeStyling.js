@@ -24,9 +24,8 @@ define([
   // summary:
   //    Tree Styling extensions to customize the look and feel of a dijit tree.
   // description:
-  //     This module provides all the functionality to dynamically customize the
+  //    This module provides all the functionality to dynamically customize the
   //    styling and icons of the 'Dijit Tree With CheckBoxes' (cbtree).
-  //    Although not tested it should also work with the default dijit tree. 
   //    The styling functionality has been implemented as an extension to the
   //    tree and tree node and can be loaded seperately from either the cbtree
   //    or default dijit tree.
@@ -360,7 +359,7 @@ define([
                               /*Function*/ onComplete) {
       // summary:
       //    Set the css classname of an icon, label or row for a given item.  If
-      //    the item argument is ommitted the classname is set for all currently
+      //    the item argument is omitted the classname is set for all currently
       //    known items. Note: no updates to the tree nodes are made.
       //
       //    A classname may contain multiple names, if so, the first name in the
@@ -421,7 +420,7 @@ define([
     _setAttrClassSet: function (/*data.item?*/ item, /*String*/ attr, /*String*/ cssClass) {
       // summary:
       //    Set the css classname for a given item and update all tree nodes
-      //    associated with the item. If the item argument is ommitted all
+      //    associated with the item. If the item argument is omitted all
       //    tree nodes are updates. (see _setAttrClass())
       // item:
       //    The data item (optional).
@@ -449,7 +448,7 @@ define([
     _setAttrStyle: function (/*data/item*/ item, /*String*/ attr, /*Object*/ style, /*Function*/ onComplete) {
       // summary:
       //    Set the css style properties of an icon, label or row for a given
-      //    item. If the item argument is ommitted the classname is set for all
+      //    item. If the item argument is omitted the classname is set for all
       //    currently known data items. Note: no updates to the tree nodes are
       //    made.
       // item:
@@ -498,7 +497,7 @@ define([
     _setAttrStyleSet: function (/*data.item*/ item, /*String*/ attr, /*Object*/ style) {
       // summary:
       //    Set the css style properties for a given item and update all tree
-      //    nodes associated with the item. If the item argument is ommitted
+      //    nodes associated with the item. If the item argument is omitted
       //    all tree nodes are updates. (see _setAttrStyle())
       // item:
       //    The data item (optional).
@@ -616,7 +615,7 @@ define([
     _setIconAttr: function (/*string|Object*/ icon, /*data.item?*/ item ) {
       // summary:
       //    Hook for the set("icon",customIcon) method and allows for dynamic
-      //    changing of the tree node icons. If the item argument is ommitted
+      //    changing of the tree node icons. If the item argument is omitted
       //    the icon is applied to all tree node.
       //
       //    NOTE: No matter what the custom icon is, the associated css file(s)
@@ -660,7 +659,7 @@ define([
     _setIconClassAttr: function (/*String*/ cssClass, /*Item?*/ item) {
       // summary:
       //    Set the icon classname. This is the hook for set("iconClass",...).
-      //    If the optional argument item is ommitted, the classname is applied
+      //    If the optional argument item is omitted, the classname is applied
       //    to all tree node.
       // cssClass
       //    css classname
@@ -676,7 +675,7 @@ define([
     _setIconStyleAttr: function (/*Object*/ style, /*Item?*/ item) {
       // summary:
       //    Set the icon style properties. This is the hook for set("iconStyle",..)
-      //    If the optional argument item is ommitted, the style is applied to all
+      //    If the optional argument item is omitted, the style is applied to all
       //    tree node.
       // style:
       //    Object suitable for input to domStyle.set() like: {color: "red"}
@@ -692,7 +691,7 @@ define([
     _setLabelClassAttr: function (/*String*/ cssClass, /*Item?*/ item) {
       // summary:
       //    Set the label classname. This is the hook for set("labelClass",...).
-      //    If the optional argument item is ommitted, the classname is applied
+      //    If the optional argument item is omitted, the classname is applied
       //    to all tree node.
       // cssClass
       //    css classname
@@ -708,7 +707,7 @@ define([
     _setLabelStyleAttr: function (/*Object*/ style, /*Item?*/ item) {
       // summary:
       //    Set the label style properties. This is the hook for set("labelStyle",..)
-      //    If the optional argument item is ommitted, the style is applied to all
+      //    If the optional argument item is omitted, the style is applied to all
       //    tree node.
       // style:
       //    Object suitable for input to domStyle.set() like: {color: "red"}
@@ -724,7 +723,7 @@ define([
     _setRowClassAttr: function (/*String*/ cssClass, /*Item?*/ item) {
       // summary:
       //    Set the row classname. This is the hook for set("rowClass",...).
-      //    If the optional argument item is ommitted, the classname is applied
+      //    If the optional argument item is omitted, the classname is applied
       //    to all tree node.
       // cssClass
       //    css classname
@@ -740,7 +739,7 @@ define([
     _setRowStyleAttr: function (/*Object*/ style, /*data.item?*/ item) {
       // summary:
       //    Set the row style properties. This is the hook for set("rowStyle",..)
-      //    If the optional argument item is ommitted, the style is applied to all
+      //    If the optional argument item is omitted, the style is applied to all
       //    tree node.
       // style:
       //    Object suitable for input to domStyle.set() like: {color: "red"}
