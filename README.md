@@ -81,6 +81,13 @@ and *getItemAttr()* methods. Some of the Store Model API functions are:
 * fetchItem(), fetchItemsWithChecked()
 * addReference(), removeReference()
 
+<h2 id="checkbox-tree-demos">CheckBox Tree Demos</h2>
+The cbtree packages comes with a set of demos and unit tests each demonstrating
+the CheckBox Tree features and capabilities. A comprehensive [live demo](http://thejekels.com/cbtree/demos)
+is also available at:
+
+* [http://thejekels.com/cbtree/demos](http://thejekels.com/cbtree/demos)
+
 <h2 id="basics">CheckBox Tree Documentation</h2>
 The CheckBox Tree documentation set consists of the following documents located
 in the /documentation directory.
