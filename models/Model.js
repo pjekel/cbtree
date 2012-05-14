@@ -44,7 +44,7 @@ declare("cbtree.models.model", null,
 
 	mayHaveChildren: function(item){
 		// summary:
-		//		Tells if an item has or may have children.  Implementing logic here
+		//		Tells if an item has or may have children.	Implementing logic here
 		//		avoids showing +/- expando icon for nodes that we know don't have children.
 		//		(For efficiency reasons we may not want to check if an element actually
 		//		has children until user clicks the expando node)
@@ -59,7 +59,7 @@ declare("cbtree.models.model", null,
 	fetchItemByIdentity: function(keywordArgs){
 		// summary:
 		//		Given the identity of an item, this method returns the item that has
-		//		that identity through the onItem callback.  Conforming implementations
+		//		that identity through the onItem callback.	Conforming implementations
 		//		should return null if there is no item with the given identity.
 		//		Implementations of fetchItemByIdentity() may sometimes return an item
 		//		from a local cache and may sometimes fetch an item from a remote server.
@@ -157,7 +157,7 @@ declare("cbtree.models.model", null,
 
 	newItem: function(args, parent, insertIndex){
 		// summary:
-		//		Creates a new item.   See `dojo.data.api.Write` for details on args.
+		//		Creates a new item.	 See `dojo.data.api.Write` for details on args.
 		// args:
 		//		dojo.dnd.Item
 		// parent:
