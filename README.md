@@ -5,10 +5,10 @@ the name [*Dijit Tree with Multi State Checkboxes*](http://thejekels.com/dojo/Di
 Both the Tree and associated models are highly configurable providing support
 for, amongst others:
 
-* The standard dijit tree, that is, without checkboxes.
 * Default dual state checkboxes (checked/unchecked).
 * Multi state checkboxes (checked/unchecked/mixed).
 * Alternative widgets instead of the standard checkbox widget.
+* The standard dijit tree, that is, without checkboxes.
 * Optional Parent-Child checkbox relationship.
 * Tree Styling and Custom Icons API
 * Hide branch and/or leaf icons

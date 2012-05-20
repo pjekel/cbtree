@@ -242,7 +242,8 @@ You can test the availability of the Store Model API using the command `has("cbt
 <h2 id="sample-application">Sample Application</h2>
 ****************************************
 The following sample application demonstrate the use of several of the Store Model
-API functions. A more elaborate demo can be found at /cbtree/demos/tree03.html
+API functions. A more elaborate demo can be found in the CheckBox Tree package
+directory /cbtree/demos/tree03.html
 
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
