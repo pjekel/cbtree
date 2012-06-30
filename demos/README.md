@@ -7,3 +7,4 @@ to create the tree using markup please refer to the /tests directory.
 * tree03.html - Demostrate the Tree Model API features.
 * tree04.html - Use third party widget instead of the cbtree Multi State CheckBox
 * tree05.html - Use ToggleButton widget instead of the cbtree Multi State CheckBox
+* tree10.html - A CheckBox Tree using the cbtree File Store (PHP server support required).

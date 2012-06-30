@@ -238,13 +238,15 @@ define([
 				// mode, so we will load it and just return the children (without loading each
 				// child item)
 				var getChildren = lang.hitch(this, arguments.callee);
-				store.loadItem({
-					item: parentItem,
-					onItem: function(parentItem){
-						getChildren(parentItem, onComplete, onError);
-					},
-					onError: onError
-				});
+				store.loadItem( this._mixinFetch( 
+					{	
+						item: parentItem,
+						onItem: function(parentItem) {
+											getChildren(parentItem, onComplete, onError);
+										},
+						onError: onError
+					})
+				);
 				return;
 			}
 			// get children of specified item
@@ -275,18 +277,20 @@ define([
 			}else{
 				// still waiting for some or all of the items to load
 				array.forEach(childItems, function(item, idx){
-					if(!store.isItemLoaded(item)){
-						store.loadItem({
-							item: item,
-							onItem: function(item){
-								childItems[idx] = item;
-								if(--_waitCount == 0){
-									// all nodes have been loaded, send them to the tree
-									onComplete(childItems);
-								}
-							},
-							onError: onError
-						});
+					if (!store.isItemLoaded(item)) {
+						store.loadItem( this._minixFetch( 
+							{
+								item: item,
+								onItem: function(item){
+									childItems[idx] = item;
+									if(--_waitCount == 0){
+										// all nodes have been loaded, send them to the tree
+										onComplete(childItems);
+									}
+								},
+								onError: onError
+							} )
+						);
 					}
 				});
 			}
@@ -316,18 +320,20 @@ define([
 			if(this.root){
 				onItem(this.root);
 			}else{
-				this.store.fetch({
-					query: this.query,
-					onComplete: lang.hitch(this, function(items){
-						if(items.length != 1){
-							throw new Error(this.moduleName + ": query " + json.stringify(this.query) + " returned " + items.length +
-								 " items, but must return exactly one item");
-						}
-						this.root = items[0];
-						onItem(this.root);
-					}),
-					onError: onError
-				});
+				this.store.fetch( this._mixinFetch( 
+					{
+						query: this.query,
+						onComplete: lang.hitch(this, function(items){
+							if(items.length != 1){
+								throw new Error(this.moduleName + ": query " + json.stringify(this.query) + " returned " + items.length +
+									 " items, but must return exactly one item");
+							}
+							this.root = items[0];
+							onItem(this.root);
+						}),
+						onError: onError
+					})
+				);
 			}
 		},
 
@@ -678,7 +684,7 @@ define([
 				// already been validated.
 				if (!this.store.isValidated()) {
 					// Force a store load.
-					if (this.store.loadStore()) {
+					if (this.store.loadStore( this.query, this._mixinFetch() )) {
 						if (has("tree-model-setChecked")) {
 							this.getRoot( lang.hitch(this, function (rootItem) {
 									this.getChildren(rootItem, lang.hitch(this, function(children) {
@@ -1117,6 +1123,16 @@ define([
 				}
 			}
 			return newArray;
+		},
+		
+		_mixinFetch: function (/*object*/ fetchArgs ) {
+			// summary:
+			//		Any model that inherits from this model (TreeStoreModel) and requires
+			//		additional parameters to be passed in a store fetch(), loadStore() or
+			//		loadItem() call must overwrite this method.
+			//
+			//		See the FileStoreModel for an example.
+			return fetchArgs;
 		}
 
 	});
