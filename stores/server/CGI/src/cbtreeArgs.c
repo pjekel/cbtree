@@ -105,6 +105,7 @@ static OPTIONS * _getOptionArgs( DATA *pGET, int *piResult )
 			{
 				pOptions->bShowHiddenFiles = varInArray("showHiddenFiles", ptOptions);
 				pOptions->bDirsOnly		   = varInArray("dirsOnly", ptOptions);
+				pOptions->bIconClass	   = varInArray("iconClass", ptOptions);
 				pOptions->bDebug		   = varInArray("debug", ptOptions);
 
 				destroy( ptOptions );
@@ -473,10 +474,10 @@ ARGS *getArguments( int *piResult )
 			}
 			if( iResult == HTTP_V_OK )
 			{
-				// Parse the 'sortFields' specifications, if any..
-				if( hasProperty( "sortFields", pGET ) )
+				// Parse the 'sort' specifications, if any..
+				if( hasProperty( "sort", pGET ) )
 				{
-					if( (ptSort = jsonDecode( varGetProperty("sortFields", pGET) )) )
+					if( (ptSort = jsonDecode( varGetProperty("sort", pGET) )) )
 					{
 						pArgs->pSortList = _getSortArgs( ptSort, pArgs->pOptions, &iResult );
 						destroy( ptSort );

@@ -6,15 +6,16 @@
 
 // Define symbolic file properties
 #define PROP_V_UNKNOWN		-1
-#define PROP_V_NAME			1
-#define PROP_V_PATH			2
-#define PROP_V_DIRECTORY	3
-#define PROP_V_SIZE			4
-#define PROP_V_MODIFIED		5
+#define PROP_V_NAME			0
+#define PROP_V_PATH			1
+#define PROP_V_DIRECTORY	2
+#define PROP_V_SIZE			3
+#define PROP_V_MODIFIED		4
 
 typedef struct fileInfo {
 	char	*pcName;			// Pointer to C-string containing the filename
 	char	*pcPath;			// Pointer to C-string containing the file path
+	char	*pcIconClass;		// Pointer to C-string containinf the iconClass;
 	long	lSize;				// File size
 	long	lModified;			// Last modified (seconds since Jan 1, 1970)
 	bool	directory;			// True if file is a directory

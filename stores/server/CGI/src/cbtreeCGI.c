@@ -102,7 +102,8 @@ static DATA *cgiEnvironment = NULL;
 FILE	*phResp = NULL;
 
 // When debuging use cDbgQS to inject a QUERY-STRING.
-char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree";
+//char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree";
+char	cDbgQS[] = "basePath=./&path=js/dojotoolkit/cbtree/stores/server/CGI/src/vc2008";
 
 /**
 *	_cgiGetStatus

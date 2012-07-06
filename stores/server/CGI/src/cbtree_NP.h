@@ -27,8 +27,8 @@ typedef struct OS_ARG {
 	extern "C" {
 #endif
 
-FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, int *piResult );
-FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvArgm );
+FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs, int *piResult );
+FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs );
 void findEnd( void *pvOsArg );
 
 #ifdef __cplusplus

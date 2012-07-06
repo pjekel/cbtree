@@ -60,6 +60,7 @@ static void _destroyFileInfo( FILE_INFO *pFileInfo )
 	{
 		free( pFileInfo->pcPath );
 		free( pFileInfo->pcName );
+		free( pFileInfo->pcIconClass );
 
 		if( pFileInfo->pChildren )
 		{
@@ -406,7 +407,7 @@ LIST *getDirectory( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResul
 	char		cFullPath[MAX_PATH_SIZE];
 	int			iResult;
 	
-	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, piResult )) )
+	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
 	{
 		pFileList = newList();		// Allocate a new list header.
 		do {
@@ -425,7 +426,7 @@ LIST *getDirectory( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResul
 			{
 				_destroyFileInfo( pFileInfo );
 			}
-		} while ( (pFileInfo = findNextFile( pcFullPath, pcRootDir, &OSArg )) );
+		} while ( (pFileInfo = findNextFile( pcFullPath, pcRootDir, &OSArg, pArgs )) );
 
 		if( listIsEmpty( pFileList ) )
 		{
@@ -461,7 +462,7 @@ LIST *getFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
 	char		cFullPath[MAX_PATH_SIZE];
 	int			iResult;
 	
-	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, piResult )) )
+	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
 	{
 		if( !_fileFilter( pFileInfo, pArgs ) )
 		{
@@ -584,7 +585,7 @@ LIST *getMatch( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
 	char		cFullPath[MAX_PATH_SIZE];
 	int			iResult;
 
-	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, piResult )) )
+	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
 	{
 		pFileList = newList();	// Allocate a new list header
 		do {
@@ -624,7 +625,7 @@ LIST *getMatch( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
 			{
 				_destroyFileInfo( pFileInfo );
 			}
-		} while ( (pFileInfo = findNextFile( pcFullPath, pcRootDir, &OSArg )) );
+		} while ( (pFileInfo = findNextFile( pcFullPath, pcRootDir, &OSArg, pArgs )) );
 
 		if( listIsEmpty( pFileList ) )
 		{

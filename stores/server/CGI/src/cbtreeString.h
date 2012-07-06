@@ -26,11 +26,14 @@ bool isQuoted( char *s );
 char *mstrncpy( const char *src, size_t len );
 char *mstrcpy( const char *src );
 
+char *strcap( char *src );
 int strcpair( char *src, int iLvalue, int iRvalue );
 char *strfchr( char *src );
 char *strncpyz( char *dst, const char *src, size_t len );
 char *strpair( char *src, int iLvalue, int iRvalue );
 char *strtrim( char *src, int flag );
+
+char *getIconClass( char *filename, bool isDirectory );
 
 #ifdef __cplusplus
 	}

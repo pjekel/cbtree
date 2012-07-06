@@ -67,10 +67,11 @@ static time_t _fileTimeToTime( FILETIME *pFileTime )
 *	@param	pcFullPath		Address C-string containing the full directory path.
 *	@param	pcRootDir		Address C-string containing the root directory.
 *	@param	pvFileData		Address OS specific file info structure.
+*	@param	pArgs			Address arguments struct
 *
 *	@return		On sucess, pointer to a FILE_INFO struct otherwise NULL
 **/
-static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFileData )
+static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFileData, ARGS *pArgs )
 {
 #ifdef WIN32
 	WIN32_FIND_DATA	*psFileData = (WIN32_FIND_DATA *)pvFileData;
@@ -88,6 +89,11 @@ static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFile
 		pFileInfo->bIsHidden	= (psFileData->dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) ? 1: 0;
 		pFileInfo->lSize		= psFileData->nFileSizeLow;
 		pFileInfo->lModified	= (long)_fileTimeToTime( &psFileData->ftLastWriteTime );
+
+		if( pArgs->pOptions->bIconClass ) 
+		{
+			pFileInfo->pcIconClass	= mstrcpy( getIconClass( pFileInfo->pcName, pFileInfo->directory ) );
+		}
 	}
 	return pFileInfo;
 #else
@@ -114,7 +120,7 @@ static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFile
 *
 *	@return		On sucess, pointer to a FILE_INFO struct otherwise NULL
 **/
-FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, int *piResult )
+FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs, int *piResult )
 {
 #ifdef WIN32
 	WIN32_FIND_DATA	sFileData;
@@ -124,7 +130,7 @@ FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, int *piR
 	handle = FindFirstFile( pcFullPath, &sFileData );
 	if( handle != INVALID_HANDLE_VALUE )
 	{
-		pFileInfo = _fileToStruct( pcFullPath, pcRootDir, &sFileData );
+		pFileInfo = _fileToStruct( pcFullPath, pcRootDir, &sFileData, pArgs );
 		*piResult = HTTP_V_OK;
 		if( pvOsArgm ) {
 			*((HANDLE *)pvOsArgm) = handle;
@@ -154,7 +160,7 @@ FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, int *piR
 *
 *	@return		On sucess, pointer to a FILE_INFO struct otherwise NULL
 **/
-FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm )
+FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs )
 {
 #ifdef WIN32
 	WIN32_FIND_DATA	sFileData;
@@ -163,7 +169,7 @@ FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm )
 	{
 		if( FindNextFile( *((HANDLE *)pvOsArgm), &sFileData ) )
 		{
-			return _fileToStruct( pcFullPath, pcRootDir, &sFileData );
+			return _fileToStruct( pcFullPath, pcRootDir, &sFileData, pArgs );
 		}
 	}
 	return NULL;

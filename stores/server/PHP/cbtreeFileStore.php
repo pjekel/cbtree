@@ -34,7 +34,7 @@
 	*				HTTP-GET 			::= uri ('?' query-string)?
 	*				query-string  ::= (qs-param ('&' qs-param)*)?
 	*				qs-param		  ::= basePath | path | query | queryOptions | options | 
-	*								 				  start | count | sortFields
+	*								 				  start | count | sort
 	*				basePath		  ::= 'basePath' '=' path-rfc3986
 	*				path				  ::= 'path' '=' path-rfc3986
 	*				query			  	::= 'query' '=' json-object
@@ -42,7 +42,7 @@
 	*				options			  ::= 'options' '=' json-array
 	*				start			  	::= 'start' '=' number
 	*				count				  ::= 'count' '=' number
-	*				sortFields 		::= 'sortFields' '=' json-array
+	*				sort 					::= 'sort' '=' json-array
 	*
 	*			Please refer to http://json.org for the correct JSON encoding of the
 	*			parameters.
@@ -103,16 +103,16 @@
 	*				Parameter count specifies the maximum number of files to be returned. If zero
 	*				(default) all files, relative to the start position, are returned.
 	*
-	*			sortFields:
+	*			sort:
 	*
-	*				Parameter sortFields is a JSON array of JSON objects. If specified the files
-	*				list is sorted in the order the JSON objects are arranged in the array. The
-	*				properties allowed are: "attribute", "descending" and "ignoreCase". Each sort
-	*				field object MUST have the "attribute" property defined.
+	*				Parameter sort is a JSON array of JSON objects. If specified the files list
+	*				is sorted in the order the JSON objects are arranged in the array.
+	*				The properties allowed are: "attribute", "descending" and "ignoreCase". Each
+	*				sort field object MUST have the "attribute" property defined.
 	*
-	*				Example:	sortFields=[{"attribute":"directory", "descending":true},{"attribute":"name"}]
+	*				Example:	sort=[{"attribute":"directory", "descending":true},{"attribute":"name"}]
 	*
-	*				The example sortFields will return the file list with the directories first and
+	*				The example sort will return the file list with the directories first and
 	*				all names in ascending order. (A typical UI file tree).
 	*
 	****************************************************************************************
@@ -128,14 +128,14 @@
 	*					status-code	::=	'200' | '204'
 	*					file-list		::= '"items"' ':' '[' file-info* ']'
 	*					file-info		::= '{' name ',' path ',' size ',' modified ',' directory 
-	*													(',' childItems ',' expanded)? '}'
+	*													(',' children ',' expanded)? '}'
 	*					name				::= '"name"' ':' json-string
 	*					path				::= '"path"' ':' json-string
 	*					size				::= '"size"' ':' number
 	*					modified		::= '"modified"' ':' number
 	*					directory		::= '"directory"' ':' ('true' | 'false')
-	*					childItems	::= '[' file-info* ']'
-	*					expanded		::= '"_expanded"' ':' ('true' | 'false')
+	*					children		::= '[' file-info* ']'
+	*					expanded		::= '"_EX"' ':' ('true' | 'false')
 	*					number			::= DIGIT+
 	*					DIGIT				::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 	*
@@ -144,7 +144,7 @@
 	*				-	The file-info path is returned as a so-called rootless path, that is,
 	*					without a leading dot and forward slash. (see rfc-3986 for details).
 	*				-	The expanded property indicates if a deep search was performed on a 
-	*					directory. Therefore, if expanded is true and childItems is empty we
+	*					directory. Therefore, if expanded is true and children is empty we
 	*					are dealing with an empty directory and not a directory that hasn't
 	*					been searched/expanded yet. The expanded property is typically used
 	*					when lazy loading the file store.
@@ -177,6 +177,11 @@
 	*				to the server/client.   Requests to access files above the server's document root
 	*				are rejected returning the HTTP forbidden response (403).
 	*
+	*		NOTE:	This implementation will not list any files starting with a dot like .htaccess
+	*					unless explicitly requested. However it will NOT process .htaccess files either.
+	*					Therefore, it is the user's responsibility not to include any private or other
+	*					hidden files in the directory tree accessible to this application.
+	*
 	***************************************************************************************/
 
 	// Define the possible HTTP result codes returned by this application.
@@ -188,6 +193,9 @@
 	define( "HTTP_V_METHOD_NOT_ALLOWED",	405);
 	define( "HTTP_V_SERVER_ERROR",				500);
 
+	define( "STORE_C_IDENTIFIER", "path" );
+	define( "STORE_C_LABEL", "name" );
+	
 	$docRoot = $_SERVER["DOCUMENT_ROOT"];
 
 	$files	= null;
@@ -230,10 +238,13 @@
 						$total = count($files);
 					}
 				}
-				$result					= new stdClass();
-				$result->total  = $total;
-				$result->status = $total ? HTTP_V_OK : HTTP_V_NO_CONTENT;
-				$result->items  = $files;
+				// Compile the final result
+				$result							= new stdClass();
+				$result->identifier = STORE_C_IDENTIFIER;
+				$result->label			= STORE_C_LABEL;
+				$result->total			= $total;
+				$result->status			= $total ? HTTP_V_OK : HTTP_V_NO_CONTENT;
+				$result->items			= $files;
 
 				header("Content-Type: text/json");
 				print( json_encode($result) );
@@ -314,7 +325,7 @@
 	*					ANSI-C CGI implementation. 
 	*					(PHP generates an error when referencing non-existing properties).
 	**/
-	function fileToStruct( /*string*/$fullPath, /*string*/$rootDir, /*string*/$filename ) {
+	function fileToStruct( /*string*/$fullPath, /*string*/$rootDir, /*string*/$filename, /*object*/$args ) {
 		$uriPath  = $fullPath . "/" . $filename;
 		$realPath = realPath( $uriPath ); 
 		$atts 	  = stat( $realPath );
@@ -329,9 +340,12 @@
 		$fileInfo->modified 	= $atts[9];
 		$fileInfo->directory	= is_dir($realPath);
 
+		if ($args->iconClass) {
+			$fileInfo->icon = getIconClass( $fileInfo->name, $fileInfo->directory );
+		}
 		if ($fileInfo->directory) {
-			$fileInfo->_expanded	= false;
-			$fileInfo->childItems	= array();
+			$fileInfo->children = array();
+			$fileInfo->_EX      = false;
 		}
 		return $fileInfo;
 	}
@@ -358,6 +372,7 @@
 		$args->deep 						= false;
 		$args->dirsOnly 				= false;
 		$args->files 					  = array();
+		$args->iconClass				= false;
 		$args->ignoreCase 			= false;
 		$args->loadAll					= false;
 		$args->path 						= null;
@@ -379,6 +394,9 @@
 				}
 				if (array_search("showHiddenFiles", $options) > -1) {
 					$args->showHiddenFiles = true;
+				}
+				if (array_search("iconClass", $options) > -1) {
+					$args->iconClass = true;
 				}
 			}	
 			else	// options is not an array.
@@ -429,13 +447,13 @@
 				return null;
 			}
 		}
-		if (array_key_exists("sortFields", $_GET)) {
-			$sortFields = str_replace("\\\"", "\"", $_GET['sortFields']);
+		if (array_key_exists("sort", $_GET)) {
+			$sortFields = str_replace("\\\"", "\"", $_GET['sort']);
 			$sortFields = json_decode($sortFields);
 			if (is_array($sortFields)) {
 				$args->sortList = getSortArgs($sortFields, $args->ignoreCase);
 			}
-			else	// sortFields is not an array.
+			else	// sort is not an array.
 			{
 				return null;
 			}
@@ -472,6 +490,30 @@
 	}
 
 	/**
+	*		getIconClass
+	*
+	*			Returns the icon classname for a given file extension. If the file is
+	*			a directory the class name extension is uppercase 'DIR' to distinguish
+	*			between the file extension 'dir'.
+	*
+	*	@param	filename				String containing a filename
+	*	@param	isDirectory			Boolean indicating if this file is a directory.
+	*
+	*	@return		String containing the icon classname
+	**/
+	function getIconClass( $filename, $isDirectory ) {
+		if (!$isDirectory) {
+			$info = pathInfo($filename);
+			if ($info['extension']) {
+				return "fileIcon" . ucFirst(strtolower($info['extension'])) . " fileIcon";
+			}
+			return "fileIconUnknown fileIcon";
+		} else {
+			return "fileIconDIR fileIcon";
+		}
+	}
+
+	/**
 	*		getDirectory
 	*
 	*			Returns the content of a directory as an array of FILE_INFO objects.
@@ -488,7 +530,7 @@
 			$files = array();
 			$stat	 = 0;
 			while($file = readdir($dirHandle)) {
-				$fileInfo = fileToStruct( $fullPath, $rootDir, $file );
+				$fileInfo = fileToStruct( $fullPath, $rootDir, $file, $args );
 				if (!fileFilter( $fileInfo, $args )) {
 					if ($fileInfo->directory && $args->deep) {
 						$path = $rootDir . "/" . $fileInfo->path;
@@ -496,8 +538,8 @@
 						if ($children && $args->sortList != null) {
 							usort($children, array($args->sortList, "fileCompare"));
 						}
-						$fileInfo->childItems = $children;
-						$fileInfo->_expanded  = true;
+						$fileInfo->children = $children;
+						$fileInfo->_EX      = true;
 					}
 					$files[] = $fileInfo;
 				}
@@ -515,7 +557,7 @@
 	*
 	*			Returns the information for the file specified by parameter fullPath.
 	*			If the designated file is a directory the directory content is returned
-	*			as the childItems of the file.
+	*			as the children of the file.
 	*
 	*	@param	fullPath				Full path string (file path)
 	*	@param	rootDir					Root directory
@@ -533,7 +575,7 @@
 			$segment  = strrchr( $fullPath, "/" );
 			$filename = substr( $segment, 1 );
 			$path     = substr( $fullPath, 0, (strlen($fullPath) - strlen($segment)) );
-			$fileInfo = fileToStruct( $path, $rootDir, $filename );
+			$fileInfo = fileToStruct( $path, $rootDir, $filename, $args );
 
 			if (!fileFilter( $fileInfo, $args )) {
 				if ($fileInfo->directory) {
@@ -541,8 +583,8 @@
 					if ($children && $args->sortList != null) {
 						usort($children, array($args->sortList, "fileCompare"));
 					}
-					$fileInfo->childItems = $children;
-					$fileInfo->_expanded  = true;
+					$fileInfo->children = $children;
+					$fileInfo->_EX      = true;
 				}
 				$files[] = $fileInfo;
 			}
@@ -573,7 +615,7 @@
 			$files = array();
 			$stat	 = 0;
 			while($file = readdir($dirHandle)) {
-				$fileInfo = fileToStruct( $fullPath, $rootDir, $file );
+				$fileInfo = fileToStruct( $fullPath, $rootDir, $file, $args );
 				if (!fileFilter( $fileInfo, $args )) {
 					if (fileMatchQuery( $fileInfo, $args->query )) {
 						$files[] = $fileInfo;

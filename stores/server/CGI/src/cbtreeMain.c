@@ -36,7 +36,7 @@
 *			HTTP-GET 	  ::= uri ('?' query-string)?
 *			query-string  ::= (qs-param ('&' qs-param)*)?
 *			qs-param	  ::= basePath | path | query | queryOptions | options | 
-*							  start | count | sortFields
+*							  start | count | sort
 *			basePath	  ::= 'basePath' '=' path-rfc3986
 *			path		  ::= 'path' '=' path-rfc3986
 *			query		  ::= 'query' '=' json-object
@@ -44,7 +44,7 @@
 *			options		  ::= 'options' '=' json-array
 *			start		  ::= 'start' '=' number
 *			count		  ::= 'count' '=' number
-*			sortFields	  ::= 'sortFields' '=' json-array
+*			sort		  ::= 'sort' '=' json-array
 *
 *		Please refer to http://json.org for the correct JSON encoding of the
 *		parameters.
@@ -102,16 +102,16 @@
 *			Parameter count specifies the maximum number of files to be returned. If zero
 *			(default) all files, relative to the start position, are returned.
 *
-*		sortFields:
+*		sort:
 *
-*			Parameter sortFields is a JSON array of JSON objects. If specified the files
-*			list is sorted in the order the JSON objects are arranged in the array. The
-*			properties allowed are: "attribute", "descending" and "ignoreCase". Each sort
-*			field object MUST have the "attribute" property defined.
+*			Parameter sort is a JSON array of JSON objects. If specified the files list
+*			is sorted in the order the JSON objects are arranged in the array.
+*			The properties allowed are: "attribute", "descending" and "ignoreCase". Each
+*			sort field object MUST have the "attribute" property defined.
 *
-*				sortFields=[{"attribute":"directory", "descending":true},{"attribute":"name"}]
+*				sort=[{"attribute":"directory", "descending":true},{"attribute":"name"}]
 *
-*			The example sortFields will return the file list with the directories first and
+*			The example sort will return the file list with the directories first and
 *			all names in ascending order. (A typical UI file tree).
 *
 ****************************************************************************************
@@ -127,14 +127,14 @@
 *			status-code	::=	'200' | '204'
 *			file-list	::= '"items"' ':' '[' file-info* ']'
 *			file-info	::= '{' name ',' path ',' size ',' modified ',' directory 
-*							(',' childItems ',' expanded)? '}'
+*							(',' children ',' expanded)? '}'
 *			name		::= '"name"' ':' json-string
 *			path		::= '"path"' ':' json-string
 *			size		::= '"size"' ':' number
 *			modified	::= '"modified"' ':' number
 *			directory	::= '"directory"' ':' ('true' | 'false')
-*			childItems	::= '[' file-info* ']'
-*			expanded	::= '"_expanded"' ':' ('true' | 'false')
+*			children	::= '[' file-info* ']'
+*			expanded	::= '"_EX"' ':' ('true' | 'false')
 *			number		::= DIGIT+
 *			DIGIT		::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 *
@@ -143,7 +143,7 @@
 *		-	The file-info path is returned as a so-called rootless path, that is,
 *			without a leading dot and forward slash. (see rfc-3986 for details).
 *		-	The expanded property indicates if a deep search was performed on a 
-*			directory. Therefore, if expanded is true and childItems is empty we
+*			directory. Therefore, if expanded is true and children is empty we
 *			are dealing with an empty directory and not a directory that hasn't
 *			been searched/expanded yet. The expanded property is typically used
 *			when lazy loading the file store.
@@ -173,6 +173,11 @@
 *		to the server/client.   Requests to access files above the server's document root
 *		are rejected returning the HTTP forbidden response (403).
 *
+*	NOTE:	This implementation will not list any files starting with a dot like .htaccess
+*			unless explicitly requested. However it will NOT process .htaccess files either.
+*			Therefore, it is the user's responsibility not to include any private or other
+*			hidden files in the directory tree accessible to this application.
+*
 ****************************************************************************************
 *
 *	EXTERNAL DEPENDENCIES:
@@ -182,6 +187,8 @@
 *
 *			http://www.pcre.org/
 *
+*		The PCRE directory includes a Microsoft Windows PCRE DLL and associated link
+*		library version 8.10 for your conveniance.
 *
 ***************************************************************************************/
 #ifdef _MSC_VER
@@ -199,6 +206,9 @@
 #include "cbtreeString.h"
 #include "cbtreeFiles.h"
 #include "cbtreeDebug.h"
+
+#define	STORE_C_IDENTIFIER	"path"
+#define STORE_C_LABEL		"name"
 
 static char	cDbgServer[] = "d:/MyServer/html/";		// For debug purpose only.
 
@@ -221,7 +231,8 @@ int main()
 			cFullPath[MAX_PATH_SIZE]  = "",
 			cPathEnc[MAX_PATH_SIZE*2] = "";			
 	char	*pcResult;
-	int		iResult;
+	int		iMaskJSON = 0,
+			iResult;
 	
 	cgiInit();		// Initialize the CGI environment.
 
@@ -300,16 +311,19 @@ int main()
 
 		if( pFileList )
 		{
-			pSlice  = fileSlice( pFileList, pArgs->iStart, pArgs->iCount );
-			iResult = listIsEmpty( pSlice ) ? HTTP_V_NO_CONTENT : HTTP_V_OK;
-			if( (pcResult = jsonEncode(pSlice, 0)) )
+			pSlice     = fileSlice( pFileList, pArgs->iStart, pArgs->iCount );
+			iResult    = listIsEmpty( pSlice ) ? HTTP_V_NO_CONTENT : HTTP_V_OK;
+			iMaskJSON |= pArgs->pOptions->bIconClass ? JSON_M_INCLUDE_ICON : 0;
+
+			if( (pcResult = jsonEncode(pSlice, iMaskJSON)) )
 			{
 				// Write the header(s)
 				fprintf( phResp, "Content-Type: text/json\r\n" );
 				fprintf( phResp, "\r\n" );
 				// Write the body
-				fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
-						 fileCount(pSlice, false), iResult, pcResult );
+				fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\", \
+								   \"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
+						 STORE_C_IDENTIFIER, STORE_C_LABEL, fileCount(pSlice, false), iResult, pcResult );
 				destroy( pcResult );
 			}
 			else
@@ -326,7 +340,9 @@ int main()
 				fprintf( phResp, "Content-Type: text/json\r\n" );
 				fprintf( phResp, "\r\n" );
 
-				fprintf( phResp, "{\"total\":0,\"status\":%d,\"items\":[]}\r\n", iResult );
+				fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\", \
+								   \"total\":%d,\"status\":%d,\"items\":[]}\r\n", 
+						 STORE_C_IDENTIFIER, STORE_C_LABEL, iResult );
 			}
 			else
 			{
