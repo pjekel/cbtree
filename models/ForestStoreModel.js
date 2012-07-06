@@ -50,7 +50,7 @@ define([
 		// End of parameters to constructor
 		//=================================
 		
-		moduleName: "cbTree/ForestStoreModel",
+		moduleName: "cbTree/models/ForestStoreModel",
 
 		constructor: function (params) {
 			// summary:
@@ -82,14 +82,16 @@ define([
 					// already loaded, just return
 					callback(this.root.children);
 				}else{
-					this.store.fetch({
-						query: this.query,
-						onComplete: lang.hitch(this, function(items){
-							this.root.children = items;
-							callback(items);
-						}),
-						onError: onError
-					});
+					this.store.fetch( this._mixinFetch(
+						{
+							query: this.query,
+							onComplete: lang.hitch(this, function(items){
+								this.root.children = items;
+								callback(items);
+							}),
+							onError: onError
+						})
+					);
 				}
 			}else{
 				this.inherited(arguments);
@@ -283,20 +285,22 @@ define([
 			//		private
 
 			var oldChildren = this.root.children || [];
-			this.store.fetch({
-				query: this.query,
-				onComplete: lang.hitch(this, function (newChildren){
-					this.root.children = newChildren;
-					// If the list of children or the order of children has changed...
-					if (oldChildren.length != newChildren.length ||
-						array.some(oldChildren, function (item, idx){ 
-								return newChildren[idx] != item;
-							})) {
-						this.onChildrenChange(this.root, newChildren);
-						this._updateCheckedParent(newChildren[0]);
-					}
-				}) /* end hitch() */
-			}); /* end fetch() */
+			this.store.fetch( this._mixinFetch(
+				{
+					query: this.query,
+					onComplete: lang.hitch(this, function (newChildren){
+						this.root.children = newChildren;
+						// If the list of children or the order of children has changed...
+						if (oldChildren.length != newChildren.length ||
+							array.some(oldChildren, function (item, idx){ 
+									return newChildren[idx] != item;
+								})) {
+							this.onChildrenChange(this.root, newChildren);
+							this._updateCheckedParent(newChildren[0]);
+						}
+					}) /* end hitch() */
+				}) /* end _mixinFetch() */
+			); /* end fetch() */
 		}
 
 	});

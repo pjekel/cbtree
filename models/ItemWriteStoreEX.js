@@ -152,6 +152,29 @@ define([
 			}
 		},
 
+		isRootItem: function (/*dojo.data.item*/ item) {
+			// summary:
+			//		Returns true if the item has the '_rootItemPropName' property defined
+			//		and its value is true, otherwise false is returned.
+			// item:
+			//		A valid dojo.data.store item.
+			// returns:
+			//		True if the item is a root item otherwise false
+			// tag:
+			//		public
+
+			this._assertIsItem(item);
+			return item[this._rootItemPropName] ? true : false; 
+		},
+
+		isValidated: function () {
+			// summary:
+			//		Returns true if a model has signalled the store has successfully been
+			//		validated. The attribute _validated is part of the store and not of a
+			//		model as multiple models may operate on this store. 
+			return this._validated;
+		},
+
 		itemExist: function (/*Object*/ keywordArgs) {
 			// summary:
 			//		Tests if, and return a store item if it exists.	 This method is based
@@ -190,29 +213,6 @@ define([
 			return item;
 		},
 		
-		isRootItem: function (/*dojo.data.item*/ item) {
-			// summary:
-			//		Returns true if the item has the '_rootItemPropName' property defined
-			//		and its value is true, otherwise false is returned.
-			// item:
-			//		A valid dojo.data.store item.
-			// returns:
-			//		True if the item is a root item otherwise false
-			// tag:
-			//		public
-
-			this._assertIsItem(item);
-			return item[this._rootItemPropName] ? true : false; 
-		},
-
-		isValidated: function () {
-			// summary:
-			//		Returns true if a model has signalled the store has successfully been
-			//		validated. The attribute _validated is part of the store and not of a
-			//		model as multiple models may operate on this store. 
-			return this._validated;
-		},
-
 		loadStore: function () {
 			// summary:
 			//		Try a forced synchronous load of the store but only if it has not

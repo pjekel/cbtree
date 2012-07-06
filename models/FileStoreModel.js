@@ -12,32 +12,53 @@
 //	In case of doubt, the BSD 2-Clause license takes precedence.
 //
 define([
-	"dojo/_base/array",	 // array.indexOf array.some
+	"dojo/_base/array",	  // array.indexOf array.some
 	"dojo/_base/declare", // declare
-	"dojo/_base/lang",		// lang.hitch
-	"dojo/_base/window",	// win.global
+	"dojo/_base/lang",    // lang.hitch
+	"dojo/_base/window",  // win.global
 	"./TreeStoreModel"
 ], function(array, declare, lang, win, TreeStoreModel){
 
 		// module:
 		//		cbtree/models/ForestStoreModel
 		// summary:
-		//		Interface between a CheckBox Tree and a dojo.data store that doesn't have a 
-		//		root item, a.k.a. a store that has multiple "top level" items.
+		//		Interface between a CheckBox Tree and a cbtree File store that doesn't have a 
+		//		root item, a.k.a. a store that can have multiple "top level" items.
 
 	return declare([TreeStoreModel], {
 		// summary:
-		//		Interface between a cbTree.Tree and a cbtreeFileStore
+		//		Interface between a cbTree.Tree and a cbtreeF ileStore
 		//
 
 		//=================================
 		// Parameters to constructor
 
+		// deferItemLoadingUntilExpand: Boolean
+		//		Setting this to true will cause the FileStoreModel to defer calling loadItem
+		//		on nodes until they are expanded. This allows for lazying loading where only
+		//		one loadItem (and generally one network call) per expansion rather than one
+		//		for each child.
+		deferItemLoadingUntilExpand: true,
+
 		// queryOptions: Object
+		//		A set of JS 'property:value' pairs use to assist in querying the File Store.
+		//		Properties supported are: 'deep' and 'ignoreCase'. If deep is true a recursive
+		//		search is performed on the stores basePath and path combination. If ignoreCase
+		//		is true matching filenames and paths is done case insensitive.
 		queryOptions: null,
 
-		// sortFileds: Array of 'property:value' pair objects
-		sortFields: null,
+		// sort: Object[]
+		//		An array of sort fields, each sort field is a JavaScript 'property:value' pair
+		//		object. The sort field properties supported are: 'attribute', 'descending' and
+		//		'ignoreCase'. 
+		//		Each sort field object must at least have the 'attribute' property defined, the
+		//		default value for 'descending' is false. If the 'ignoreCase' properties of a 
+		//		sort field is omitted the value of queryOptions 'ignoreCase' is used.
+		//		The sort operation is performed in the order in which the sort field objects
+		//		appear in the sort array.
+		//
+		//		Example: [ {attribute:'directory', descending:true}, {attribute:'name', ignoreCase: true} ]
+		sort: null,
 		
 		// rootLabel: String
 		//		Label of fabricated root item
@@ -50,7 +71,7 @@ define([
 		// End of parameters to constructor
 		//=================================
 		
-		moduleName: "cbTree/FileStoreModel",
+		moduleName: "cbTree/models/FileStoreModel",
 
 		constructor: function (params) {
 			// summary:
@@ -72,8 +93,8 @@ define([
 			if (params.queryOptions) {
 				this._setQueryOptions(params.queryOptions);
 			}
-			if (params.sortFields) {
-				this._setSortFields(params.sortFields);
+			if (params.sort) {
+				this._setSortFields(params.sort);
 			}
 		},
 
@@ -86,16 +107,16 @@ define([
 			}
 		},
 
-		_setSortFields: function (/*array*/ sortFields ) {
-			if (lang.isArray(sortFields)) {
+		_setSortFields: function (/*array*/ sort ) {
+			if (lang.isArray(sort)) {
 				var isArrayOfObjects = true;
-				array.forEach( sortFields, function (field) {
+				array.forEach( sort, function (field) {
 						if (!lang.isObject(field)) {
 							isArrayOfObjects = false;
 						}
 					} )
 				if (isArrayOfObjects) {
-					this.sortFields = sortFields;
+					this.sort = sort;
 				}
 			}
 		},
@@ -208,41 +229,12 @@ define([
 		// Write interface
 
 		newItem: function(/* dojo.dnd.Item */ args, /*Item*/ parent, /*int?*/ insertIndex, /*String?*/ childrenAttr){
-			// summary:
-			//		Creates a new item.	 See dojo.data.api.Write for details on args.
-			//		Used in drag & drop when item from external source dropped onto tree.
-			if(parent === this.root){
-				var newItem = this.store.newItem(args);
-				this._updateCheckedParent(newItem);
-				return newItem;
-			}else{
-				return this.inherited(arguments);
-			}
+			throw new Error(this.moduleName+"newItem(): Operation not allowed on a File Store.");
 		},
 
 		pasteItem: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ oldParentItem, /*dojo.data.item*/ newParentItem, 
 												 /*Boolean*/ bCopy, /*int?*/ insertIndex, /*String?*/ childrenAttr){
-			// summary:
-			//		Move or copy an item from one parent item to another.
-			//		Used in drag & drop
-			// tags:
-			//		extension
-
-			if (oldParentItem === this.root){
-				if (!bCopy){
-					this.store.detachFromRoot(childItem);
-				}
-			}
-			if (newParentItem === this.root){
-				this.store.attachToRoot(childItem);
-			}
-			this.inherited(arguments, [childItem,
-				oldParentItem === this.root ? null : oldParentItem,
-				newParentItem === this.root ? null : newParentItem,
-				bCopy,
-				insertIndex,
-				childrenAttr
-			]);
+			throw new Error(this.moduleName+"pasteItem(): Operation not allowed on a File Store.");
 		},
 
 		// =======================================================================
@@ -313,7 +305,7 @@ define([
 			//		FileStoreModel to pass additional parameters to any store fetch style
 			//		method like fetch(), loadStore() and loadItem().
 			
-			var queryArgs = {	queryOptions: this.queryOptions,	sortFields: this.sortFields };
+			var queryArgs = {	queryOptions: this.queryOptions,	sort: this.sort };
 			var newArgs   = fetchArgs || {};
 			
 			return lang.mixin( newArgs, queryArgs );

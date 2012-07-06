@@ -130,7 +130,7 @@ define([
 		// End Parameters to constructor
 		//==============================
 		
-		moduleName: "cbTree/TreeStoreModel",
+		moduleName: "cbTree/models/TreeStoreModel",
 
 		// hasFakeRoot: Boolean
 		//		Indicates if the model has a fabricated root item. (this is not a constructor 
@@ -233,12 +233,14 @@ define([
 			//		public
 			
 			var store = this.store;
+			var scope = this;
+			
 			if(!store.isItemLoaded(parentItem)){
 				// The parent is not loaded yet, we must be in deferItemLoadingUntilExpand
 				// mode, so we will load it and just return the children (without loading each
 				// child item)
 				var getChildren = lang.hitch(this, arguments.callee);
-				store.loadItem( this._mixinFetch( 
+				store.loadItem( scope._mixinFetch( 
 					{	
 						item: parentItem,
 						onItem: function(parentItem) {
@@ -278,7 +280,7 @@ define([
 				// still waiting for some or all of the items to load
 				array.forEach(childItems, function(item, idx){
 					if (!store.isItemLoaded(item)) {
-						store.loadItem( this._minixFetch( 
+						store.loadItem( scope._mixinFetch( 
 							{
 								item: item,
 								onItem: function(item){
