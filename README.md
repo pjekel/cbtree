@@ -96,9 +96,40 @@ in the /documentation directory.
 * Tree Styling and Icons
 * CheckBox Tree Store Models
 * Store Models API
+* The File Store
 
 Note: All documentation is written using the [markdown](http://daringfireball.net/projects/markdown/)
 format.
+
+<h2 id="checkbox-tree-downloads">Checkbox Tree Downloads</h2>
+The github repository cbtree represents the current development stage of the CheckBox
+Tree project, also known as the incubation stage. It may contain new, untested and undocumented
+features that are not included in any stable build. No warrenty is provided that such
+features will be included in a later release. 
+
+To get the latest stable version please visit the [download](https://github.com/pjekel/cbtree/downloads)
+section:
+
+
+<table style="width:100%">
+  <tbody>
+	<thead>
+	  <tr>
+	    <th style="width:15%;">Version</th>
+	    <th style="width:15%;">Date</th>
+	    <th style="width:10%;">dojo</th>
+	    <th>Description</th>
+	  </tr>
+	</thead>
+    <tr>
+      <td>cbtree-v09.0-0</td>
+      <td>May-20 2012</td>
+      <td>1.7</td>
+      <td>Initial cbtree-AMD release</td>
+    </tr>
+  </tbody>
+</table>
+
 
 <h2 id="basics">CheckBox Tree Migration</h2>
 The new CheckBox Tree implementation is a complete rewrite of the previous

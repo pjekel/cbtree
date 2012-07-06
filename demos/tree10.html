@@ -1,7 +1,7 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<!DOCTYPE html>
+<html>
   <head> 
-    <title>Dijit Tree with Checkboxes</title>     
+    <title>Dijit CheckBox Tree and File Store</title>     
     <style type="text/css">
       @import "../../dijit/themes/claro/claro.css";
       @import "../../dijit/themes/claro/document.css";
@@ -43,7 +43,7 @@
       require([
         "cbtree/Tree",                  // Checkbox tree
         "cbtree/models/FileStoreModel", // FileStoreModel
-        "cbtree/stores/cbtreeFileStore"
+        "cbtree/stores/FileStore"
         ], function( Tree, FileStoreModel, FileStore) {
 
 					// Because of the generic nature of this demo it has no knowledge of the file system layout
@@ -54,8 +54,7 @@
                   rootLabel: 'My HTTP Document Root',
                   checkedRoot: true,
                   checkedStrict: false,
-                  deferItemLoadingUntilExpand: true,
-                  sortFields: [{attribute:"directory", descending:true},{attribute:"name"}]
+                  sort: [{attribute:"directory", descending:true},{attribute:"name"}]
                }); 
           var tree = new Tree( { model: model, id: "MenuTree" });
           tree.placeAt( "CheckboxTree" );

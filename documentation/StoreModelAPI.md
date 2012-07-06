@@ -1,12 +1,19 @@
 # Store Model API #
 The Store Model API extends the functionality of the standard CheckBox Tree Store
-Models. The API allows the user to programmatically build and maintain checkbox
+Models. The Store Model API can be loaded and used with the TreeStoreModel, the ForestStoreModel and
+the FileStoreModel. 
+
+The API allows the user to programmatically build and maintain checkbox
 trees. For example, you can create your store starting with an empty JSON dataset
 or use an existing data store and use the Store Model API to add, move, remove or
 change store items.
 
-The Store Model API can be loaded and used with both the TreeStoreModel as well as
-the ForestStoreModel.
+### File Store Model Restrictions ###
+When used with the FileStoreModel ***ONLY*** the functionality that query the 
+[File Store](FileStore.md) is supported. You can not, for example, add items to
+or remove from a File Store nor can you change any of the File Store item properties deemed 
+'read-only'. In addition, the cbtree/FileStore does not accept a JSON dataset like the
+the dojo/data/ItemFileWriteStore does.
 
 ### Loading the API ###
 The Store Model API is implemented as an extension to the [Store Models](StoreModels.md)

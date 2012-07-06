@@ -1,7 +1,7 @@
 # CheckBox Tree Store Models #
-The CheckBox Tree comes with two store models, that is, a *Tree Store Model* and
-a *Forest Store Model*. The distinct differences are explained in the following 
-sections. Which store model to use primarily depends on:
+The CheckBox Tree comes with three store models, that is, a *Tree Store Model*
+a *Forest Store Model* and a *File Store Model*. The distinct differences are
+explained in the following sections. Which store model to use primarily depends on:
 
 1. How the data store is structured.
 2. How you are going to query the store.
@@ -119,6 +119,26 @@ to anchor the tree.
 
 In this example the store query returns all store items available.
 
+<h2 id="file-store-model">File Store Model</h2>
+
+Derived from the Forest Store Model, the File Store Model allows the user to present
+the back-end server file system as a traditional UI directory tree. 
+The model is designed to be used with the cbtree FileStore which is based on the 
+*dojo.data.ItemFileWriteStore* but implements the functionality to query the back-end
+servers file system, add lazy loading and provide limited support for store write operations.
+Please refer to the [File Store](FileStore.md) documentation for details. 
+
+The File Store Model implements a subset of the Forest Store Model and only supports
+a limited set of the [Store Model API](StoreModelAPI.md) functionality.
+Because the content of a File Store is treated as read-only, that is, you can't change
+file properties such as the name and path or add or delete files to/from the store
+any attempt to do so will throw an error.
+
+In addition to the common Store Model Properties, the File Store Model has an
+additional set of properties to help query the File Store. Also, because of the
+reduced function set supported, some of common store model properties will be
+ignored by the File Store Model.
+
 <h2 id="store-model-properties">Store Model Properties</h2>
 
 #### checkedAll: ####
@@ -149,7 +169,8 @@ In this example the store query returns all store items available.
 > example, if all children are checked the parent will automatically receive
 > the same checked state or if any of the children are unchecked the parent
 > will, depending on, if multi state is enabled, receive either a mixed or unchecked
-> state. Note: If true, *deferItemLoadingUntilExpand* will be ignored.
+> state. Note: If true, the property *deferItemLoadingUntilExpand* will be ignored
+> and a complete store load is forced.
 
 #### childrenAttrs: ####
 > String[] ('children'), Array of one or more attribute names (attributes of a dojo.data item)
@@ -158,8 +179,8 @@ In this example the store query returns all store items available.
 #### deferItemLoadingUntilExpand: ####
 > Boolean (false), If true will cause the TreeStoreModel to defer calling loadItem
 > on nodes until they are expanded. This allows for lazy loading where only one
-> loadItem (and generally one network call, consequently) per expansion (rather than
-> one for each child). Note: Only valid if *checkedStrict* equals false.
+> loadItem (and generally one network call) per expansion (rather than one for each child).
+> Note: Only valid if *checkedStrict* equals false.
 
 #### excludeChildrenAttrs: ####
 > String[] (null), If multiple childrenAttrs have been specified excludeChildrenAttrs
@@ -199,7 +220,35 @@ In this example the store query returns all store items available.
 > String ('$root$'), ID of fabricated root item, Only valid for a ForestStoreModel.
 
 #### store: ####
-> Object (null), The underlying dojo.data store.
+> Object (null), The underlying dojo/data or cbtree/file store.
+
+
+<h2 id="file-store-model-properties">File Store Model Properties</h2>
+The following properties are in addition to the common store model properties but are
+specific to the File Store Model. 
+Please note that these properties rely on the use of the cbtree File Store ***AND*** 
+the server side applications *cbtreeFileStore.php* or *cbtreeFileStore.cgi*.
+(See the [File Store](FileStore.md) documentation for details).
+
+#### queryOptions: ####
+> Object (null), A set of JS 'property:value' pairs used to assist in querying the 
+File Store and back-end server. Properties supported are: *deep* and *ignoreCase*. 
+If deep is true a recursive search is performed on the stores basePath and path
+combination. If ignoreCase is true, filenames and paths are matched case insensitive.
+
+#### sort: ####
+> Array (null), An array of sort fields, each sort field is a JavaScript 'property:value'
+pair object. The sort field properties supported are: *attribute*, *descending* and
+*ignoreCase*. Each sort field object must at least have the *attribute* property defined, the
+default value for *descending* is false. If the *ignoreCase* properties of a sort field is
+omitted the value of the queryOptions *ignoreCase* is used.
+The sort operation is performed in the order in which the sort field objects appear in the
+sort array.
+
+> Example: [ {attribute:'directory', descending:true}, {attribute:'name', ignoreCase: true} ]
+
+> The above examples returns a typical UI style directory listing with the directories first
+followed by a file list in ascending order.
 
 <h2 id="store-model-functions">Store Model Functions</h2>
 
