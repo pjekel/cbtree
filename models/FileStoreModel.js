@@ -20,14 +20,14 @@ define([
 ], function(array, declare, lang, win, TreeStoreModel){
 
 		// module:
-		//		cbtree/models/ForestStoreModel
+		//		cbtree/models/FileStoreModel
 		// summary:
 		//		Interface between a CheckBox Tree and a cbtree File store that doesn't have a 
 		//		root item, a.k.a. a store that can have multiple "top level" items.
 
 	return declare([TreeStoreModel], {
 		// summary:
-		//		Interface between a cbTree.Tree and a cbtreeF ileStore
+		//		Interface between a cbTree.Tree and a cbtree FileStore
 		//
 
 		//=================================
@@ -52,8 +52,7 @@ define([
 		//		object. The sort field properties supported are: 'attribute', 'descending' and
 		//		'ignoreCase'. 
 		//		Each sort field object must at least have the 'attribute' property defined, the
-		//		default value for 'descending' is false. If the 'ignoreCase' properties of a 
-		//		sort field is omitted the value of queryOptions 'ignoreCase' is used.
+		//		default value for both 'descending' and 'ignoreCase' is false.
 		//		The sort operation is performed in the order in which the sort field objects
 		//		appear in the sort array.
 		//
@@ -228,6 +227,46 @@ define([
 		// =======================================================================
 		// Write interface
 
+		deleteItem: function(/*item*/ item, /*Callback*/ onBegin, /*Callback*/ onError, /*Context*/ scope) {
+			// summary:
+			//		Delete an item from the file store.
+			// item:
+			//		A valid File Store item
+			// onBegin:
+			//		If an onBegin callback function is provided, the callback function
+			//		will be called just once, before the XHR DELETE request is issued.
+			//		The onBegin callback MUST return true in order to proceed with the
+			//		deletion, any other return value will abort the operation.
+			// onError:
+			//		The onError parameter is the callback to invoke when the item load
+			//		encountered an error. It takes only one parameter, the error object
+			// scope:
+			//		If a scope object is provided, all of the callback functions (onBegin,
+			//		onError, etc) will be invoked in the context of the scope object. In
+			//		the body of the callback function, the value of the "this" keyword
+			//		will be the scope object otherwise window.global is used.
+			// tag:
+			//		Public
+			var scope = scope || window.global;
+
+			if (onBegin) {
+				if (!onBegin.call(scope, item)) {
+					return;
+				}
+			}
+
+			if (item === this.root) {
+				var children = this.root.children || [];
+				var i;
+				
+				for(i=0;i<children.length; i++) {
+					this.store.deleteItem( children[i], null, onError, scope );
+				}
+			} else {
+				return this.store.deleteItem(item, onBegin, onError, scope);
+			}
+		},
+
 		newItem: function(/* dojo.dnd.Item */ args, /*Item*/ parent, /*int?*/ insertIndex, /*String?*/ childrenAttr){
 			throw new Error(this.moduleName+"newItem(): Operation not allowed on a File Store.");
 		},
@@ -252,6 +291,33 @@ define([
 			this.inherited(arguments);
 		},
 
+		onNewItem: function(/* dojo.data.item */ item, /* Object */ parentInfo){
+			// summary:
+			//		Handler for when new items appear in the store, either from a drop operation
+			//		or some other way.	 Updates the tree view (if necessary).
+			// description:
+			//		If the new item is a child of an existing item,
+			//		calls onChildrenChange() with the new list of children
+			//		for that existing item.
+			//
+			// tags:
+			//		extension
+		
+			// Call onChildrenChange() on parent (ie, existing) item with new list of children
+			// In the common case, the new list of children is simply parentInfo.newValue or
+			// [ parentInfo.newValue ], although if items in the store has multiple
+			// child attributes (see `childrenAttr`), then it's a superset of parentInfo.newValue,
+			// so call getChildren() to be sure to get right answer.
+			if(parentInfo){
+				this.getChildren(parentInfo.item, lang.hitch(this, function(children){
+					this.onChildrenChange(parentInfo.item, children);
+				}));
+				this._updateCheckedParent(item, true);
+			} else {
+				this._requeryTop();
+			}
+		},
+
 		onSetItem: function (/*dojo.data.item*/ storeItem, /*string*/ attribute, /*AnyType*/ oldValue, 
 													/*AnyType*/ newValue){
 			// summary:
@@ -274,29 +340,6 @@ define([
 				this._requeryTop();
 			}
 			this.inherited(arguments);
-		},
-
-		onRootChange: function (/*dojo.data.item*/ storeItem, /*Object*/ evt) {
-			// summary:
-			//		Handler for any changes to the stores top level items.
-			// description:
-			//		Users can extend this method to modify a new element that's being
-			//		added to the root of the tree, for example to make sure the new item
-			//		matches the tree root query. Remember, even though the item is added
-			//		as a top level item in the store it does not quarentee it will match
-			//		your tree query unless your query is simply the store identifier.
-			//		Therefore, in case of a store root detach event (evt.detach=true) we
-			//		only require if the item is a known child of the tree root.
-			// storeItem:
-			//		The store item that was attached to, or detached from, the root.
-			// evt:
-			//		Object detailing the type of event { attach: boolean, detach: boolean }.
-			// tag:
-			//		callback, public
-
-			if (evt.attach || (array.indexOf(this.root.children, storeItem) != -1)){
-				this._requeryTop();
-			}
 		},
 
 		_mixinFetch: function (/*object*/ fetchArgs ) {
@@ -330,7 +373,7 @@ define([
 									return newChildren[idx] != item;
 								})) {
 							this.onChildrenChange(this.root, newChildren);
-							this._updateCheckedParent(newChildren[0]);
+							this._updateCheckedParent(newChildren[0], true);
 						}
 					}) /* end hitch() */
 				}) /* end _mixinFetch */
