@@ -61,7 +61,7 @@ void destroyList( LIST **ppList, DESTROY_DATA func )
 		pEntry = (*ppList)->pNext;
 		while( pEntry != *ppList )
 		{
-			if( func )
+			if( func && pEntry->pvData )
 			{
 				func( pEntry->pvData );
 			}

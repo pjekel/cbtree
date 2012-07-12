@@ -37,15 +37,15 @@
 
 // Declare list of possible HTTP methods and their symbolic values.
 static METHOD	httpMethods[] = {
-		{ HTTP_V_OPTIONS,	"OPTIONS" },
-		{ HTTP_V_GET,		"GET" },
-		{ HTTP_V_HEAD,		"HEAD" },
-		{ HTTP_V_POST,		"POST" },
-		{ HTTP_V_PUT,		"PUT" },
-		{ HTTP_V_DELETE,	"DELETE" },
-		{ HTTP_V_TRACE,		"TRACE" },
-		{ HTTP_V_CONNECT,	"CONNECT" },
-		{ 0, NULL }
+		{ HTTP_V_OPTIONS,	"OPTIONS",	false },
+		{ HTTP_V_GET,		"GET",		true },		// Allowed by default
+		{ HTTP_V_HEAD,		"HEAD",		false },
+		{ HTTP_V_POST,		"POST",		false },
+		{ HTTP_V_PUT,		"PUT",		false },
+		{ HTTP_V_DELETE,	"DELETE",	false },
+		{ HTTP_V_TRACE,		"TRACE",	false },
+		{ HTTP_V_CONNECT,	"CONNECT",	false },
+		{ 0, NULL, false }
 	};
 
 // Declare list of possible HTTP status codes and reason phrases.
@@ -53,14 +53,16 @@ static STATUS	httpStatus[] = {
 		{ HTTP_V_OK,					200, "OK" },
 		{ HTTP_V_NO_CONTENT,			204, "No Content" },
 		{ HTTP_V_BAD_REQUEST,			400, "Bad Request" },
+		{ HTTP_V_UNAUTHORIZED,			401, "Unauthorized" },
 		{ HTTP_V_FORBIDDEN,				403, "Forbidden" },
 		{ HTTP_V_NOT_FOUND,				404, "Not Found" },
 		{ HTTP_V_METHOD_NOT_ALLOWED,	405, "Method Not Allowed" },
+		{ HTTP_V_GONE,					410, "Gone" },
 		{ HTTP_V_SERVER_ERROR,			500, "Internal Server Error" },
 		{ 0, 0, NULL }
 	};
 
-// Declare list of possible CGI varaible.
+// Declare list of possible CGI varaible. (availability depends on the HTTP server).
 static const char *cgiVarNames[] = { 
 	"AUTH_TYPE",
 	"CONTENT_LENGTH",
@@ -97,13 +99,65 @@ static const char *cgiVarNames[] = {
 	NULL
 	};
 
+// Declare CBTREE specific configuration variables
+static const char *cgiCbtreeNames[] = { 
+	"CBTREE_BASEPATH",
+	"CBTREE_METHODS",
+	NULL
+	};
+
+
 static DATA *cgiEnvironment = NULL;
 
 FILE	*phResp = NULL;
 
+#ifdef _DEBUG
 // When debuging use cDbgQS to inject a QUERY-STRING.
-//char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree";
-char	cDbgQS[] = "basePath=./&path=js/dojotoolkit/cbtree/stores/server/CGI/src/vc2008";
+//char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree&sort=[{\"attribute\":\"name\", \"ignoreCase\":true}]";
+char	cDbgQS[] = "basePath=/Logs&path=markdown";
+#endif
+
+/**
+*	_cgiGetMethodById
+*
+*		Returns the address of a HTTP method declaration based on the method ID
+*
+*	@return		Address METHOD.
+**/
+METHOD * _cgiGetMethodById( int iMethod )
+{
+	int		i;
+	
+	for( i = 0; httpMethods[i].pcMethod; i++ )
+	{
+		if( httpMethods[i].iSymbolic == iMethod )
+		{
+			return &httpMethods[i];
+		}
+	}	
+	return NULL;
+}
+
+/**
+*	_cgiGetMethodByName
+*
+*		Returns the address of a HTTP method declaration based on the method name.
+*
+*	@return		Address METHOD.
+**/
+METHOD * _cgiGetMethodByName( char *pcMethod )
+{
+	int		i;
+	
+	for( i = 0; httpMethods[i].pcMethod; i++ )
+	{
+		if( !strcmp( pcMethod, httpMethods[i].pcMethod ) )
+		{
+			return &httpMethods[i];
+		}
+	}	
+	return NULL;
+}
 
 /**
 *	_cgiGetStatus
@@ -143,36 +197,6 @@ void cgiCleanup()
 }
 
 /**
-*	cgiFailed
-*
-*		Send a failure response back to the server. If parameter iStatus is an
-*		unknown symbolic value, HTTP_V_SERVER_ERROR is used instead.
-*
-*	@param	iStatus			Symbolic HTTP Status code
-*	@param	pcText			Address C-string optional text message.
-**/
-void cgiFailed( int iStatus, char *pcText )
-{
-	STATUS	*pStatus = _cgiGetStatus( iStatus );
-	
-	fprintf( phResp, "Content-Type: text/html\r\n" );
-	if( pStatus )
-	{
-		fprintf( phResp, "Status: %d %s\r\n", pStatus->iStatusCode, pStatus->pcReason ); 
-	}
-	else
-	{
-		cgiFailed( HTTP_V_SERVER_ERROR, pcText );
-		return;
-	}
-	fprintf( phResp, "\r\n" );		// Empty line between headers and body (REQUIRED).
-	if( pcText && *pcText )
-	{
-		fprintf( phResp, "%s\r\n", pcText );
-	}
-}
-
-/**
 *	cgiInit
 *
 *		Load the available CGI variables and create the PHP style _SERVER and _GET
@@ -180,13 +204,16 @@ void cgiFailed( int iStatus, char *pcText )
 **/
 int cgiInit()
 {
+	METHOD	*pMethod;
 	DATA	*ptQuery,
 			*ptArgs,
 			*ptSERVER,
+			*ptCBTREE,
 			*ptGET;
 	char	cProperty[MAX_BUF_SIZE],
 			cValue[MAX_BUF_SIZE],
 			cArgm[MAX_BUF_SIZE],
+			*pcAllowed,
 			*pcSrc,
 			*pcArgm;
 	int		iArgCount,
@@ -197,6 +224,7 @@ int cgiInit()
 	
 	cgiEnvironment = newArray(NULL);
 
+	// Setup a PHP style '$_SERVER' variable.
 	if( (ptSERVER = newArray( "_SERVER" )) )
 	{
 		for( i=0; cgiVarNames[i]; i++)
@@ -206,6 +234,24 @@ int cgiInit()
 		varPush( cgiEnvironment, ptSERVER );
 	}
 
+	/**
+	*	 Setup a PHP style '$_CBTREE' variable.
+	*
+	*	NOTE:	On Apache HTTP servers any non CGI variables must be passed explicitly
+	*			using the 'SetEnv' or 'PassEnv' directive. For example in httpd.conf
+	*			add:
+	*
+	*				PassEnv CBTREE_METHODS
+	**/
+	if( (ptCBTREE = newArray( "_CBTREE" )) )
+	{
+		for( i=0; cgiCbtreeNames[i]; i++)
+		{
+			varNewProperty( cgiCbtreeNames[i],  getenv(cgiCbtreeNames[i]), ptCBTREE );
+		}
+		varPush( cgiEnvironment, ptCBTREE );
+	}
+	
 #ifdef _DEBUG
 	varSet( cgiGetProperty("QUERY_STRING"), cDbgQS );
 #endif
@@ -235,7 +281,27 @@ int cgiInit()
 		}
 		destroy( ptArgs );
 	}
-	return 0;
+
+	// Define which HTTP methods are allowed.
+	if( ptCBTREE )
+	{
+		pcAllowed = varGet(varGetProperty("CBTREE_METHODS", ptCBTREE));
+		snprintf( cProperty, sizeof(cProperty)-1,"GET,%s", (pcAllowed ? pcAllowed : "") );
+		pcArgm = strtok( cProperty, ", " );
+		while( pcArgm )
+		{
+			strtrim( pcArgm, TRIM_M_WSP );
+			if( *pcArgm )
+			{
+				if( (pMethod = _cgiGetMethodByName( pcArgm )) )
+				{
+					pMethod->bAllowed = true;
+				}
+			}
+			pcArgm = strtok( NULL, ", " );
+		}
+	}
+	return 1;
 }
 
 /**
@@ -268,26 +334,74 @@ DATA *cgiGetProperty( char *pcProperty )
 }
 
 /**
-*	cgiGetMethod
+*	cgiGetMethodId
 *
 *		Returns the symbolic value of the HTTP method used to invoke this application.
 *
 *	@return		Integer HTTP method id.
 **/
-int cgiGetMethod()
+int cgiGetMethodId()
 {
+	METHOD	*pMethod;
 	char	*pcMethod;
-	int		i;
 	
 	if( (pcMethod = varGet(cgiGetProperty( "REQUEST_METHOD" ))) )
 	{
-		for( i = 0; httpMethods[i].pcMethod; i++ )
+		if( (pMethod = _cgiGetMethodByName(pcMethod)) )
 		{
-			if( !strcmp( pcMethod, httpMethods[i].pcMethod ) )
-			{
-				return httpMethods[i].iSymbolic;
-			}
-		}	
+			return pMethod->iSymbolic;
+		}
 	}
 	return HTTP_V_UNKNOWN;
 }
+
+/**
+*	cgiMethodAllowed
+*
+*		Returns true if the HTTP method identified by iMethod is valid and allowed.
+*
+*	@param	iMethod			Integer value identifying a HTTP method.
+*
+*	@return		true or false
+**/
+bool cgiMethodAllowed( int iMethod ) 
+{
+	METHOD	*pMethod;
+	
+	if( (pMethod = _cgiGetMethodById(iMethod)) )
+	{
+		return pMethod->bAllowed;
+	}
+	return false;
+}
+
+/**
+*	cgiResponse
+*
+*		Send a response back to the server. If parameter iStatus is an
+*		unknown symbolic value, HTTP_V_SERVER_ERROR is used instead.
+*
+*	@param	iStatus			Symbolic HTTP Status code
+*	@param	pcText			Address C-string optional text message.
+**/
+void cgiResponse( int iStatus, char *pcText )
+{
+	STATUS	*pStatus = _cgiGetStatus( iStatus );
+	
+	fprintf( phResp, "Content-Type: text/html\r\n" );
+	if( pStatus )
+	{
+		fprintf( phResp, "Status: %d %s\r\n", pStatus->iStatusCode, pStatus->pcReason ); 
+	}
+	else
+	{
+		cgiResponse( HTTP_V_SERVER_ERROR, pcText );
+		return;
+	}
+	fprintf( phResp, "\r\n" );		// Empty line between headers and body (REQUIRED).
+	if( pcText && *pcText )
+	{
+		fprintf( phResp, "%s\r\n", pcText );
+	}
+}
+

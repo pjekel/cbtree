@@ -8,6 +8,8 @@
   #endif /* _MSC_VER */
   #define	snprintf			_snprintf
   #define	stricmp				_stricmp
+  #define	chmod				_chmod
+  #define	rmdir				_rmdir
 #endif	/* WIN32 */
 
 #ifndef __cplusplus
@@ -19,9 +21,11 @@
 #define	HTTP_V_OK					200
 #define HTTP_V_NO_CONTENT			204
 #define HTTP_V_BAD_REQUEST			400
+#define HTTP_V_UNAUTHORIZED			401
 #define	HTTP_V_FORBIDDEN			403
 #define	HTTP_V_NOT_FOUND			404
 #define HTTP_V_METHOD_NOT_ALLOWED	405
+#define HTTP_V_GONE					410
 #define HTTP_V_SERVER_ERROR			500
 
 #define	MAX_BUF_SIZE	4096		// Maximum buffer size

@@ -747,7 +747,7 @@ define([
 			if(this.labelAttr){
 				return this.store.getValue(item,this.labelAttr);	// String
 			}else{
-				this.setLabelAttr(this.store.getLabelAttr());
+				this.setLabelAttr(this.getLabelAttr());
 				return this.store.getLabel(item);	// String
 			}
 		},
@@ -804,6 +804,17 @@ define([
 		
 		// =======================================================================
 		// Write interface
+
+		deleteItem: function (/*dojo.data.Item*/ storeItem){
+			// summary:
+			//		Delete a store item.
+			// storeItem:
+			//		The store item to be delete.
+			// tag:
+			//		public
+			
+			return this.store.deleteItem(storeItem);
+		},
 
 		newItem: function (/*dojo.dnd.Item*/ args, /*dojo.data.item*/ parent, /*int?*/ insertIndex, /*String?*/ childrenAttr){
 			// summary:
@@ -884,7 +895,7 @@ define([
 			// tags:
 			//		public
 			if (!this.labelAttr) {
-				this.setLabelAttr(this.store.getLabelAttr());
+				this.setLabelAttr(this.store.getLabelAttributes()[0]);
 			}
 			return this.labelAttr;
 		},
@@ -969,23 +980,18 @@ define([
 			//
 			// tags:
 			//		extension
-
-			this._updateCheckedParent(item, true);
 			
-			// We only care about the new item if it has a parent that corresponds to a TreeNode
-			// we are currently displaying
-			if(!parentInfo){
-				return;
-			}
-
 			// Call onChildrenChange() on parent (ie, existing) item with new list of children
 			// In the common case, the new list of children is simply parentInfo.newValue or
 			// [ parentInfo.newValue ], although if items in the store has multiple
 			// child attributes (see `childrenAttr`), then it's a superset of parentInfo.newValue,
 			// so call getChildren() to be sure to get right answer.
-			this.getChildren(parentInfo.item, lang.hitch(this, function(children){
-				this.onChildrenChange(parentInfo.item, children);
-			}));
+			if(parentInfo) {
+				this.getChildren(parentInfo.item, lang.hitch(this, function(children){
+					this.onChildrenChange(parentInfo.item, children);
+				}));
+			}
+			this._updateCheckedParent(item, true);
 		},
 
 		onDeleteItem: function (/*dojo.data.item*/ storeItem){
@@ -1049,7 +1055,7 @@ define([
 			this.getLabelAttr();
 		},
 
-		onRootChange: function (/*dojo.data.item*/ storeItem, /*Object*/ evt) {
+		onRootChange: function (/*dojo.data.item*/ storeItem, /*String*/ action) {
 			// summary:
 			//		Handler for any changes to the stores top level items.
 			// description:
@@ -1062,8 +1068,9 @@ define([
 			//		only require if the item is a known child of the tree root.
 			// storeItem:
 			//		The store item that was attached to, or detached from, the root.
-			// evt:
-			//		Object detailing the type of event { attach: boolean, detach: boolean }.
+			// action:
+			//		String detailing the type of event: "new", "delete", "attach" or 
+			//		"detach"
 			// tag:
 			//		callback
 		},

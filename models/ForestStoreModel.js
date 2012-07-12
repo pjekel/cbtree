@@ -177,6 +177,25 @@ define([
 		// =======================================================================
 		// Write interface
 
+		deleteItem: function(/*item*/ item) {
+			// summary:
+			//		Delete an item from the file store.
+			// item:
+			//		A valid store item
+			// tag:
+			//		Public
+			if (item === this.root) {
+				var children = this.root.children || [];
+				var i;
+				
+				for(i=0;i<children.length; i++) {
+					this.store.deleteItem( children[i] );
+				}
+			} else {
+				return this.store.deleteItem(item);
+			}
+		},
+
 		newItem: function(/* dojo.dnd.Item */ args, /*Item*/ parent, /*int?*/ insertIndex, /*String?*/ childrenAttr){
 			// summary:
 			//		Creates a new item.	 See dojo.data.api.Write for details on args.
@@ -230,6 +249,33 @@ define([
 			this.inherited(arguments);
 		},
 
+		onNewItem: function(/* dojo.data.item */ item, /* Object */ parentInfo){
+			// summary:
+			//		Handler for when new items appear in the store, either from a drop operation
+			//		or some other way.	 Updates the tree view (if necessary).
+			// description:
+			//		If the new item is a child of an existing item,
+			//		calls onChildrenChange() with the new list of children
+			//		for that existing item.
+			//
+			// tags:
+			//		extension
+		
+			// Call onChildrenChange() on parent (ie, existing) item with new list of children
+			// In the common case, the new list of children is simply parentInfo.newValue or
+			// [ parentInfo.newValue ], although if items in the store has multiple
+			// child attributes (see `childrenAttr`), then it's a superset of parentInfo.newValue,
+			// so call getChildren() to be sure to get right answer.
+			if(parentInfo){
+				this.getChildren(parentInfo.item, lang.hitch(this, function(children){
+					this.onChildrenChange(parentInfo.item, children);
+				}));
+				this._updateCheckedParent(item, true);
+			} else {
+				this._requeryTop();
+			}
+		},
+
 		onSetItem: function (/*dojo.data.item*/ storeItem, /*string*/ attribute, /*AnyType*/ oldValue, 
 													/*AnyType*/ newValue){
 			// summary:
@@ -254,7 +300,7 @@ define([
 			this.inherited(arguments);
 		},
 
-		onRootChange: function (/*dojo.data.item*/ storeItem, /*Object*/ evt) {
+		onRootChange: function (/*dojo.data.item*/ storeItem, /*string*/ action) {
 			// summary:
 			//		Handler for any changes to the stores top level items.
 			// description:
@@ -272,7 +318,9 @@ define([
 			// tag:
 			//		callback, public
 
-			if (evt.attach || (array.indexOf(this.root.children, storeItem) != -1)){
+			// Only handle "attach" and "detach" here as store item creation or deletion
+			// will be handled by onNewItem() and onDeleteItem()
+			if (action === "attach" || action === "detach") {
 				this._requeryTop();
 			}
 		},

@@ -495,17 +495,6 @@ define([
 			this._checkOrUncheck(query, true, onComplete, scope);
 		},
 		
-		deleteItem: function (/*dojo.data.Item*/ storeItem){
-			// summary:
-			//		Delete a store item.
-			// storeItem:
-			//		The store item to be delete.
-			// tag:
-			//		public
-			
-			return this.store.deleteItem(storeItem);
-		},
-
 		detachFromRoot: function (/*dojo.data.item*/ storeItem) {
 			// summary:
 			//		Detach item from the root by removing it from the stores top level item

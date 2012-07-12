@@ -85,7 +85,7 @@ define([
 			if ( !this.isRootItem(/*dojo.data.item*/ item) ) {
 				item[this._rootItemPropName] = true;
 				this._arrayOfTopLevelItems.push(item);
-				this.onRoot( item,{ attach: true, detach: false } );
+				this.onRoot( item, "attach" );
 			}
 		},
 
@@ -101,7 +101,7 @@ define([
 			if ( this.isRootItem(item) ) {
 				this._removeArrayElement(this._arrayOfTopLevelItems, item);
 				delete item[this._rootItemPropName];
-				this.onRoot( item,{ attach: false, detach: true } );
+				this.onRoot( item, "detach" );
 			}
 		},
 		
@@ -117,15 +117,6 @@ define([
 			return this._getIdentifierAttribute();
 		},
 		
-		getLabelAttr: function () {
-			// summary:
-			//		Return the label attribute of the store.
-			// tag:
-			//		public
-
-			return this._labelAttr;
-		},
-
 		getParents: function (/*dojo.data.item*/ item) {
 			// summary:
 			//		Get the parent(s) of a dojo.data.item.	
@@ -235,22 +226,20 @@ define([
 			//		See dojo.data.api.Notification.onDelete()
 			// tag:
 			//		callback.
-
 			// NOTE: Don't call isItem() as it will fail, the item is already deleted
-			//			 and therefore no longer valid. 
+			//			 and therefore no longer valid.
 			if ( deletedItem[this._rootItemPropName] === true ){
-				this.onRoot( deletedItem, { attach: false, detach: true } );
+				this.onRoot( deletedItem, "delete" );
 			}
 		},
-
+		
 		onNew: function(/*dojo.data.item*/ item, parentInfo ){
 			// summary:
 			//		See dojo.data.api.Notification.onNew()
 			// tag:
 			//		callback.
-
 			if ( this.isRootItem(item) ){
-				this.onRoot( item,{ attach: true, detach: false } );
+				this.onRoot( item, "new" );
 			}
 		},
 		
@@ -262,16 +251,13 @@ define([
 			//		callback.
 		},
 		
-		onRoot: function(/*dojo.data.item*/ item, /*Object*/ evt ) {
+		onRoot: function(/*dojo.data.item*/ item, /*string*/ action ) {
 			// summary:
 			//		Invoked whenever a item is added to, or removed from the root.
 			// item:
 			//		Store item.
-			// evt:
-			//		Event object with two properties: 
-			//				{ attach: /*boolean*/, 
-			//					detach: /*boolean*/ 
-			//				}
+			// action:
+			//		Event action which can be: "new", "delete", "attach" or "detach" 
 			// tag:
 			//		callback.
 		},

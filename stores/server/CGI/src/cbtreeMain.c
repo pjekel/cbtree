@@ -23,20 +23,18 @@
 *
 *	Description:
 *
-*		This file contains the main entry point for the server side CGI application
-*		required to enable the dojo cbtreeFileStore and is part of the github project
+*		This file contains the main entry point for the Server Side CGI application
+*		required to enable the dojo cbtree FileStore and is part of the github project
 *		'cbtree'.
 *
-*		Please refer to http://datatracker.ietf.org/doc/rfc3875/ for the CGI Version 1.1
-*		specification.
+*		The cbtree FileStore CGI application is invoked by means of a HTTP GET or DELETE
+*		request, the basic ABNF format of a request looks like:
 *
-*		The cbtreeFileStore CGI application is invoked by means of a HTTP GET request,
-*		the basic ABNF format of a request looks like:
-*
-*			HTTP-GET 	  ::= uri ('?' query-string)?
+*			HTTP-request  ::= uri ('?' query-string)?
 *			query-string  ::= (qs-param ('&' qs-param)*)?
-*			qs-param	  ::= basePath | path | query | queryOptions | options | 
+*			qs-param	  ::= authToken | basePath | path | query | queryOptions | options | 
 *							  start | count | sort
+*			authToken	  ::= 'authToken' '=' json-object
 *			basePath	  ::= 'basePath' '=' path-rfc3986
 *			path		  ::= 'path' '=' path-rfc3986
 *			query		  ::= 'query' '=' json-object
@@ -49,10 +47,18 @@
 *		Please refer to http://json.org for the correct JSON encoding of the
 *		parameters.
 *
+*		Please refer to http://datatracker.ietf.org/doc/rfc3875/ for the CGI Version 1.1
+*		specification.
+*
 ****************************************************************************************
 *
 *	QUERY-STRING Parameters:
 * 
+*		authToken:
+*
+*			The authToken parameter is a JSON object. There are no restrictions with
+*			regards to the content of the object. (currently not used).
+*
 *		basePath:
 *
 *			The basePath parameter is a URI reference (rfc 3986) relative to the server's
@@ -87,8 +93,8 @@
 *		options:
 *
 *			The options parameter is a JSON array of strings. Each string specifying a
-*			search options to be enabled. Currently two options are supported: "dirsOnly"
-*			and "showHiddenFiles".
+*			search options to be enabled. Currently the following options are supported:
+*			"dirsOnly", "iconClass" and "showHiddenFiles".
 *
 *				options=["dirsOnly", "showHiddenFiles"]
 *
@@ -109,50 +115,51 @@
 *			The properties allowed are: "attribute", "descending" and "ignoreCase". Each
 *			sort field object MUST have the "attribute" property defined.
 *
-*				sort=[{"attribute":"directory", "descending":true},{"attribute":"name"}]
+*				sort=[{"attribute":"directory", "descending":true},{"attribute":"name", 
+*					   "ignoreCase":true}]
 *
 *			The example sort will return the file list with the directories first and
 *			all names in ascending order. (A typical UI file tree).
 *
 ****************************************************************************************
 *
-*	RESPONSE:
+*	ENVIRONMENT VARIABLE:
 *
-*		Assuming a valid HTTP GET request was received the response to the client
-*		complies with the following ABNF notation:
+*		CBTREE_BASEPATH
 *
-*			response	::= '[' totals ',' status ',' file-list ']'
-*			totals 		::= '"total"' ':' number
-*			status		::= '"status"' ':' status-code
-*			status-code	::=	'200' | '204'
-*			file-list	::= '"items"' ':' '[' file-info* ']'
-*			file-info	::= '{' name ',' path ',' size ',' modified ',' directory 
-*							(',' children ',' expanded)? '}'
-*			name		::= '"name"' ':' json-string
-*			path		::= '"path"' ':' json-string
-*			size		::= '"size"' ':' number
-*			modified	::= '"modified"' ':' number
-*			directory	::= '"directory"' ':' ('true' | 'false')
-*			children	::= '[' file-info* ']'
-*			expanded	::= '"_EX"' ':' ('true' | 'false')
-*			number		::= DIGIT+
-*			DIGIT		::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+*			The basePath is a URI reference (rfc 3986) relative to the server's
+*			document root used to compose the root directory.  If this variable
+*			is set it overwrites the basePath parameter in any query string and
+*			therefore becomes the server wide basepath.
+*
+*				CBTREE_BASEPATH /myServer/wide/path
+*
+*		CBTREE_METHODS
+*
+*			A comma separated list of HTTP methods to be supported by the Server
+*			Side Application. By default only HTTP GET is supported. Example:
+*
+*				CBTREE_METHODS GET,DELETE
 *
 *	Notes:
 *
-*		-	The file-info path is returned as a so-called rootless path, that is,
-*			without a leading dot and forward slash. (see rfc-3986 for details).
-*		-	The expanded property indicates if a deep search was performed on a 
-*			directory. Therefore, if expanded is true and children is empty we
-*			are dealing with an empty directory and not a directory that hasn't
-*			been searched/expanded yet. The expanded property is typically used
-*			when lazy loading the file store.
+*		-	Some HTTP servers require  special configuration to make environment
+*			variables available to  script or CGI application.  For example, the
+*			Apache HTTP servers requires you to either use the SetEnv or PassEnv 
+*			directive. To make the environment variable CBTREE_METHODS available
+*			add the following to your httpd.conf file:
+*
+*				SetEnv CBTREE_METHODS GET,DELETE
+*							or
+*				PassEnv CBTREE_METHODS
+*
+*			(See http://httpd.apache.org/docs/2.2/mod/mod_env.html for details).
 *
 ****************************************************************************************
 *
 *	PERFORMACE:
 *
-*		If you plan on using the cbtreeFileStore on large file systems with, for
+*		If you plan on using the cbtreeFileStore on  large file systems with, for
 *		example, a checkbox tree  that requires a strict parent-child elationship
 *		it is highly recommended to use this ANSI-C implementation instead of the
 *		PHP version.
@@ -168,13 +175,18 @@
 *	SECURITY:
 *
 *		Some  basic security issues are addressed  by this implementation.   For example,
-*		only HTTP GET requests are served. In addition, malformed QUERY-STRING parameters
-*		are NOT skipped and ignored, instead they will result in a 'Bad Request' response
-*		to the server/client.   Requests to access files above the server's document root
-*		are rejected returning the HTTP forbidden response (403).
+*		only HTTP requests allowed are served. Malformed QUERY-STRING parameters are NOT
+*		skipped and  ignored, instead they will result  in a 'Bad Request' response  to
+*		the server/client. Requests to access files above the server's document root are
+*		rejected returning the HTTP forbidden response (403).
+*
+*	AUTHENTICATION:
+*
+*		This application does NOT authenticate the calling party however, it does test
+*		for, and retreives, a 'authToken' paramter if present.
 *
 *	NOTE:	This implementation will not list any files starting with a dot like .htaccess
-*			unless explicitly requested. However it will NOT process .htaccess files either.
+*			unless explicitly requested. However it will NOT process .htaccess files.
 *			Therefore, it is the user's responsibility not to include any private or other
 *			hidden files in the directory tree accessible to this application.
 *
@@ -189,6 +201,44 @@
 *
 *		The PCRE directory includes a Microsoft Windows PCRE DLL and associated link
 *		library version 8.10 for your conveniance.
+*
+***************************************************************************************
+*
+*	RESPONSE:
+*
+*		Assuming a valid HTTP GET or DELETE request was received the response to
+*		the client complies with the following ABNF notation:
+*
+*			response	  ::= '[' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list ']'
+*			totals 		  ::= '"total"' ':' number
+*			status		  ::= '"status"' ':' status-code
+*			status-code	  ::=	'200' | '204'
+*			identifier	  ::= '"identifier"' ':' quoted-string
+*			label		  ::= '"label"' ':' quoted-string
+*			file-list	  ::= '"items"' ':' '[' file-info* ']'
+*			file-info	  ::= '{' name ',' path ',' size ',' modified (',' icon)? ',' directory 
+*							  (',' children ',' expanded)? '}'
+*			name		  ::= '"name"' ':' json-string
+*			path		  ::= '"path"' ':' json-string
+*			size		  ::= '"size"' ':' number
+*			modified	  ::= '"modified"' ':' number
+*			icon		  ::= '"icon"' ':' classname-string
+*			directory	  ::= '"directory"' ':' ('true' | 'false')
+*			children	  ::= '[' file-info* ']'
+*			expanded	  ::= '"_EX"' ':' ('true' | 'false')
+*			quoted-string ::= '"' CHAR* '"'
+*			number		  ::= DIGIT+
+*			DIGIT		  ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+*
+*	Notes:
+*
+*		-	The file-info path is returned as a so-called rootless path, that is,
+*			without a leading dot and forward slash. (see rfc-3986 for details).
+*		-	The expanded property indicates if a deep search was performed on a 
+*			directory. Therefore, if expanded is true and children is empty we
+*			are dealing with an empty directory and not a directory that hasn't
+*			been searched/expanded yet. The expanded property is typically used
+*			when lazy loading the file store.
 *
 ***************************************************************************************/
 #ifdef _MSC_VER
@@ -223,6 +273,7 @@ extern FILE	*phResp;		// File handle output stream. (set by cgiInit() )
 int main()
 {
 	ARGS	*pArgs = NULL;
+	FILE_INFO	*pFileInfo;
 	LIST	*pFileList,
 			*pSlice;
 	
@@ -232,6 +283,7 @@ int main()
 			cPathEnc[MAX_PATH_SIZE*2] = "";			
 	char	*pcResult;
 	int		iMaskJSON = 0,
+			iMethod,
 			iResult;
 	
 	cgiInit();		// Initialize the CGI environment.
@@ -241,43 +293,40 @@ int main()
 	varSet( cgiGetProperty("REQUEST_METHOD"), "GET" );
 #endif
 
-	// This CGI application ONLY serves HTTP GET requests, anything else will
-	// be rejected.
-	if( cgiGetMethod() == HTTP_V_GET )
+	// Get the HTTP method and validate if allowed.
+	iMethod = cgiGetMethodId();
+	if( !cgiMethodAllowed( iMethod ) )
 	{
-		// Get the application specific arguments and options.
-		if( !(pArgs = getArguments( &iResult )) )
-		{
-			switch( iResult )
-			{
-				case HTTP_V_BAD_REQUEST:
-				case HTTP_V_SERVER_ERROR:
-					cgiFailed( iResult, NULL );
-					break;
-				default:
-					cgiFailed( iResult, "Undetermined error condition" );
-					break;
-			}
-			return 0;
-		}
-	}
-	else // Not a HTTP GET request method.
-	{
-		cgiFailed( HTTP_V_METHOD_NOT_ALLOWED, NULL );
-		cbtDebug( "Invalid method: %d", cgiGetMethod() );
+		cgiResponse( HTTP_V_METHOD_NOT_ALLOWED, NULL );
+		cbtDebug( "Invalid method: %d", iMethod );
 		return 0;
 	}
+
+	// Get the application specific arguments and options.
+	if( !(pArgs = getArguments( &iResult )) )
+	{
+		switch( iResult )
+		{
+			case HTTP_V_BAD_REQUEST:
+			case HTTP_V_SERVER_ERROR:
+				cgiResponse( iResult, NULL );
+				break;
+			default:
+				cgiResponse( iResult, "Undetermined error condition" );
+				break;
+		}
+	}
+
 	/*
 		Compose and normalize the root directory and full path.   Any path is handled
 		as a URI path as described in RFC 3986. The path argument in the QUERY-STRING
-		must  comply with the either  the path-absolute, path-noscheme  or path-empty
-		format. Any pathname returned to the caller is of type path-noscheme, that is,
-		it begins with a non-colon segment (e.g no leading '/').
+		must comply with either the path-absolute, path-noscheme or path-empty format.
+		Any  pathname returned to  the caller is of  type  path-rootless, that is, it 
+		begins with a non-colon segment (e.g no leading '/').
 	*/
-
 	if( varGet( cgiGetProperty( "DOCUMENT_ROOT" )) == NULL )
 	{
-		cgiFailed( HTTP_V_SERVER_ERROR, "CGI environment variables missing." );
+		cgiResponse( HTTP_V_SERVER_ERROR, "CGI environment variables missing." );
 		cbtDebug( "No DOCUMENT_ROOT available." );
 		return 0;
 	}
@@ -290,76 +339,108 @@ int main()
 	strtrim( normalizePath( cFullPath ), TRIM_M_SLASH );
 
 	// Make sure the caller is not backtracking by specifying paths like '../../../../'
-	if( !strncmp( cDocRoot, cRootDir, strlen(cDocRoot)) &&
-		!strncmp( cRootDir, cFullPath, strlen(cRootDir)) )
+	if( strncmp( cDocRoot, cRootDir, strlen(cDocRoot)) || strncmp( cRootDir, cFullPath, strlen(cRootDir)) )
 	{
-		if( !pArgs->pcPath )
-		{
-			if( pArgs->pQueryList ) 
-			{
-				pFileList = getMatch( cFullPath, cRootDir, pArgs, &iResult );
-			}
-			else // No query parameters
-			{
-				pFileList = getDirectory( cFullPath, cRootDir, pArgs, &iResult );
-			}
-		}
-		else // A specific path is specified.
-		{
-			pFileList = getFile( cFullPath, cRootDir, pArgs, &iResult );
-		}
+		cgiResponse( HTTP_V_FORBIDDEN, "We're not going there." );
+		destroyArguments( &pArgs );
+		cgiCleanup();
+		return 0;
+	}
 
-		if( pFileList )
-		{
-			pSlice     = fileSlice( pFileList, pArgs->iStart, pArgs->iCount );
-			iResult    = listIsEmpty( pSlice ) ? HTTP_V_NO_CONTENT : HTTP_V_OK;
-			iMaskJSON |= pArgs->pOptions->bIconClass ? JSON_M_INCLUDE_ICON : 0;
-
-			if( (pcResult = jsonEncode(pSlice, iMaskJSON)) )
+	switch( iMethod )
+	{
+		case HTTP_V_GET:
+			if( !pArgs->pcPath )
 			{
-				// Write the header(s)
-				fprintf( phResp, "Content-Type: text/json\r\n" );
-				fprintf( phResp, "\r\n" );
-				// Write the body
-				fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\", \
-								   \"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
-						 STORE_C_IDENTIFIER, STORE_C_LABEL, fileCount(pSlice, false), iResult, pcResult );
-				destroy( pcResult );
+				if( pArgs->pQueryList ) 
+				{
+					pFileList = getMatch( cFullPath, cRootDir, pArgs, &iResult );
+				}
+				else // No query parameters
+				{
+					pFileList = getDirectory( cFullPath, cRootDir, pArgs, &iResult );
+				}
+			}
+			else // A specific path is specified.
+			{
+				pFileList = getFile( cFullPath, cRootDir, pArgs, &iResult );
+			}
+
+			if( pFileList )
+			{
+				pSlice     = fileSlice( pFileList, pArgs->iStart, pArgs->iCount );
+				iResult    = listIsEmpty( pSlice ) ? HTTP_V_NO_CONTENT : HTTP_V_OK;
+				iMaskJSON |= pArgs->pOptions->bIconClass ? JSON_M_INCLUDE_ICON : 0;
+
+				if( (pcResult = jsonEncode(pSlice, iMaskJSON)) )
+				{
+					// Write the header(s)
+					fprintf( phResp, "Content-Type: text/json\r\n" );
+					fprintf( phResp, "\r\n" );
+					// Write the body
+					fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\",\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
+							 STORE_C_IDENTIFIER, STORE_C_LABEL, fileCount(pSlice, false), iResult, pcResult );
+					destroy( pcResult );
+				}
+				else
+				{
+					cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
+				}
+				destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
+				destroyList( &pSlice, NULL );	// Destroy list only.
 			}
 			else
 			{
-				cgiFailed( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
-			}
-			destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
-			destroyList( &pSlice, NULL );	// Destroy list only.
-		}
-		else
-		{
-			if( iResult != HTTP_V_NOT_FOUND )
-			{
-				fprintf( phResp, "Content-Type: text/json\r\n" );
-				fprintf( phResp, "\r\n" );
+				if( iResult != HTTP_V_NOT_FOUND )
+				{
+					fprintf( phResp, "Content-Type: text/json\r\n" );
+					fprintf( phResp, "\r\n" );
 
-				fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\", \
-								   \"total\":%d,\"status\":%d,\"items\":[]}\r\n", 
-						 STORE_C_IDENTIFIER, STORE_C_LABEL, iResult );
+					fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\",\"total\":%d,\"status\":%d,\"items\":[]}\r\n", 
+							 STORE_C_IDENTIFIER, STORE_C_LABEL, iResult );
+				}
+				else
+				{
+					// Don't give away more than is needed....
+					encodeReserved( pArgs->pcBasePath, cPathEnc, sizeof(cPathEnc)-1 );
+					cgiResponse( HTTP_V_NOT_FOUND, "Invalid path and/or basePath" );
+				}
+			}
+			break;
+
+		case HTTP_V_DELETE:
+			// Delete a file or directory
+			if( (pFileList = getFile( cFullPath, cRootDir, pArgs, &iResult )) )
+			{
+				pFileInfo = pFileList->pNext->pvData;	// Get first entry in the list
+				pFileList = removeFile( pFileInfo, cRootDir, pArgs, &iResult );
+
+				if( pFileList )
+				{
+					if( (pcResult = jsonEncode(pFileList, 0)) )
+					{
+						fprintf( phResp, "Content-Type: text/json\r\n" );
+						fprintf( phResp, "\r\n" );
+						// Write the body
+						fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
+								 fileCount(pFileList, false), iResult, pcResult );
+						destroy( pcResult );
+					}
+					else
+					{
+						cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
+					}
+					destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
+				}
 			}
 			else
 			{
-				// Don't give away more than is needed....
-				encodeReserved( pArgs->pcBasePath, cPathEnc, sizeof(cPathEnc)-1 );
-				cgiFailed( HTTP_V_NOT_FOUND, cPathEnc );
+				cgiResponse( iResult, NULL );
 			}
-		}
+			cbtDebug( "DELETE \"%s\" %d", cFullPath, iResult );
+			break;
 	}
-	else // Somebody is being naughty....
-	{
-		/*
-			If we get here the caller specified either a base path or path that, after
-			normalization, resulted in a directory ABOVE the document root.
-		*/
-		cgiFailed( HTTP_V_FORBIDDEN, "We're not going there." );
-	}
+	// The END
 	destroyArguments( &pArgs );
 	cgiCleanup();
 	return 0;

@@ -38,6 +38,7 @@ typedef struct sort {
 typedef struct arguments {
 	const char	*pcBasePath;		// Pointer to a C-string containing the base path
 	const char	*pcPath;			// Pointer to a C-string containing the path
+	DATA		*pAuthToken;		// Custom authentication token.
 	int			iCount;				// File count requested
 	int			iStart;				// Offset first file found.
 	OPTIONS		*pOptions;			// Pointer to the query options struct

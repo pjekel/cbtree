@@ -28,8 +28,6 @@ typedef struct fileInfo {
 	extern "C" {
 #endif
 
-void fileDump( LIST *pFileList );
-
 void  destroyFileList( LIST **ppList );
 int	  fileCount( LIST *pFileList, bool iDeep );
 LIST *fileSlice( LIST *pFileList, int iStart, int iCount );
@@ -38,6 +36,8 @@ LIST *getDirectory( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResul
 LIST *getFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );
 char *getRelativePath( char *pcFullPath, char *pcRootDir, char *pcFilename, char **ppcPath );
 LIST *getMatch( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );
+
+LIST *removeFile( FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piResult );
 
 #ifdef __cplusplus
 	}

@@ -16,6 +16,7 @@
 typedef struct httpMethod {
 	const int	iSymbolic;
 	const char	*pcMethod;
+	bool		bAllowed;
 	} METHOD;
 
 typedef struct httpStatus {
@@ -29,11 +30,11 @@ typedef struct httpStatus {
 #endif
 		
 void  cgiCleanup();
-void  cgiFailed( int iStatus, char *pcText );
-int   cgiGetMethod();
+int   cgiGetMethodId();
 DATA *cgiGetProperty( char *pcVarName );
-
-int cgiInit();
+int   cgiInit();
+bool  cgiMethodAllowed( int iMethod );
+void  cgiResponse( int iStatus, char *pcText );
 
 #ifdef __cplusplus
 	}

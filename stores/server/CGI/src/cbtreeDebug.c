@@ -26,7 +26,10 @@
 #include <time.h>
 
 #include "cbtreeCommon.h"
+#include "cbtreeCGI.h"
 #include "cbtreeDebug.h"
+#include "cbtreeString.h"
+#include "cbtreeTypes.h"
 
 FILE	*phDbgFile = NULL;
 
@@ -59,19 +62,23 @@ static char *_timeStamp()
 void cbtDebug( const char *pcFormat, ... )
 {
 	char	cBuffer[MAX_BUF_SIZE];
+	char	*pcRemoteHost = NULL;
 	va_list	ArgPtr;
 
 	va_start (ArgPtr, pcFormat );
 	if( !phDbgFile )
 	{
-		if( !(phDbgFile = fopen( "cbtreeCGI.log", "w+" )) )
+		if( !(phDbgFile = fopen( "cbtreeFileStore.log", "a+" )) )
 		{
 			va_end( ArgPtr );
 			return;
 		}
 	}
+	pcRemoteHost = varGet(cgiGetProperty("REMOTE_ADDR"));
+
 	vsnprintf( cBuffer, sizeof(cBuffer)-1, pcFormat, ArgPtr );
-	fprintf( phDbgFile, "%s %s", _timeStamp(), cBuffer );
+	strtrim( cBuffer, TRIM_M_WSP );
+	fprintf( phDbgFile, "%s %s %s\n", (pcRemoteHost ? pcRemoteHost : " - "), _timeStamp(), cBuffer );
 	fflush( phDbgFile );
 	
 	va_end( ArgPtr );

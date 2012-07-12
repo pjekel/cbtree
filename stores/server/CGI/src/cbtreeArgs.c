@@ -29,6 +29,7 @@
 
 #include "cbtreeArgs.h"
 #include "cbtreeCGI.h"
+#include "cbtreeDebug.h"
 #include "cbtreeFiles.h"
 #include "cbtreeJSON.h"
 #include "cbtreeString.h"
@@ -112,6 +113,7 @@ static OPTIONS * _getOptionArgs( DATA *pGET, int *piResult )
 			}
 			else // Ill formatted JSON array
 			{
+				cbtDebug( "options parameter is not a valid JSON object." );
 				*piResult = HTTP_V_BAD_REQUEST;
 				destroy( pOptions );
 				return NULL;
@@ -133,6 +135,7 @@ static OPTIONS * _getOptionArgs( DATA *pGET, int *piResult )
 			}
 			else // Ill formatted JSON object
 			{
+				cbtDebug( "queryOptions parameter is not a valid JSON object." );
 				*piResult = HTTP_V_BAD_REQUEST;
 				destroy( pOptions );
 				return NULL;
@@ -216,6 +219,7 @@ static LIST *_getQueryArgs( DATA *pQueryObj, OPTIONS *pOptions, int *piResult )
 							}
 							else // Invalid or empty pattern string.
 							{
+								cbtDebug( "Query property [%s] has an invalid or empty pattern string.", pcProperty );
 								_destroyQueryArgm( pQueryArgm );
 								continue;
 							}
@@ -228,6 +232,10 @@ static LIST *_getQueryArgs( DATA *pQueryObj, OPTIONS *pOptions, int *piResult )
 					}
 					insertTail( pQueryArgm, pQueryList );
 				}
+			}
+			else // Unsupported property name.
+			{
+				cbtDebug( "Invalid query property [%s].", pcProperty );
 			}
 		}
 	}
@@ -250,11 +258,10 @@ static LIST *_getQueryArgs( DATA *pQueryObj, OPTIONS *pOptions, int *piResult )
 *			sort=[{"attribute":"directory", "descending":true}, {"attribute":"path", "ignoreCase":true}]
 *
 *	@param	pSortObj		Address DATA struct containing a sort-object.
-*	@param	pOptions		Address OPTIONS struct containing the 'global' options.
 *	@param	piResult		Address integer receiving the final result code:
 *							HTTP_V_OK or HTTP_V_BAD_REQUEST
 **/
-static LIST * _getSortArgs( DATA *pSortObj, OPTIONS *pOptions, int *piResult )
+static LIST * _getSortArgs( DATA *pSortObj, int *piResult )
 {
 	DATA	*pDescending,
 			*pIgnoreCase,
@@ -282,7 +289,9 @@ static LIST * _getSortArgs( DATA *pSortObj, OPTIONS *pOptions, int *piResult )
 			pDescending = varGetProperty("descending", pSortSpec);
 			pIgnoreCase = varGetProperty("ignoreCase", pSortSpec);
 
-			if( (pAttribute && isString(pAttribute)) && (pDescending && isBool(pDescending)) )
+			if( (pAttribute && isString(pAttribute)) &&		// Must have 'attribute' property
+				(!pDescending || isBool(pDescending)) &&
+				(!pIgnoreCase || isBool(pIgnoreCase)) )
 			{
 				iPropId = getPropertyId( varGet( pAttribute ));
 				if( iPropId != -1 )
@@ -291,8 +300,7 @@ static LIST * _getSortArgs( DATA *pSortObj, OPTIONS *pOptions, int *piResult )
 					{
 						pSort->pcProperty  = mstrcpy(varGet( pAttribute ));
 						pSort->bDescending = (bool)varGet( pDescending );
-						pSort->bIgnoreCase = pIgnoreCase ? (bool)varGet( pIgnoreCase ) : 
-														   (bool)pOptions->bIgnoreCase;
+						pSort->bIgnoreCase = (bool)varGet( pIgnoreCase );
 						pSort->iPropertyId = iPropId;
 
 						insertTail( pSort, pSortList );
@@ -304,6 +312,13 @@ static LIST * _getSortArgs( DATA *pSortObj, OPTIONS *pOptions, int *piResult )
 						return NULL;
 					}
 				}
+			}
+			else // Invalid sort field.
+			{
+				cbtDebug( "Invalid sort field definition." );
+				destroyList( &pSortList, _destroySortArgm );
+				*piResult = HTTP_V_BAD_REQUEST;
+				return NULL;
 			}
 		}
 	}
@@ -402,8 +417,9 @@ void destroyArguments( ARGS **ppArgs )
 *		extracted and decoded. The query string parameters (args) supported are:
 *
 *			query-string  ::= (qs-param ('&' qs-param)*)?
-*			qs-param	  ::= basePath | path | query | queryOptions | options | 
+*			qs-param	  ::= authToken | basePath | path | query | queryOptions | options | 
 *							  start | count |sort
+*			authToken	  ::= 'authToken' '=' json-object
 *			basePath	  ::= 'basePath' '=' path-rfc3986
 *			path		  ::= 'path' '=' path-rfc3986
 *			query		  ::= 'query' '=' object
@@ -423,7 +439,8 @@ void destroyArguments( ARGS **ppArgs )
 ARGS *getArguments( int *piResult )
 {
 	ARGS	*pArgs;
-	DATA	*pGET = NULL;
+	DATA	*pGET = NULL,
+			*pCBTREE = NULL;
 	DATA	*ptQuery,
 			*ptSort,
 			*ptArg;
@@ -431,6 +448,7 @@ ARGS *getArguments( int *piResult )
 	
 	if( (pArgs = (ARGS *)calloc(1, sizeof(ARGS))) )
 	{
+		pCBTREE = cgiGetProperty("_CBTREE");	// Get CBTREE environment variables.
 		if( (pGET = cgiGetProperty( "_GET" )) )
 		{
 			// Parse the general options, if any..
@@ -439,13 +457,45 @@ ARGS *getArguments( int *piResult )
 				destroyArguments( &pArgs );
 				return NULL;
 			}
-			if( (ptArg = varGetProperty("basePath", pGET)) && isString( ptArg ) )
+			if( hasProperty( "authToken", pGET ) )
 			{
-				pArgs->pcBasePath = varGet( ptArg );
+				if( (ptArg = jsonDecode(varGetProperty("authToken", pGET))) && isObject(ptArg) )
+				{
+					pArgs->pAuthToken = ptArg;
+				}
+				else
+				{
+					cbtDebug( "authToken parameter is not a valid JSON object" );
+					iResult = HTTP_V_BAD_REQUEST;
+				}
 			}
-			if( (ptArg = varGetProperty("path", pGET)) && isString( ptArg ) )
+			// Get and validate the basePath if any.
+			pArgs->pcBasePath = varGet(varGetProperty("CBTREE_BASEPATH", pCBTREE));
+			if( !pArgs->pcBasePath )
 			{
-				pArgs->pcPath = varGet( ptArg );
+				if((ptArg = varGetProperty("basePath", pGET)) )
+				{
+					if( isString(ptArg) )
+					{
+						pArgs->pcBasePath = varGet( ptArg );
+					}
+					else
+					{
+						iResult = HTTP_V_BAD_REQUEST;
+					}
+				}
+			}
+			// Validate the path if any.
+			if( (ptArg = varGetProperty("path", pGET)) )
+			{
+				if( isString(ptArg) )
+				{
+					pArgs->pcPath = varGet( ptArg );
+				}
+				else
+				{
+					iResult = HTTP_V_BAD_REQUEST;
+				}
 			}
 			if( (ptArg = varGetProperty("start", pGET)) && isInteger( ptArg ) )
 			{
@@ -468,6 +518,7 @@ ARGS *getArguments( int *piResult )
 					}
 					else // Invalid query format (not a JSON object)
 					{
+						cbtDebug( "query parameter is not a valid JSON object" );
 						iResult = HTTP_V_BAD_REQUEST;
 					}
 				}
@@ -479,11 +530,12 @@ ARGS *getArguments( int *piResult )
 				{
 					if( (ptSort = jsonDecode( varGetProperty("sort", pGET) )) )
 					{
-						pArgs->pSortList = _getSortArgs( ptSort, pArgs->pOptions, &iResult );
+						pArgs->pSortList = _getSortArgs( ptSort, &iResult );
 						destroy( ptSort );
 					}
 					else
 					{
+						cbtDebug( "sort parameter is not a valid JSON object" );
 						iResult = HTTP_V_BAD_REQUEST;
 					} 
 				}

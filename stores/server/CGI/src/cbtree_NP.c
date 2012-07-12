@@ -18,9 +18,9 @@
 *		you must provide the following four functions:
 *
 *			1 - _fileToStruct	(Convert OS specific file info to a generic format).
-*			2 -	findFile		(Find the first file in a search sequence.)
-*			3 -	findNextFile	(Find the next file in a search sequence.)
-*			4 - findEnd			(File search completion.)
+*			2 -	findFile_NP		(Find the first file in a search sequence.)
+*			3 -	findNextFile_NP	(Find the next file in a search sequence.)
+*			4 - findEnd_NP			(File search completion.)
 *		
 *		All other modules, part of this CGI implementation, are OS independent.
 *
@@ -103,14 +103,14 @@ static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFile
 }
 
 /**
-*	findFile
+*	findFile_NP
 *
 *		Locate and return the first file entry matching the full path name. Parameter
 *		pvOsArgm offers the ability to return any OS specific information to the caller.
 *		In case	of Microsoft Windows, if parameter pvOsArgm is not NULL, the search handle
 *		returned by FindFirstFile() is stored at the address pointing to by pvOsArgm.
 *		The value of the handle must be passed as an argument to all subsequent calls
-*		to findNextFile().
+*		to findNextFile_NP().
 *
 *	@param	pcFullPath		Address C-string containing the full directory path.
 *	@param	pcRootDir		Address C-string containing the root directory.
@@ -120,7 +120,7 @@ static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFile
 *
 *	@return		On sucess, pointer to a FILE_INFO struct otherwise NULL
 **/
-FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs, int *piResult )
+FILE_INFO *findFile_NP( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs, int *piResult )
 {
 #ifdef WIN32
 	WIN32_FIND_DATA	sFileData;
@@ -135,7 +135,7 @@ FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pA
 		if( pvOsArgm ) {
 			*((HANDLE *)pvOsArgm) = handle;
 		} else {
-			findEnd( &handle );
+			findEnd_NP( &handle );
 		}
 	}
 	else
@@ -144,15 +144,15 @@ FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pA
 	}
 	return pFileInfo;
 #else
-	#error Function findFile() not implemented
+	#error Function findFile_NP() not implemented
 	return NULL;
 #endif /* WIN32 */
 }
 
 /**
-*	findNextFile
+*	findNextFile_NP
 *
-*		Continues a file search from a previous call to the findFile() function.
+*		Continues a file search from a previous call to the findFile_NP() function.
 *		
 *	@param	pcFullPath		Address C-string containing the full directory path.
 *	@param	pcRootDir		Address C-string containing the root directory.
@@ -160,7 +160,7 @@ FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pA
 *
 *	@return		On sucess, pointer to a FILE_INFO struct otherwise NULL
 **/
-FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs )
+FILE_INFO *findNextFile_NP( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs )
 {
 #ifdef WIN32
 	WIN32_FIND_DATA	sFileData;
@@ -174,24 +174,24 @@ FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS
 	}
 	return NULL;
 #else
-	#error Function findNextFile() not implemented
+	#error Function findNextFile_NP() not implemented
 	return NULL;
 #endif /* WIN32 */
 
 }
 
 /**
-*	findEnd
+*	findEnd_NP
 *
 *		Terminate the file search. In case of Microsoft Windows the stream associated
 *		with the search handle is closed. Other operating systems may not require any
 *		action.
 **/
-void findEnd( void *pvOsArg )
+void findEnd_NP( void *pvOsArg )
 {
 #ifdef WIN32
 	FindClose( *((HANDLE *)pvOsArg) );
 #else
-	#error Function findEnd() not implemented
+	#error Function findEnd_NP() not implemented
 #endif /* WIN32 */
 }

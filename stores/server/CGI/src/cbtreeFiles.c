@@ -28,8 +28,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <direct.h>
+#include <errno.h>
+#include <io.h>
 
 #include "cbtree_NP.h"
+#include "cbtreeDebug.h"
 #include "cbtreeFiles.h"
 #include "cbtreeURI.h"
 #include "cbtreeString.h"
@@ -45,6 +49,7 @@ typedef struct fileList {
 static const char *pcFileProp[] = { "name", "path", "directory", "size", "modified", NULL };
 
 static int _fileCompare( FILE_INFO *pFileA, FILE_INFO *pFileB, LIST *pSortList );
+static int _removeFile( LIST *pFileList, FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piResult );
 
 /**
 *	_destroyFileInfo
@@ -277,6 +282,123 @@ static bool _fileMatchQuery( FILE_INFO *pFileInfo, LIST *pQueryList )
 }
 
 /**
+*	_removeDirectory
+*
+*		Delete a directory. The content of the directory is deleted after which
+*		the directory itself is delete.
+*
+*	@param	pFileList		Address LIST struct containing all deleted files.
+*	@param	pcFullPath		Address C-string containing the full directory path.
+*	@param	pcRootDir		Address C-string containing the root directory.
+*	@param	pArgs			Address arguments struct
+*	@param	piResult		Address integer receiving the final result code:
+*							HTTP_V_OK, HTTP_V_NOT_FOUND, HTTP_V_UNAUTHORIZED or
+*							HTTP_V_SERVER_ERROR
+*
+*	@return		1 if successful otherwise 0.
+**/
+static int _removeDirectory( LIST *pFileList, char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
+{
+	FILE_INFO	*pDirectory;
+	LIST	*pDirList, 
+			*pChildList;
+	ENTRY	*pEntry;
+	int		iResult,
+			iMode = 0777;
+	
+	if( (pDirList = getFile( pcFullPath, pcRootDir, pArgs, piResult )) )
+	{
+		pDirectory = pDirList->pNext->pvData;
+		pChildList = pDirectory->pChildren;
+
+		chmod( pcFullPath, iMode );
+		// Delete directory content		
+		for( pEntry = pChildList->pNext; pEntry != pChildList; pEntry = pEntry->pNext )
+		{
+			iResult = _removeFile( pFileList, pEntry->pvData, pcRootDir, pArgs, piResult );
+			if( iResult )
+			{
+				// Detach child from list so it won't be destroyed.
+				pEntry->pvData = NULL;
+			}
+		}
+		destroyFileList( &pDirList );
+
+		*piResult = HTTP_V_OK;
+		// Now delete the directory itself.
+		return rmdir( pcFullPath );
+	}
+	return ENOENT;
+}
+
+/**
+*	removeFile
+*
+*		Delete a file or directory. If the file is a directory the directory and
+*		its content is deleted. Deleted files are added to the list of deleted
+*		files 'pFileList'.
+*
+*	@param	pFileList		Address LIST struct containing all deleted files.
+*	@param	pcFullPath		Address C-string containing the full directory path.
+*	@param	pcRootDir		Address C-string containing the root directory.
+*	@param	pArgs			Address arguments struct
+*	@param	piResult		Address integer receiving the final result code:
+*							HTTP_V_OK, HTTP_V_NOT_FOUND, HTTP_V_UNAUTHORIZED or
+*							HTTP_V_SERVER_ERROR
+*
+*	@return		1 if successful otherwise 0.
+**/
+static int _removeFile( LIST *pFileList, FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piResult )
+{
+	char	cFilePath[MAX_PATH_SIZE];
+	int		iResult,
+			iMode = 0666;
+
+	if( pFileInfo )
+	{
+		*piResult = HTTP_V_OK;
+		snprintf( cFilePath, sizeof(cFilePath)-1, "%s%s", pcRootDir, pFileInfo->pcPath );
+		if( pFileInfo->directory )
+		{
+			iResult = _removeDirectory( pFileList, cFilePath, pcRootDir, pArgs, piResult );
+		}
+		else
+		{
+			chmod( cFilePath, iMode );
+			iResult = remove( cFilePath );
+		}
+		// If success, add to the list of deleted files.
+		if( iResult == 0 ) 
+		{
+			insertTail( pFileInfo, pFileList );
+		}
+		else
+		{
+			switch( errno )
+			{
+				case ENOTEMPTY:	// Directory not empty
+				case EACCES:	// Access denied
+				case EPERM:		// No permission
+				case EBUSY:		// System file
+				case EROFS:		// Read-only File System
+					*piResult = HTTP_V_UNAUTHORIZED;
+					break;				
+				case ENOENT:
+					*piResult = HTTP_V_NOT_FOUND;
+					break;
+				default:
+					*piResult = HTTP_V_SERVER_ERROR;
+					break;
+			}
+			cbtDebug( "DELETE [%s] errno: %d", cFilePath, errno );
+		}
+		return (iResult ? 0 : 1);
+	}
+	*piResult = HTTP_V_NO_CONTENT;
+	return 0;
+}
+
+/**
 *	destroyFileList
 *
 *		Release all resources associated with a file list. Not only is the list deleted
@@ -319,20 +441,6 @@ int fileCount( LIST *pFileList, bool iDeep )
 		iCount++;
 	}
 	return iCount;
-}
-
-void fileDump( LIST *pFileList )
-{
-	FILE_INFO	*pFileInfo;
-	ENTRY		*pEntry;
-	
-	printf( "\n" );
-	
-	for( pEntry = pFileList->pNext; pEntry != pFileList; pEntry = pEntry->pNext )
-	{
-		pFileInfo = (FILE_INFO *)pEntry->pvData;
-		printf( "%s\n", pFileInfo->pcPath );
-	}
 }
 
 /**
@@ -407,7 +515,7 @@ LIST *getDirectory( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResul
 	char		cFullPath[MAX_PATH_SIZE];
 	int			iResult;
 	
-	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
+	if( (pFileInfo = findFile_NP( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
 	{
 		pFileList = newList();		// Allocate a new list header.
 		do {
@@ -426,13 +534,13 @@ LIST *getDirectory( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResul
 			{
 				_destroyFileInfo( pFileInfo );
 			}
-		} while ( (pFileInfo = findNextFile( pcFullPath, pcRootDir, &OSArg, pArgs )) );
+		} while ( (pFileInfo = findNextFile_NP( pcFullPath, pcRootDir, &OSArg, pArgs )) );
 
 		if( listIsEmpty( pFileList ) )
 		{
 			*piResult = HTTP_V_NO_CONTENT;
 		}
-		findEnd( &OSArg );		
+		findEnd_NP( &OSArg );		
 	}
 	return pFileList;
 }
@@ -458,11 +566,11 @@ LIST *getFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
 {
 	FILE_INFO	*pFileInfo;
 	OS_ARG		OSArg;
-	LIST		*pFileList;
+	LIST		*pFileList = NULL;
 	char		cFullPath[MAX_PATH_SIZE];
 	int			iResult;
 	
-	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
+	if( (pFileInfo = findFile_NP( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
 	{
 		if( !_fileFilter( pFileInfo, pArgs ) )
 		{
@@ -470,18 +578,20 @@ LIST *getFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
 			if( pFileInfo->directory )
 			{
 				snprintf( cFullPath, sizeof(cFullPath)-1, "%s%s/*", pcRootDir, pFileInfo->pcPath );
-				pFileInfo->pChildren  = getDirectory( cFullPath, pcRootDir, pArgs, &iResult );
+				pFileInfo->pChildren   = getDirectory( cFullPath, pcRootDir, pArgs, &iResult );
 				pFileInfo->bIsExpanded = true;
 			}
 			insertTail( pFileInfo, pFileList );
 			*piResult = HTTP_V_OK;
-			return pFileList;
 		}
-		_destroyFileInfo( pFileInfo );
-		*piResult = HTTP_V_NO_CONTENT;
-		findEnd( &OSArg );		
+		else // File was excluded
+		{
+			_destroyFileInfo( pFileInfo );
+			*piResult = HTTP_V_NO_CONTENT;
+		}
+		findEnd_NP( &OSArg );		
 	}
-	return NULL;
+	return pFileList;
 }
 
 /**
@@ -585,7 +695,7 @@ LIST *getMatch( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
 	char		cFullPath[MAX_PATH_SIZE];
 	int			iResult;
 
-	if( (pFileInfo = findFile( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
+	if( (pFileInfo = findFile_NP( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
 	{
 		pFileList = newList();	// Allocate a new list header
 		do {
@@ -625,13 +735,48 @@ LIST *getMatch( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
 			{
 				_destroyFileInfo( pFileInfo );
 			}
-		} while ( (pFileInfo = findNextFile( pcFullPath, pcRootDir, &OSArg, pArgs )) );
+		} while ( (pFileInfo = findNextFile_NP( pcFullPath, pcRootDir, &OSArg, pArgs )) );
 
 		if( listIsEmpty( pFileList ) )
 		{
 			*piResult = HTTP_V_NO_CONTENT;
 		}
-		findEnd( &OSArg );		
+		findEnd_NP( &OSArg );		
 	}
 	return pFileList;
 }
+
+/**
+*	removeFile
+*
+*		Delete a file or directory. If the file is a directory the content of the
+*		directory is deleted resurcive.
+*
+*	@param	pcFullPath		Address C-string containing the full directory path.
+*	@param	pcRootDir		Address C-string containing the root directory.
+*	@param	pArgs			Address arguments struct
+*	@param	piResult		Address integer receiving the final result code:
+*							HTTP_V_OK, HTTP_V_NOT_FOUND, HTTP_V_UNAUTHORIZED or
+*							HTTP_V_SERVER_ERROR
+*
+*	@return		Address LIST struct containing all files deleted.
+**/
+LIST *removeFile( FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piResult )
+{
+	LIST	*pFileList = newList();
+
+	*piResult = HTTP_V_NO_CONTENT;
+
+	// Set the appropriate options so we catch hidden files and don't include more
+	// info than we need in the output.
+	pArgs->pOptions->bShowHiddenFiles = true;
+	pArgs->pOptions->bIconClass		  = false;
+	pArgs->pOptions->bDeep			  = false;
+
+	if( pFileInfo )
+	{
+		_removeFile( pFileList, pFileInfo, pcRootDir, pArgs, piResult );
+	}
+	return pFileList;
+}
+

@@ -9,7 +9,7 @@
   #endif	
   #ifdef FindNextFile
 	#undef FindNextFile
-  #endif	
+  #endif
   #define FindFirstFile		FindFirstFileA
   #define FindNextFile		FindNextFileA
   #define WIN32_FIND_DATA	WIN32_FIND_DATAA
@@ -27,9 +27,9 @@ typedef struct OS_ARG {
 	extern "C" {
 #endif
 
-FILE_INFO *findFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs, int *piResult );
-FILE_INFO *findNextFile( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs );
-void findEnd( void *pvOsArg );
+FILE_INFO *findFile_NP( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs, int *piResult );
+FILE_INFO *findNextFile_NP( char *pcFullPath, char *pcRootDir, void *pvOsArgm, ARGS *pArgs );
+void findEnd_NP( void *pvOsArg );
 
 #ifdef __cplusplus
 	}
