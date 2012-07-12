@@ -3,7 +3,7 @@
 	*	Copyright (c) 2012, Peter Jekel
 	*	All rights reserved.
 	*
-	*		The cbtreeFileStore server side application (cbtreeFileStore.php) is released under
+	*		The cbtree FileStore Server Side Application (cbtreeFileStore.php) is released under
 	*		to following license:
 	*
 	*	    BSD 2-Clause		(http://thejekels.com/cbtree/LICENSE)
@@ -23,18 +23,19 @@
 	*		Description:
 	*
 	*			This file contains the server side application required  to enable the dojo
-	*			cbtreeFileStore and is part of the github project 'cbtree'. Your server MUST
+	*			cbtree FileStore and is part of the github project 'cbtree'. Your server MUST
 	*			provide support for PHP applications in order for it to work properly.
 	*			Alternatively, an ANSI-C CGI application is also available. See the notes on
 	*			performance below.
 	*
-	*			The cbtreeFileStore.php application is invoked by means of a HTTP GET request,
-	*			the basic ABNF format of a request looks like:
+	*			The cbtree FileStore.php application is invoked by means of a HTTP GET or DELETE
+	*			request, the basic ABNF format of a request looks like:
 	*
-	*				HTTP-GET 			::= uri ('?' query-string)?
+	*				HTTP-request	::= uri ('?' query-string)?
 	*				query-string  ::= (qs-param ('&' qs-param)*)?
-	*				qs-param		  ::= basePath | path | query | queryOptions | options | 
+	*				qs-param		  ::= authToken | basePath | path | query | queryOptions | options | 
 	*								 				  start | count | sort
+	*				authToken			::= 'authToken' '=' json-object
 	*				basePath		  ::= 'basePath' '=' path-rfc3986
 	*				path				  ::= 'path' '=' path-rfc3986
 	*				query			  	::= 'query' '=' json-object
@@ -54,6 +55,11 @@
 	*
 	*		QUERY-STRING Parameters:
 	* 
+	*			authToken:
+	*
+	*				The authToken parameter is a JSON object. There are no restrictions with
+	*				regards to the content of the object. (currently not used).
+	*
 	*			basePath:
 	*
 	*				The basePath parameter is a URI reference (rfc 3986) relative to the server's
@@ -88,8 +94,8 @@
 	*			options:
 	*
 	*				The options parameter is a JSON array of strings. Each string specifying a
-	*				search options to be enabled. Currently two options are supported: "dirsOnly"
-	*				and "showHiddenFiles".
+	*				search options to be enabled. Currently the following options are supported:
+	*				"dirsOnly", "iconClass" and "showHiddenFiles".
 	*
 	*				Example:	options=["dirsOnly", "showHiddenFiles"]
 	*
@@ -110,44 +116,45 @@
 	*				The properties allowed are: "attribute", "descending" and "ignoreCase". Each
 	*				sort field object MUST have the "attribute" property defined.
 	*
-	*				Example:	sort=[{"attribute":"directory", "descending":true},{"attribute":"name"}]
+	*				Example:	sort=[{"attribute":"directory", "descending":true},{"attribute":"name",
+	*												 "ignoreCase":true}]
 	*
 	*				The example sort will return the file list with the directories first and
 	*				all names in ascending order. (A typical UI file tree).
 	*
 	****************************************************************************************
 	*
-	*		RESPONSE:
+	*		ENVIRONMENT VARIABLE:
 	*
-	*				Assuming a valid HTTP GET request was received the response to the client
-	*				complies with the following ABNF notation:
+	*			CBTREE_BASEPATH
 	*
-	*					response		::= '[' totals ',' status ',' file-list ']'
-	*					totals 			::= '"total"' ':' number
-	*					status			::= '"status"' ':' status-code
-	*					status-code	::=	'200' | '204'
-	*					file-list		::= '"items"' ':' '[' file-info* ']'
-	*					file-info		::= '{' name ',' path ',' size ',' modified ',' directory 
-	*													(',' children ',' expanded)? '}'
-	*					name				::= '"name"' ':' json-string
-	*					path				::= '"path"' ':' json-string
-	*					size				::= '"size"' ':' number
-	*					modified		::= '"modified"' ':' number
-	*					directory		::= '"directory"' ':' ('true' | 'false')
-	*					children		::= '[' file-info* ']'
-	*					expanded		::= '"_EX"' ':' ('true' | 'false')
-	*					number			::= DIGIT+
-	*					DIGIT				::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+	*				The basePath is a URI reference (rfc 3986) relative to the server's
+	*				document root used to compose the root directory.  If this variable
+	*				is set it overwrites the basePath parameter in any query string and
+	*				therefore becomes the server wide basepath.
+	*
+	*					CBTREE_BASEPATH /myServer/wide/path
+	*
+	*			CBTREE_METHODS
+	*
+	*				A comma separated list of HTTP methods to be supported by the Server
+	*				Side Application. By default only HTTP GET is supported. Example:
+	*
+	*					CBTREE_METHODS GET,DELETE
 	*
 	*		Notes:
 	*
-	*				-	The file-info path is returned as a so-called rootless path, that is,
-	*					without a leading dot and forward slash. (see rfc-3986 for details).
-	*				-	The expanded property indicates if a deep search was performed on a 
-	*					directory. Therefore, if expanded is true and children is empty we
-	*					are dealing with an empty directory and not a directory that hasn't
-	*					been searched/expanded yet. The expanded property is typically used
-	*					when lazy loading the file store.
+	*			-	Some HTTP servers require  special configuration to make environment
+	*				variables available to  script or CGI application.  For example, the
+	*				Apache HTTP servers requires you to either use the SetEnv or PassEnv 
+	*				directive. To make the environment variable CBTREE_METHODS available
+	*				add the following to your httpd.conf file:
+	*
+	*					SetEnv CBTREE_METHODS GET,DELETE
+	*											or
+	*					PassEnv CBTREE_METHODS
+	*
+	*				(See http://httpd.apache.org/docs/2.2/mod/mod_env.html for details).
 	*
 	****************************************************************************************
 	*
@@ -171,16 +178,59 @@
 	*
 	*		SECURITY:
 	*
-	*				Some  basic security issues are addressed  by this implementation.   For example,
-	*				only HTTP GET requests are served. In addition, malformed QUERY-STRING parameters
-	*				are NOT skipped and ignored, instead they will result in a 'Bad Request' response
-	*				to the server/client.   Requests to access files above the server's document root
-	*				are rejected returning the HTTP forbidden response (403).
+	*				Some  basic security issues are addressed  by this implementation.  For example,
+	*				only HTTP methods allowed are served. Malformed QUERY-STRING parameters are NOT
+	*				skipped and  ignored, instead they will result  in a 'Bad Request' response  to
+	*				the server/client. Requests to access files above the server's document root are
+	*				rejected returning the HTTP forbidden response (403).
+	*
+	*		AUTHENTICATION:
+	*
+	*				This application does NOT authenticate the calling party however, it does test
+	*				for, and retreives, a 'authToken' paramter if present.
 	*
 	*		NOTE:	This implementation will not list any files starting with a dot like .htaccess
-	*					unless explicitly requested. However it will NOT process .htaccess files either.
+	*					unless explicitly requested. However it will NOT process .htaccess files.
 	*					Therefore, it is the user's responsibility not to include any private or other
 	*					hidden files in the directory tree accessible to this application.
+	*
+	***************************************************************************************
+	*
+	*		RESPONSES:
+	*
+	*				Assuming a valid HTTP GET or DELETE request was received the response to
+	*				the client complies with the following ABNF notation:
+	*
+	*					response	  	::= '[' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list ']'
+	*					totals 				::= '"total"' ':' number
+	*					status				::= '"status"' ':' status-code
+	*					status-code		::=	'200' | '204'
+	*					identifier		::= '"identifier"' ':' quoted-string
+	*					label		  		::= '"label"' ':' quoted-string
+	*					file-list			::= '"items"' ':' '[' file-info* ']'
+	*					file-info			::= '{' name ',' path ',' size ',' modified (',' icon)? ',' directory 
+	*														(',' children ',' expanded)? '}'
+	*					name					::= '"name"' ':' json-string
+	*					path					::= '"path"' ':' json-string
+	*					size					::= '"size"' ':' number
+	*					modified			::= '"modified"' ':' number
+	*					icon		  		::= '"icon"' ':' classname-string
+	*					directory			::= '"directory"' ':' ('true' | 'false')
+	*					children			::= '[' file-info* ']'
+	*					expanded			::= '"_EX"' ':' ('true' | 'false')
+	*					quoted-string ::= '"' CHAR* '"'
+	*					number				::= DIGIT+
+	*					DIGIT					::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+	*
+	*		Notes:
+	*
+	*				-	The file-info path is returned as a so-called rootless path, that is,
+	*					without a leading dot and forward slash. (see rfc-3986 for details).
+	*				-	The expanded property indicates if a deep search was performed on a 
+	*					directory. Therefore, if expanded is true and children is empty we
+	*					are dealing with an empty directory and not a directory that hasn't
+	*					been searched/expanded yet. The expanded property is typically used
+	*					when lazy loading the file store.
 	*
 	***************************************************************************************/
 
@@ -188,9 +238,11 @@
 	define( "HTTP_V_OK", 								200);
 	define( "HTTP_V_NO_CONTENT",					204);
 	define( "HTTP_V_BAD_REQUEST",				400);
+	define( "HTTP_V_UNAUTHORIZED",				401);
 	define( "HTTP_V_FORBIDDEN",					403);
 	define( "HTTP_V_NOT_FOUND",					404);
 	define( "HTTP_V_METHOD_NOT_ALLOWED",	405);
+	define( "HTTP_V_GONE",								410);
 	define( "HTTP_V_SERVER_ERROR",				500);
 
 	define( "STORE_C_IDENTIFIER", "path" );
@@ -198,27 +250,43 @@
 	
 	$docRoot = $_SERVER["DOCUMENT_ROOT"];
 
+	$method = null;
 	$files	= null;
 	$total	= 0;
 	$status	= 0;
 
-	$args	= getArguments($status);
-	
-	if ($args != null ) {
+	$method = $_SERVER["REQUEST_METHOD"];
 
-		// This application ONLY serves HTTP GET requests, anything else will
-		// be rejected.
-		if ($_SERVER["REQUEST_METHOD"] !== "GET") {
-			requestFailed( HTTP_V_METHOD_NOT_ALLOWED, "Method Not Allowed", NULL);
+	// Check the HTTP method first.
+	if (!cgiMethodAllowed($method)) {
+		cgiResponse( HTTP_V_METHOD_NOT_ALLOWED, "Method Not Allowed", NULL);
+		error_log( "Invalid or unsupported method: [".$method."]");
+		return;
+	}
+
+	// Validate the HTTP QUERY-STRING parameters
+	$args	= getArguments($status);
+	if ($args == null ) {
+		cgiResponse( HTTP_V_BAD_REQUEST, "Bad Request", "Malformed query arguments." );
+		return;
+	}
+
+	if ($args->authToken) {
+		// Your authentication may go here....
+	}
+
+	$rootDir  = str_replace( "\\","/", realPath( $docRoot . "/" . $args->basePath ));
+	$fullPath = str_replace( "\\","/", realPath( $rootDir . "/" . $args->path ));
+
+	if ($rootDir && $fullPath) {
+		// Make sure the caller isn't backtracking by specifying paths like '../../../'
+		if ( strncmp($rootDir, $docRoot, strlen($docRoot)) || strncmp($fullPath, $rootDir, strlen($rootDir)) ) {
+			cgiResponse( HTTP_V_FORBIDDEN, "Forbidden", "We're not going there..." );
 			return;
 		}
 
-		$rootDir  = str_replace( "\\","/", realPath( $docRoot . "/" . $args->basePath ));
-		$fullPath = str_replace( "\\","/", realPath( $rootDir . "/" . $args->path ));
-
-		if ($rootDir && $fullPath) {
-			// Make sure the caller isn't backtracking by specifying paths like '../../../'
-			if ( !strncmp($rootDir, $docRoot, strlen($docRoot)) && !strncmp($fullPath, $rootDir, strlen($rootDir)) ) {
+		switch($method) {
+			case "GET":
 				if (!is_string($args->path)) {
 					if ($args->query) {
 						$files = getMatch( $fullPath, $rootDir, $args, $status );
@@ -226,7 +294,7 @@
 						$files = getDirectory( $fullPath, $rootDir, $args, $status );
 					}
 				} else {
-					$files = geFile( $fullPath, $rootDir, $args, $status );
+					$files = getFile( $fullPath, $rootDir, $args, $status );
 				}
 				if( ($total = count($files)) ) {
 					// sort, slice and dice
@@ -248,14 +316,67 @@
 
 				header("Content-Type: text/json");
 				print( json_encode($result) );
-			}	else {	// Caller is backtracking...
-				requestFailed( HTTP_V_FORBIDDEN, "Forbidden", "We're not going there..." );
-			}
-		}	else {
-			requestFailed( HTTP_V_NOT_FOUND, "Not Found", "Invalid path and/or basePath." );
+				break;
+
+			case "DELETE":
+				$files = getFile( $fullPath, $rootDir, $args, $status );
+				if ($files) {
+					$files = removeFile( $files[0], $rootDir, $args, $status );
+					// Compile the final result
+					$result							= new stdClass();
+					$result->total			= count($files);
+					$result->status			= $status;
+					$result->items			= $files;
+
+					header("Content-Type: text/json");
+					print( json_encode($result) );
+				} else {
+					cgiResponse( $status, "Not Found", null );
+				}
+				break;
 		}
 	}	else {
-		requestFailed( HTTP_V_BAD_REQUEST, "Bad Request", "Format error query arguments." );
+		cgiResponse( HTTP_V_NOT_FOUND, "Not Found", "Invalid path and/or basePath." );
+	}
+
+	/**
+	*		cgiMethodAllowed
+	*
+	*			Returns true if the HTTP method is allowed, that is, supported by this
+	*			application.
+	*
+	*		@param	method				Method name string.
+	*
+	*		@return		true or false
+	**/
+	function cgiMethodAllowed( /*string*/ $method ) {
+		$allowed = "GET," . getenv("CBTREE_METHODS");
+		$methods = explode(",", $allowed);
+		$count   = count($methods);
+		
+		for ($i = 0;$i<$count; $i++) {
+			if ($method == $methods[$i]) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	*		cgiResponse
+	*
+	*			Sends a CGI response back to the caller.
+	*
+	*	@param	status					HTTP result code
+	*	@param	statText				HTTP reason phrase.
+	*	@param	infoText				Optional text returned to the caller.
+	**/
+	function cgiResponse( $status, $statText, $infoText = null) {
+		header("Content-Type: text/html");
+		header("Status: " . $status . $statText );
+		if( $infoText ) {
+			print( $infoText );
+		}
 	}
 
 	/**
@@ -367,6 +488,7 @@
 	**/
 	function getArguments( /*integer*/&$status ) {
 		$args										= new stdClass();
+		$args->authToken				= null;
 		$args->basePath					= "";
 		$args->count						= 0;
 		$args->deep 						= false;
@@ -384,6 +506,15 @@
 		
 		$status	= HTTP_V_BAD_REQUEST;		// Lets assume its a malformed query string
 		
+		// Get authentication token. There are no restrictions with regards to the content
+		// of the object.
+		if (array_key_exists("authToken", $_GET)) {
+			$authToken = str_replace("\\\"", "\"", $_GET['authToken']);
+			$authToken = json_decode($authToken);
+			if ($authToken) { 
+				$args->authToken = $authToken;
+			}
+		}
 		// Get the 'options' and 'queryOptions' first before processing any other parameters.
 		if (array_key_exists("options", $_GET)) {
 			$options = str_replace("\\\"", "\"", $_GET['options']);
@@ -451,7 +582,7 @@
 			$sortFields = str_replace("\\\"", "\"", $_GET['sort']);
 			$sortFields = json_decode($sortFields);
 			if (is_array($sortFields)) {
-				$args->sortList = getSortArgs($sortFields, $args->ignoreCase);
+				$args->sortList = getSortArgs($sortFields);
 			}
 			else	// sort is not an array.
 			{
@@ -470,13 +601,17 @@
 				$args->count = $count;
 			}
 		}
-		if (array_key_exists("basePath", $_GET)) {
-			if (is_string($_GET['basePath'])) {
+		// Check for a basePath
+		$args->basePath = getenv("CBTREE_BASEPATH");
+		if (!$args->basePath) {
+			if (array_key_exists("basePath", $_GET)) {
 				$args->basePath = $_GET['basePath'];
-			} else {
-				return null;
 			}
 		}
+		if ($args->basePath && !is_string($args->basePath)) {
+			return null;
+		}
+
 		//	Check if a specific path is specified.
 		if (array_key_exists("path", $_GET)) {
 			if (is_string($_GET['path'])) {
@@ -502,15 +637,20 @@
 	*	@return		String containing the icon classname
 	**/
 	function getIconClass( $filename, $isDirectory ) {
+		$iconClass = "fileIcon";
 		if (!$isDirectory) {
 			$info = pathInfo($filename);
-			if ($info['extension']) {
-				return "fileIcon" . ucFirst(strtolower($info['extension'])) . " fileIcon";
+			if (array_key_exists("extension", $info)) {
+				$iconClass = $iconClass . ucFirst(strtolower($info['extension']));
+			} else {
+				$iconClass = $iconClass . "Unknown";
 			}
-			return "fileIconUnknown fileIcon";
 		} else {
-			return "fileIconDIR fileIcon";
+			$iconClass = $iconClass . "DIR";
 		}
+		// Append a generic icon classname in case the css classname for the file 
+		// extension is not defined on the client side.
+		return (trim( $iconClass . " fileIcon"));
 	}
 
 	/**
@@ -566,7 +706,7 @@
 	*
 	*	@return		An array of 1 FILE_INFO object or NULL in case no match was found.
 	**/
-	function geFile( /*string*/$fullPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
+	function getFile( /*string*/$fullPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
 		$realPath = realPath( $fullPath );
 
 		if( file_exists( $realPath ) ) {
@@ -642,7 +782,7 @@
 	*
 	*			Returns a query object containing an array of query arguments.   Parameter query
 	*			represents the JSON decoded 'query' argument of the HTTP QUERY-STRING. If a query
-	*			parameter value is a pattern string it is converted into a Perl Compatible Regular
+	*			parameter value is a pattern string it is converted to a Perl Compatible Regular
 	*			Expression (PCRE)
 	*
 	*	@param	query						JSON decoded array of query arguments.
@@ -683,11 +823,10 @@
 	*			Returns a sort object/class containing an array of valid sort arguments (fields).
 	*
 	*	@param	sortFields			An array of sort field objects
-	*	@param	ignoreCase			Indicates if sort is case insensitive
 	*
 	*	@return		SortList object or null.
 	**/
-	function getSortArgs(/*array*/$sortFields, /*boolean*/$ignoreCase) {
+	function getSortArgs(/*array*/$sortFields) {
 		if (($total = count($sortFields))) {
 			$sortObj = new SortList;
 
@@ -698,7 +837,7 @@
 					$sortArgm	= new stdClass;
 					$sortArgm->property		= $sortField->attribute;
 					$sortArgm->descending = property_exists($sortField, "descending") ? $sortField->descending : false;
-					$sortArgm->ignoreCase = property_exists($sortField, "ignoreCase") ? $sortField->ignoreCase : $ignoreCase;
+					$sortArgm->ignoreCase = property_exists($sortField, "ignoreCase") ? $sortField->ignoreCase : false;
 
 					$sortObj->addSortArgm($sortArgm);
 				}
@@ -763,21 +902,99 @@
 	}
 
 	/**
-	*		requestFailed
+	*		_removeDirectory
 	*
-	*			Sends an error response back to the caller. This function is called whenever
-	*			the search result status is anything else but 200 or 204.
+	*			Delete a directory. The content of the directory is deleted after which
+	*			the directory itself is delete.
 	*
-	*	@param	status					HTTP result code
-	*	@param	statText				HTTP reason phrase.
-	*	@param	infoText				Optional text returned to the caller.
+	*	@param	fileList				Array of deleted files.
+	*	@param	filePath				Full path string
+	*	@param	rootDir					Root directory
+	*	@param	args						HTTP QUERY-STRING arguments decoded.
+	*	@param	status					Receives the final result (200, 401 or 404).
 	**/
-	function requestFailed( $status, $statText, $infoText = null) {
-		header("Content-Type: text/html");
-		header("Status: " . $status . $statText );
-		if( $infoText ) {
-			print( $infoText );
+	function _removeDirectory( &$fileList, $filePath, $rootDir, $args, &$status ) {
+		$files = getFile( $filePath, $rootDir, $args, $status );
+		if ($files) {
+			$directory = $files[0];
+			$childList = $directory->children;
+
+			// Set permission on the directory first.
+			chmod($filePath, 0777);
+
+			foreach($childList as $childInfo) {
+				_removeFile($fileList, $childInfo, $rootDir, $args, $status );
+			}
+			return @rmdir( $filePath );
 		}
+		$status = HTTP_V_NOT_FOUND;
+		return false;
+	}
+
+	/**
+	*		_removeFile
+	*
+	*			Delete a file or directory. If the file is a directory the content of the
+	*			directory is deleted resurcive. Deleted file(s) are added to the list of
+	*			deleted files 'fileList'
+	*
+	*	@param	fileList				Array of deleted files.
+	*	@param	fileInfo				FILE_INFO struct
+	*	@param	rootDir					Root directory
+	*	@param	args						HTTP QUERY-STRING arguments decoded.
+	*	@param	status					Receives the final result (200, 401 or 404).
+	*
+	*	@return		True on success otherwise false.
+	**/
+	function _removeFile( &$fileList, $fileInfo, $rootDir, $args, &$status ) {
+		$filePath = realPath( $rootDir . "/" . $fileInfo->path );
+		$result   = false;
+		$status		= HTTP_V_OK;
+
+		if ($fileInfo->directory) {
+			$result = _removeDirectory( $fileList, $filePath, $rootDir, $args, $status );
+		} else {
+			chmod($filePath, 0666);
+			$result = @unlink($filePath);
+		}
+		if ($result) {
+			$fileList[] = $fileInfo;
+			$result			= true;
+		} else {
+			$status = HTTP_V_UNAUTHORIZED;
+		}
+		return $result;
+	}
+
+	/**
+	*		removeFile
+	*
+	*			Delete a file or directory. If the file is a directory the content of the
+	*			directory is deleted resurcive.
+	*
+	*	@param	fileInfo				FILE_INFO struct
+	*	@param	fullPath				Full path string (file path)
+	*	@param	rootDir					Root directory
+	*	@param	args						HTTP QUERY-STRING arguments decoded.
+	*	@param	status					Receives the final result (200, 204 or 404).
+	*
+	*	@return		The list of delete files.
+	**/
+	function removeFile( $fileInfo, $rootDir, $args, &$status ) {
+		$status = HTTP_V_NO_CONTENT;
+		$result = false;
+		
+		if ($fileInfo) {
+			$fileList = array();
+
+			$args->showHiddenFiles = true;
+			$args->iconClass			 = false;
+			$args->deep						 = false;
+
+			$result = _removeFile( $fileList, $fileInfo, $rootDir, $args, $status );
+			return $fileList;
+		}
+		return null;
 	}
 
 	/**
