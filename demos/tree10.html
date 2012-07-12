@@ -54,6 +54,7 @@
                   rootLabel: 'My HTTP Document Root',
                   checkedRoot: true,
                   checkedStrict: false,
+								  queryOptions: {ignoreCase:true},
                   sort: [{attribute:"directory", descending:true},{attribute:"name"}]
                }); 
           var tree = new Tree( { model: model, id: "MenuTree" });
