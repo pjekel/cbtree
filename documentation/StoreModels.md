@@ -121,18 +121,18 @@ In this example the store query returns all store items available.
 
 <h2 id="file-store-model">File Store Model</h2>
 
-Derived from the Forest Store Model, the File Store Model allows the user to present
+Similar to the Forest Store Model, the File Store Model allows the user to present
 the back-end server file system as a traditional UI directory tree. 
-The model is designed to be used with the cbtree FileStore which is based on the 
-*dojo.data.ItemFileWriteStore* but implements the functionality to query the back-end
+The model is designed to be used with the cbtree FileStore which implements both the 
+*dojo.data.api.Read* and *dojo.data.api.Write* APIs offering the functionality to query the back-end
 servers file system, add lazy loading and provide limited support for store write operations.
 Please refer to the [File Store](FileStore.md) documentation for details. 
 
-The File Store Model implements a subset of the Forest Store Model and only supports
-a limited set of the [Store Model API](StoreModelAPI.md) functionality.
+The File Store Model implements a subset of the Forest Store Model and [Store Model API](StoreModelAPI.md) functionality.
 Because the content of a File Store is treated as read-only, that is, you can't change
-file properties such as the name and path or add or delete files to/from the store
-any attempt to do so will throw an error.
+file properties such as the name and path or programmatically add items to the store,
+any attempt to do so will throw an error. You can however add custom properties to store 
+items which will be writeable.
 
 In addition to the common Store Model Properties, the File Store Model has an
 additional set of properties to help query the File Store. Also, because of the
@@ -241,12 +241,11 @@ combination. If ignoreCase is true, filenames and paths are matched case insensi
 > Array (null), An array of sort fields, each sort field is a JavaScript 'property:value'
 pair object. The sort field properties supported are: *attribute*, *descending* and
 *ignoreCase*. Each sort field object must at least have the *attribute* property defined, the
-default value for *descending* is false. If the *ignoreCase* properties of a sort field is
-omitted the value of the queryOptions *ignoreCase* is used.
+default value for both *descending* and *ignoreCase* is false. 
 The sort operation is performed in the order in which the sort field objects appear in the
 sort array.
 
-> Example: [ {attribute:'directory', descending:true}, {attribute:'name', ignoreCase: true} ]
+> sort:[ {attribute:'directory', descending:true}, {attribute:'name', ignoreCase: true} ]
 
 > The above examples returns a typical UI style directory listing with the directories first
 followed by a file list in ascending order.
@@ -258,9 +257,10 @@ store models.
 Additional functionality is available using the [Store Model API](StoreModelAPI.md).
 
 ******************************************
+#### deleteItem( storeItem ) #### 
 #### deleteItem( storeItem, onBegin, onError, scope) #### 
 > Delete a store item. Please note that this feature needs to be explicitly enabled
-> on a File Store. (See the [CBTREE_METHODS](FileStore.md#file-store-ssa-config) environment
+> on a File Store. (See the [CBTREE_METHODS](FileStore.md#server-side-configuration) environment
 variable in the File Store documentation
 for details).
 
