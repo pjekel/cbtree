@@ -8,7 +8,7 @@ and is dynamically loaded by issueing HTTP GET requests to the back-end server
 serving the active HTML page.
 
 Please note that both the HTTP GET and DELETE requests are support but only GET is enabled 
-by default. See the Server Side Application [configuration](#file-store-ssa-config) for
+by default. See the Server Side Application [configuration](#server-side-configuration) for
 details.
 
 #### Lazy Store Loading ####
@@ -22,7 +22,7 @@ and *checkedStrict* actually determine how data is retreived from the back-end s
 
 If you elect to use a store model that requires a full store load (no lazy loading), such
 as the FileStoreModel with the model property *checkedStrict* set, please check the '*Which
-Application to use*' section of the [Server Side Applications](#file-store-ssapp) as 
+Application to use*' section of the [Server Side Applications](#server-side-applications) as 
 performance may be an issue.
 
 
@@ -34,7 +34,7 @@ must host at least one of the server side applications included in the cbtree pa
 * cbtreeFileStore.php
 * cbtreeFileStore.cgi
 
-See the [Server Side Application](#file-store-ssapp) section for details on how to 
+See the [Server Side Application](#server-side-application) section for details on how to 
 select and configure the correct application for your environment and possible additional
 requirements. The PHP implementation has been fully tested with PHP 5.3.1
 
@@ -53,7 +53,7 @@ For example, the CheckBox Tree FileStoreModel adds a property called 'checked' t
 in the store. Custom attributes/properties are not stored on the back-end server, as soon as
 you application terminates the custom attributes, and their values, are lost. 
 
-<h2 id="file-store-ssapp">Server Side Applications</h2>
+<h2 id="server-side-applications">Server Side Applications</h2>
 
 The cbtree File Store comes with two implementations of the cbtree Server Side Application,
 one written in PHP the other is an ANSI-C CGI application compliant with the 
@@ -172,7 +172,7 @@ Below you'll find the ABNF notation for the server request and response.
 Please refer to [http://json.org/](http://json.org/) for the JSON encoding rules.
 
 
-<h2 id="file-store-ssa-config">Server Side Configuration</h2>
+<h2 id="server-side-configuration">Server Side Configuration</h2>
 
 The Server Side Application utilizes two optional environment variables to control which HTTP request
 types to support and to set a system wide basepath for the application:
@@ -218,7 +218,7 @@ Whenever you set or change the value of the environment variables you ***MUST***
 server to make these values available to scripts and CGI applications.
 
 
-<h2 id="file-store-Security">File Store Security</h2>
+<h2 id="file-store-security">File Store Security</h2>
 
 As with any application exposed to the Internet there are security issues you need to consider.
 Both the PHP and CGI Server Side Application perform strict parameter checking in that any malformed
@@ -226,7 +226,7 @@ parameter is rejected resulting in a HTTP 400 (Bad Request) error response. Any 
 files outside the root directory results in a HTTP 403 (Forbidden) response.
 
 By default only HTTP GET requests are excepted, if you want to support HTTP DELETE you ***MUST***
-set the server side environment variable CBTREE_METHODS. See [Server Side Configuration](#file-store-ssa-config)
+set the server side environment variable CBTREE_METHODS. See [Server Side Configuration](#server-side-configuration)
 for details.
 
 #### Authentication ####
@@ -308,7 +308,7 @@ arguments to the File Store constructor.
 > String (""), The public URL of the Server Side Application serving the File Store.  
 > For example: **http://MyServer/cgi-bin/cbtreeFileStore.cgi**
 
-<h2 id="file-store-fancy">Fancy Tree Styling</h2>
+<h2 id="fancy-tree-styling">Fancy Tree Styling</h2>
 
 The Server Side Applications support the option *iconClass* which will tell them to include a CSS
 classname for each file. The classname is based on the file extension. If the *iconClass* option is
@@ -369,7 +369,7 @@ At the end of this document you can find a complete example of an application us
 *********************************************
 #### deleteItem( storeItem, onBegin, onError, scope) #### 
 > Delete a store item. Note: Support for this function must be enabled explicitly
->  (See the [CBTREE_METHODS](#file-store-ssa-config) environment variable for details).
+>  (See the [CBTREE_METHODS](#server-side-configuration) environment variable for details).
 
 *storeItem:* data.item
 > A valid dojo.data.store item.
@@ -588,7 +588,7 @@ Unset an items attribute/property. Unsetting an attribute will remove the attrib
 #### onSet( item, atribute, oldValue, newValue ) ####
 
 
-<h2 id="file-store-sample">Sample Application</h2>
+<h2 id="sample-application">Sample Application</h2>
 
 The following sample application shows the document root directory of the back-end server
 as a simple tree with checkboxes. Notice that because the model property *checkedStrict* 
