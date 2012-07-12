@@ -91,13 +91,6 @@ You can test the availability of the Store Model API using the command `has("cbt
 > onComplete will be called in the context of the model.
 
 ******************************************
-#### deleteItem( storeItem ) ####
-> Delete a store item.
-
-*storeItem:* data.item
-> A valid dojo.data.store item.
-
-******************************************
 #### detachFromRoot( storeItem ) ####
 > Detach item from the store root by removing it from the stores top-level item
 > list. Note: the store item is not deleted.
