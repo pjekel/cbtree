@@ -18,7 +18,7 @@ define([
 	"./models/ForestStoreModel",
 	"./models/TreeStoreModel",
 	"./models/StoreModel-API",
-	"./stores/cbtreeFileStore",
+	"./stores/FileStore",
 	"./TreeStyling"
 	], function( CheckBox, Tree, FileStoreModel, ForestStoreModel, TreeStoreModel, StoreModelAPI, FileStore, TreeStyling ){
 			 // Define the 'Dijit CheckBox Tree' (cbtree) including the optional
