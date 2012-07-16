@@ -227,7 +227,8 @@ define([
 		// =======================================================================
 		// Write interface
 
-		deleteItem: function(/*item*/ item, /*Callback*/ onBegin, /*Callback*/ onError, /*Context*/ scope) {
+		deleteItem: function(/*item*/ item, /*Callback*/ onBegin, /*Callback*/ onComplete, 
+													/*Callback*/ onError, /*Context*/ scope) {
 			// summary:
 			//		Delete an item from the file store.
 			// item:
@@ -237,6 +238,10 @@ define([
 			//		will be called just once, before the XHR DELETE request is issued.
 			//		The onBegin callback MUST return true in order to proceed with the
 			//		deletion, any other return value will abort the operation.
+			// onComplete:
+			//		If an onComplete callback function is provided, the callback function
+			//		will be called once on successful completion of the delete operation
+			//		with the list of deleted file store items: onComplete(items)
 			// onError:
 			//		The onError parameter is the callback to invoke when the item load
 			//		encountered an error. It takes only one parameter, the error object
@@ -249,21 +254,22 @@ define([
 			//		Public
 			var scope = scope || window.global;
 
-			if (onBegin) {
-				if (!onBegin.call(scope, item)) {
-					return;
-				}
-			}
-
 			if (item === this.root) {
 				var children = this.root.children || [];
 				var i;
 				
-				for(i=0;i<children.length; i++) {
-					this.store.deleteItem( children[i], null, onError, scope );
+				if (children.length > 0) {
+					if (onBegin) {
+						if (!onBegin.call(scope, item)) {
+							return;
+						}
+					}
+					for(i=0;i<children.length; i++) {
+						this.store.deleteItem( children[i], null, onComplete, onError, scope );
+					}
 				}
 			} else {
-				return this.store.deleteItem(item, onBegin, onError, scope);
+				return this.store.deleteItem(item, onBegin, onComplete, onError, scope);
 			}
 		},
 
