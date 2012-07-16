@@ -7,7 +7,7 @@ and the HTTP back-end server aplication *cbtreeFileStore.php* or *cbtreeFileStor
 and is dynamically loaded by issueing HTTP GET requests to the back-end server
 serving the active HTML page.
 
-Please note that both the HTTP GET and DELETE requests are support but only GET is enabled 
+Please note that the HTTP GET, DELETE and POST methods are support but only GET is enabled 
 by default. See the Server Side Application [configuration](#server-side-configuration) for
 details.
 
@@ -40,7 +40,7 @@ requirements. The PHP implementation has been fully tested with PHP 5.3.1
 
 #### File Store Restrictions ####
 
-Dojo and the File Store (client side) use the JavaScript XHR API to communicate with the back-end
+File Store (client side) use the JavaScript XHR API to communicate with the back-end
 server therefore cross-domain access is, by default, denied. If you need to retreive file
 system information from any server other than the one hosting the active HTML
 page you must configure a so-called HTTP proxy server. (**HTTP server configuration is beyond the
@@ -76,18 +76,18 @@ If your server only support PHP or CGI but not both the choice is simple. If, on
 both are supported and your application requires a full store load, that is, load all available
 information up-front like with the FileStoreModel that has strict parent-child relationship enabled, 
 than the last question will determine the final outcome. If you operate on a large file system with
-1000+ files it is highly recommended you use the ANSI-C CGI implementation.
+10,000+ files it is highly recommended you use the ANSI-C CGI implementation.
 
 Most scripting languages such as PHP are implemented as an interpreter and therefore slower than
-any native compiled code like the ANSI-C CGI application. As an example, when loading the entire store
+any native compiled code like the ANSI-C CGI application. As an example, loading the entire store
 running both the browser application and the PHP server side aplication on the same 4 core 2.4 Mhz AMD
-processor with a file system of 21,000 files takes about 14 seconds to load the store and render the tree.
-Running the exact same browser application on the same platform but with the CGI application takes
-only 3-4 seconds.
+processor with a file system of 21,000 files takes about 7-8 seconds. Running the exact same browser
+application on the same platform but with the CGI application takes 3-4 seconds.
 
-If your application does ***NOT*** require a full store load (lazy loading is sufficient) and none of the directories served by the
-Server Side Application has hundreds of file entries you probably won't notice much of a difference
-as only a relatively small amounts of processing power is required to serve each client request.
+If your application does ***NOT*** require a full store load (lazy loading is sufficient) and none
+of the directories served by the Server Side Application has hundreds of file entries you probably
+won't notice much of a difference as only a relatively small amounts of processing power is
+required to serve each client request.
 
 #### cbtreeFileStore.php ####
 
@@ -191,12 +191,13 @@ CBTREE_BASEPATH
 CBTREE_METHODS
 
 > A comma separated list of HTTP methods to be supported by the Server Side Application. 
-> By default only HTTP GET is supported. Possible options are uppercase GET and DELETE. Example:
+> By default only HTTP GET is supported. Possible options are uppercase GET, DELETE and POST. Example:
 
-	CBTREE_METHODS GET,DELETE
+	CBTREE_METHODS GET,DELETE,POST
 
-> If the HTTP DELETE method is to be supported you ***MUST*** define the
-> CBTREE_METHODS variable with at least DELETE as its value.
+> If only HTTP GET support is required there is no need to define CBTREE_METHODS, if however, 
+> HTTP DELETE or POST support is required you ***MUST*** define the CBTREE_METHODS variable.
+> HTTP POST is required to rename files.
 
 #### IMPORTANT ####
 
@@ -222,12 +223,12 @@ server to make these values available to scripts and CGI applications.
 
 As with any application exposed to the Internet there are security issues you need to consider.
 Both the PHP and CGI Server Side Application perform strict parameter checking in that any malformed
-parameter is rejected resulting in a HTTP 400 (Bad Request) error response. Any attempt to access
+parameter is rejected, not just skipped, resulting in a HTTP 400 (Bad Request) error response. Any attempt to access
 files outside the root directory results in a HTTP 403 (Forbidden) response.
 
-By default only HTTP GET requests are excepted, if you want to support HTTP DELETE you ***MUST***
+By default only HTTP GET requests are excepted, if you want to support HTTP DELETE and/or POST you ***MUST***
 set the server side environment variable CBTREE_METHODS. See [Server Side Configuration](#server-side-configuration)
-for details.
+for details. When HTTP POST is enabled only renaming files is supported, you cannot upload/modify files or other content.
 
 #### Authentication ####
 
@@ -236,10 +237,11 @@ a so-called authentication token allowing you to implement you own authenticatio
 
 #### File Access Restrictions ####
 
-Neither Server Side Application will process any HTTP server directives. Therefore, any file or 
+Neither Server Side Application will process any HTTP server directives. Any file and/or 
 directory access restrictions in files like .htaccess are ignored by the Server Side Application. 
-However, such restrictions will still be enforced by the HTTP server when users try to access the
-files or directories directly.
+However, such file access restrictions will still be enforced by the HTTP server when users try to
+access the files and/or directories directly. It is therefore highly recommended to put those types
+of restrictions in place anyway as part of standard your security procedures.
 
 If you have to rely on the HTTP server security, any HTTP request must be evaluated ***BEFORE***
 the Server Side Application is invoked.
@@ -255,7 +257,7 @@ and exclude such files from being included in a response unless the *showHiddenF
 File Store is set. In general, it is good pratice not to include any files you may consider private, 
 hidden or not, in any directory you expose to the outside world.
 
-***NOTE:*** Only the CGI implementation will also recognize the Microsoft Windows hidden file attribute. 
+***NOTE:*** Only the Windwos CGI implementation will also recognize the Microsoft Windows hidden file attribute. 
 
 <h2 id="file-store-properties">File Store Properties</h2>
 
@@ -295,7 +297,7 @@ arguments to the File Store constructor.
 #### options: ####
 > String[] ([]). A comma separated string of keywords or an array of keyword strings. 
 > The list of options is passed to the back-end server. The following
-> keywords are supported:
+> keywords are supported by both Server Side Applications:
 > #### dirsOnly ####
 > Include only directories in the response.
 > #### iconClass ####
@@ -316,9 +318,12 @@ set two css classnames are included in the server response and are formatted as 
 
 	classname ::= 'fileIcon' fileExtension WSP 'fileIcon'
 
-The first character of fileExtension is always uppercase, all other characters are lowercase like in 
-*fileIconXml*. The only exception is a file system directory which gets the classname *fileIconDIR* to 
+As a result each store item will have an addition attribute/property called *icon* 
+whose value is a pair of camelCase classnames. The first character of fileExtension
+is always uppercase, all other characters are lowercase like in *fileIconXml*. 
+The only exception is a file system directory which gets the classname *fileIconDIR* to 
 distinguesh between, although not common, a file with the extension '.dir'.  
+
 The first classname is followed by a whitespace and the generic classname "fileIcon". The generic classname is used
 as a fallback in case you don't have a CSS definition for the classname with the file extension. Therefore
 always make sure you at least have a CSS definition for "fileIcon".
@@ -364,28 +369,34 @@ At the end of this document you can find a complete example of an application us
 *attribute:* String
 > The name of an item attribute/property whose value is test.
 
-*value:* Anything
+*value:* AnyType
 > The value to search for.
 *********************************************
-#### deleteItem( storeItem, onBegin, onError, scope) #### 
+#### deleteItem( storeItem, onBegin, onComplete, onError, scope ) #### 
 > Delete a store item. Note: Support for this function must be enabled explicitly
 >  (See the [CBTREE_METHODS](#server-side-configuration) environment variable for details).
 
 *storeItem:* data.item
 > A valid dojo.data.store item.
 
-*onBegin:* (Optional)
-> If an onBegin callback function is provided, the callback function
-> will be called just once, before the XHR DELETE request is issued.
-> The onBegin callback MUST return true in order to proceed with the
-> deletion, any other return value will abort the operation.
+*onBegin:* Function (Optional)
+> If the onBegin callback function is provided, the callback function will be
+> called once, before the XHR DELETE request is issued. The onBegin callback
+> MUST return true in order to proceed with the deletion, any other return
+> value will abort the operation. The onBegin callback if called without any
+> arguments: *onBegin()*
 
-*onError:* (Optional)
+*onComplete:* Function (Optional)
+> If an onComplete callback function is provided, the callback function will be
+> called once on successful completion of the delete operation with the list of
+> deleted file store items: *onComplete(deletedItems)*
+
+*onError:* Function (Optional)
 > The onError parameter is the callback to invoke when the item load encountered
 > an error. It takes two parameter, the error object and, if available, the HTTP
-> status code.
+> status code: *onError(error, status)*
 
-*scope:* (Optional)
+*scope:*  Object (Optional)
 > If a scope object is provided, all of the callback functions (onBegin, onError, etc)
 > will be invoked in the context of the scope object. In the body of the callback
 > function, the value of the "this" keyword will be the scope object otherwise
@@ -399,7 +410,7 @@ At the end of this document you can find a complete example of an application us
 > generally asynchronous manner, therefore callbacks are always used to return
 > items located by the fetch parameters.
 
-*keywordArgs:*
+*keywordArgs:* Object
 > The keywordArgs parameter may either be an instance of conforming to dojo.data.api.Request
 > or may be a simple anonymous object. (See dojo.data.api.Read.fetch for details).
 
@@ -408,7 +419,7 @@ At the end of this document you can find a complete example of an application us
 > Given the identity of an item, this method returns the item that has that identity through
 > the keywordArgs onItem callback.
 
-*keywordArgs:*
+*keywordArgs:* Object
 > An anonymous object that defines the item to locate and callbacks to invoke when the
 > item has been located and load has completed. The format of the object is as follows:
 > { *identity*: string|object, *onItem*: Function, *onError*: Function, *scope*: object }  
@@ -419,6 +430,13 @@ At the end of this document you can find a complete example of an application us
 > Returns an array of strings containing all available attributes. All private store
 > attributes are excluded. Please note that of all attributes only custom attributes
 > will be writeable.
+
+*item:* store.item
+> A valid file.store item.
+
+*********************************************
+#### getDirectory( item ) ####
+> Returns the directory path of a store item.
 
 *item:* store.item
 > A valid file.store item.
@@ -507,7 +525,7 @@ At the end of this document you can find a complete example of an application us
 > false if *something* is a literal, an item from another store instance, or is any
 > object other than an item.
 
-*something:*
+*something:* AnyType
 > Can be anything.
 
 *********************************************
@@ -529,21 +547,56 @@ At the end of this document you can find a complete example of an application us
 > Given an item, this method loads the item so that a subsequent call to isItemLoaded(item)
 > will return true.
 
-*keywordArgs:*
+*keywordArgs:* Object
 > An anonymous object that defines the item to load and callbacks to invoke when the
 > load has completed.  The format of the object is as follows:
 > { *item*: object, *onItem*: Function, *onError*: Function, *scope*: object }   
 > (See dojo.data.api.Read.loadItem for additional details).
 
 *********************************************
+#### renameItem( item, newPath, onItem, onError, scope) ####
+> Rename a store item. The file associated with the store item will be renamed.
+> On successful completion the function onItem is called with a new store item,
+> as a result parameter *item* is no longer a valid store item.  
+
+> *NOTE:* HTTP POST must be enabled to support rename operations. See the 
+> [Server Side Configuration](#server-side-configuration) for details.
+
+*item:* store.item
+> A valid file.store item which will become invalid on successful completion.
+
+*newPath:* String
+> The new pathname of the item.
+
+*onItem:* Function (Optional)
+> The callback function to invoke when the item has successfully been renamed.
+> It takes only one parameter, the renamed item: onItem(item). 
+> Please note that the parameter *item* is a new store item.
+
+*onError:* Function (Optional)
+> The onError parameter is the callback to invoke when the item rename encountered
+> an error. It takes two parameter, the error object and the optional HTTP status
+> code when available: onError(err, status). If the HTTP status code is not available
+> parameter *status* is undefined.
+
+*scope:* Object (Optional)
+> If a scope object is provided, all of the callback functions (onItem,	onError, etc)
+> will be invoked in the context of the scope object. In the body of the callback
+> function, the value of the "this" keyword will be the scope object otherwise
+> window.global is used.
+
+*********************************************
 #### setValue( item, attribute, newValue ) ####
-> Assign a new value to the items attribute/property.
+> Assign a new value to the items attribute/property. This method only allows
+> modification of custom attributes, that is, any read-only or store private
+> attributes are excluded. Please refer to *renameItem()* to change the 
+> identity (filename) of a store item. 
 
 *item:* store.item
 > A valid file.store item.
 
 *attribute:* String
-> The name of the item attribute/property whose value is to be set.
+> The name of a custom attribute/property whose value to set.
 
 *newValue:* AnyType
 > The new values to be assigned to the attribute/property.
@@ -551,13 +604,16 @@ At the end of this document you can find a complete example of an application us
 *********************************************
 #### setValues( item, attribute, newValues ) ####
 > Assign an array of new values to the items attribute/property. The parameter
-> *newValues* must be an array otherwise an error is thrown.
+> *newValues* must be an array otherwise an error is thrown. This method only allows
+> modification of custom attributes, that is, any read-only or store private
+> attributes are excluded. Please refer to *renameItem()* to change the 
+> identity (filename) of a store item. 
 
 *item:* store.item
 > A valid file.store item.
 
 *attribute:* String
-> The name of the item attribute/property whose value is to be set.
+> The name of a custom attribute/property whose value to set.
 
 *newValues:* AnyType[]
 > Array of new values to be assigned to the attribute/property. If *newValues* is an empty array

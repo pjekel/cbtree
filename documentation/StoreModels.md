@@ -258,7 +258,7 @@ Additional functionality is available using the [Store Model API](StoreModelAPI.
 
 ******************************************
 #### deleteItem( storeItem ) #### 
-#### deleteItem( storeItem, onBegin, onError, scope) #### 
+#### deleteItem( storeItem, onBegin, onComplete, onError, scope) #### 
 > Delete a store item. Please note that this feature needs to be explicitly enabled
 > on a File Store. (See the [CBTREE_METHODS](FileStore.md#server-side-configuration) environment
 variable in the File Store documentation
@@ -267,17 +267,22 @@ for details).
 *storeItem:* data.item
 > A valid dojo.data.store item.
 
-*onBegin:* (Optional, FileStoreModel only)
+*onBegin:* Function (Optional, FileStoreModel only)
 > If an onBegin callback function is provided, the callback function
 > will be called just once, before the XHR DELETE request is issued.
 > The onBegin callback MUST return true in order to proceed with the
 > deletion, any other return value will abort the operation.
 
-*onError:* (Optional, FileStoreModel only)
+*onComplete:* Function (Optional, FileStoreModel only)
+> If an onComplete callback function is provided, the callback function will be
+> called once on successful completion of the delete operation with the list of
+> deleted file store items.
+
+*onError:* Function (Optional, FileStoreModel only)
 > The onError parameter is the callback to invoke when the item load
 > encountered an error. It takes only one parameter, the error object
 
-*scope:* (Optional, FileStoreModel only)
+*scope:* Object (Optional, FileStoreModel only)
 > If a scope object is provided, all of the callback functions (onBegin,
 > onError, etc) will be invoked in the context of the scope object. In
 > the body of the callback function, the value of the "this" keyword
