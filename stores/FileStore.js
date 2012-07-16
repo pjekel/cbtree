@@ -68,10 +68,11 @@ define(["dojo/_base/array",
 			this._arrayOfTopLevelItems = [];
 			this._itemsByIdentity = null;
 
-			this._features = {'dojo.data.api.Read':true, 
-												'dojo.data.api.Write':true,
-												'dojo.data.api.Identity':true,
-												'dojo.data.api.Notification': true };
+			this._features = { 'dojo.data.api.Read':true, 
+												 'dojo.data.api.Write':true,
+												 'dojo.data.api.Identity':true,
+												 'dojo.data.api.Notification': true 
+												};
 												
 			this._storeRefPropName = "_S";   // Default name for the store reference to attach to every item.
 			this._rootItemPropName = "_RI";  // Default Item Id for top level store items
@@ -85,7 +86,7 @@ define(["dojo/_base/array",
 			this._authToken        = null;  // Authentication Token
 			this._privateAttrs     = [ this._storeRefPropName, this._rootItemPropName, this._reverseRefMap, 
 															    this._itemLoaded, this._itemExpanded ];
-			this._readOnlyAttrs    = ["name", "path", "size", "modified", "directory", this.childrenAttr];
+			this._readOnlyAttrs    = ["name", "path", "size", "modified", "directory", "icon", this.childrenAttr];
 
 			for( var prop in args ) {
 				this.set(prop, args[prop]);
@@ -96,6 +97,9 @@ define(["dojo/_base/array",
 		// Parameters to constructor
 
 		// authToken: Object
+		//		An arbitrary JavaScript object that is passed to the back-end server "as is"
+		//		and may be used to implement authentication. The Server Side Applications
+		//		currently DO NOT authenticate.
 		authToken: null,
 		
 		// basePath: String
@@ -165,6 +169,9 @@ define(["dojo/_base/array",
 		//		the store. It is as a shared variable amongst models.
 		_validated: false,
 		
+		//=========================================================================
+		// Private Methods
+		
 		_assertIsItem: function (/*item*/ item) {
 			// summary:
 			//		This function tests whether the item passed in is indeed an item in the store.
@@ -227,35 +234,52 @@ define(["dojo/_base/array",
 			});
 		},
 
-		_deleteItem: function ( /*item*/ item ) {
+		_deleteItem: function ( /*item*/ item, /*boolean*/ onSetCall ) {
 			// summary:
 			//		Delete an item from the store. This function is internal to the store.
-			//		This method is called by either _removeItems() or _mergeItems(). When 
-			//		called from _removeItems() it is the result of a explicitly user call
+			//		This method is called by either _deleteItems() or _mergeItems(). When 
+			//		called from _deleteItems() it is the result of a explicitly user call
 			//		to the public deleteItem(). If called from _mergeItems() it is because
 			//		a change on the server side was detected.
 			// item:
 			//		Valid store item to be deleted.
+			// onSetCall:
+			//		Indicate if onSet() should be called.
+			// returns:
+			//		An array of deleted file store items.
 			// tags:
 			//		private
+			var items = [];
+			
 			if (item.directory) {
-				var children = item[this.childrenAttr],
+				var children = this.getValues( item, this.childrenAttr ),
+						deleted,
 						i;
 				if (children.length > 0) {
-					for (i in children) {
-						this._deleteItem( children[i] );
+					for (i=0; i<children.length; i++) {
+						// Delete the child but suppress any onSet() events because the
+						// directory itself will be removed as well.
+						deleted = this._deleteItem( children[i], false );
+						if (deleted) {
+							items = items.concat(deleted);
+						}
 					}
 				}
-				item[this.childrenAttr] = [];
 			}
 			// Remove item from the its parent children list.
 			var parent = this.getParents(item)[0];
 			if (parent) {
-				var children = parent[this.childrenAttr];
-				var oldList  = children.slice(0);
-
-				if (this._removeArrayElement( children, item )) {
-					this.onSet( parent, this.childrenAttr, oldList, children );
+				if (onSetCall) {
+					var oldValue = this.getValues( parent, this.childrenAttr );
+					if (this._removeArrayElement( parent[this.childrenAttr], item )) {
+						var newValue = this.getValues( parent, this.childrenAttr );
+						// IMPORTANT: Do NOT use setValues() because if newValues is an empty
+						//						array setValues() will remove the children attribute.
+						//						Therefore call onSet() direct.
+						this.onSet( parent, this.childrenAttr, oldValue, newValue );
+					}
+				} else {
+					this._removeArrayElement( parent[this.childrenAttr], item );
 				}
 			} 
 			// Remove all item reference from the store.
@@ -269,6 +293,60 @@ define(["dojo/_base/array",
 				this._removeArrayElement(this._arrayOfTopLevelItems, item);
 			}
 			this.onDelete(item);
+			items.push(item);
+			return items;
+		},
+
+		_deleteItems: function (/*Object*/ dataObject ) {
+			// summary:
+			//		Delete the list of items referenced in the dataObject.
+			// description:
+			//		Delete the list of items referenced in the dataObject. The items in the
+			//		dataObject can be in any order. For example, a directory typically appears
+			// 		in the list after its children. However, to prevent the method deleteItem()
+			//		from generating an onSet() event each time a child is deleted from its
+			//		parent directory when eventually the directory itself will be removed, 
+			//		the list is sorted first. As a result directory entries will always appear
+			//		in the list BEFORE its children. 
+			//		Whenever deleteItem() encounters a directory entry, all of its children
+			//		are automatically removed WITHOUT generating the onSet() event for each
+			//		child.
+			// dataObject:
+			//		The JavaScript data object containing the files that have successfully
+			//		been deleted from the server.
+			// returns:
+			//		An array of deleted file store items.
+			// tags:
+			//		private
+			var deletedItems = dataObject.items;
+			var	storeItem, rawItem;
+			var identity;
+			var deleted;
+			var items = [];
+			var i;
+			
+			if (deletedItems) {
+				// Sort the list of deleted item first
+				var sortList = new sorter( [{attribute:"path"}] );
+				deletedItems.sort( sortList.sortFunction() );
+
+				for (i=0; i<deletedItems.length; i++) {
+					rawItem   = deletedItems[i];
+					identity  = rawItem[this._identifier];
+					storeItem = this._getItemByIdentity(identity);
+					// Deleted items may not be available in the store if the deleted item was
+					// a directory child and the directory had not been fully loaded or if the
+					// parent directory was listed BEFORE its children. Therefore, not finding
+					// items in the store is NOT considered an error.
+					if (storeItem) {
+						deleted = this._deleteItem(storeItem, true);
+						if (deleted) {
+							items = items.concat(deleted);
+						}
+					}
+				}
+			}
+			return items;
 		},
 		
 		_fetchComplete: function (/*Object*/requestArgs, /*array*/arrayOfItems) {
@@ -368,6 +446,26 @@ define(["dojo/_base/array",
 			this._fetchComplete( requestArgs, items );
 		},
 		
+		_getCustomAttributes: function( /*item*/ item ) {
+			// summary:
+			//		Returns a list of custom attributes. A custom attribute is an attribute
+			//		added by the user application in addition to the read-only attributes
+			//		provided by  the back-end server and the private attributes provided by
+			//		the store itself. Custom attributes can be added using either setValue()
+			//		or setValues().
+			// item:
+			//		A valid file store item
+			var attributes = [];
+			
+			for(var key in item){
+				// Save off only the real item attributes, not the read-only or private
+				if ( !this._isPrivateAttr(key) && !this._isReadOnlyAttr(key)) {
+					attributes.push(key);
+				}
+			}
+			return attributes;
+		},
+
 		_getItemByIdentity: function (/*Object*/ identity) {
 			// summary:
 			//		Internal function to look an item up by its identity map.
@@ -408,6 +506,10 @@ define(["dojo/_base/array",
 		_isEmpty: function (something) {
 			// summary:
 			//		Return true if 'something' is empty otherwise false.
+			// something:
+			//		Can be almost any data type.
+			// tags:
+			//		private
 			if (typeof something !== "undefined") {
 				if (lang.isObject(something)) {
 					for(var prop in something) {
@@ -429,7 +531,7 @@ define(["dojo/_base/array",
 			// summary:
 			//		Returns true is attr is one of the private item attributes.
 			// attr:
-			//		Attribute name to be tested.
+			//		Attribute name string to be tested.
 			// tags:
 			//		private
 			var i;
@@ -446,7 +548,7 @@ define(["dojo/_base/array",
 			// summary:
 			//		Returns true is attr is one of the static item attributes.
 			// attr:
-			//		Attribute name to be tested.
+			//		Attribute name string to be tested.
 			// tags:
 			//		private
 			var i;
@@ -459,7 +561,7 @@ define(["dojo/_base/array",
 			return false;
 		},
 
-		_mergeItems: function (item, rawItem) {
+		_mergeItems: function (/*item*/ item, /*Object*/ rawItem) {
 			// summary:
 			//		Merge item information received from the server with an existing item
 			//		in the in-memory store. If an items properties have changed an onSet()
@@ -492,6 +594,7 @@ define(["dojo/_base/array",
 					var orgChild,	rawChild;
 					var identity, index;
 					var newChildren = false;
+					var sortOrder   = false;
 					var oldValues = this.getValues( item, this.childrenAttr );
 					var newValues = [];
 					
@@ -511,26 +614,31 @@ define(["dojo/_base/array",
 							this._removeArrayElement( oldValues, orgChild );
 							newValues.push(orgChild);
 							this._mergeItems( orgChild, rawChild );
+							// Test if the sort order has changed.
+							if (index != i) {
+								sortOrder = true;
+							}
 						}
 					}
-					// Update the items children if, and only if, new children have been added
-					// or existing children have been deleted.
-					if (oldValues.length > 0 || newChildren) {
+					item[this._itemExpanded] = true;
+					item[this._itemLoaded]   = true;
+
+					// Update the items children if, and only if, new children have been added,
+					// the sort order changed or existing children have been deleted.
+					if (oldValues.length > 0 || newChildren || sortOrder ) {
 						this._setValues( item, this.childrenAttr, newValues, item[this._itemLoaded] );
 					}
 					// Delete obsolete children, if any
 					if (oldValues.length > 0) {
 						while (orgChild = oldValues.shift() ) {
-							this._deleteItem( orgChild );
+							this._deleteItem( orgChild, true );
 						}
 					}
-					item[this._itemExpanded] = true;
-					item[this._itemLoaded]   = true;
 				}
 			}
 		},
 
-		_newItem: function (/*item*/ item, /*item?*/ parentItem ) {
+		_newItem: function (/*item*/ item, /*item?*/ parentItem, /*boolean*/ onSetCall ) {
 			// summary:
 			//		Add a new item to the store. This is a function internal to the store, no public 
 			//		methods are available to programmatically add new items.
@@ -538,6 +646,8 @@ define(["dojo/_base/array",
 			//		A valid store data item to be added to the store.
 			// parentItem:
 			//		The parent item of item. (optional)
+			// onSetCall:
+			//		Indicated if the callback onSet() will be called on completion.
 			// tags:
 			//		private
 			var identity = item[this._identifier];
@@ -560,32 +670,29 @@ define(["dojo/_base/array",
 			item[this._itemLoaded] = item.directory ? false : true;
 
 			// If the item is a directory and fully expanded, that is, the server included all
-			// children, we need to add each child as a new store item as well. But because the
-			// directory itself is a new item we suppress any onNew() events for the children.
+			// children, we need to add each child as a new store item as well.
 			if (item.directory && item[this._itemExpanded]) {
 				var children = item[this.childrenAttr];
-				var newItems = [];
-				var child;
 				var i;		
 				// Transform all (raw) children to valid store items.
+				item[this.childrenAttr] = [];
 				for (i =0; i<children.length; i++) {
-					child = this._newItem(children[i], item);
-					newItems.push(child);
+					this._newItem(children[i], item, false);
 				}
-				if (newItems.length > 0) {
-					this._setValues(item, this.childrenAttr, newItems, false );
-				}
-				// Now the directory is considered 'loaded'.
+				// With all children added, the directory is now considered 'loaded'.
 				item[this._itemLoaded] = true;
-			}
-			// If there is no parent, the item is a top level entry in the store..
+			} 
+			// If there is no parent, the item is a top level entry in the store, otherwise
+			// add the item to the parents list of children.
 			if (parentItem == null) {
 				this._arrayOfTopLevelItems.push(item);
 				item[this._rootItemPropName] = true;
+			} else {
+				parentItem[this.childrenAttr].push(item);
 			}
 			this._arrayOfAllItems.push(item);
 
-			if (this._loadFinished) {
+			if (this._loadFinished && onSetCall) {
 				if (parentItem) {
 					if (parentItem[this._itemLoaded]) {
 						parentInfo = { item: parentItem, attribute: this._childrenAttr, oldValue: undefined };
@@ -596,6 +703,53 @@ define(["dojo/_base/array",
 				}
 			}
 			return item;
+		},
+		
+		_renameItem: function ( keywordArgs ) {
+			//
+			var scope = keywordArgs.scope || window.global;
+			var item  = keywordArgs.item;
+			var self  = this;
+
+			if (this._loadInProgress) {
+				this._queuedFetches.push({args: keywordArgs, func: this._renameItem, scope: self});
+			} else {
+				this._loadInProgress = true;
+				var request    = { path: item.path, 
+													 attribute: keywordArgs.attribute, 
+													 oldValue: keywordArgs.oldValue,
+													 newValue: keywordArgs.newValue 
+													};
+				var getArgs    = this._requestToArgs( "POST", request );
+				var getHandler = xhr.post(getArgs);
+				getHandler.addCallback(function (data) {
+					try{
+						var items = self._uploadRenamedItem(data, keywordArgs);
+
+						self._loadFinished   = true;
+						self._loadInProgress = false;
+						self._handleQueuedFetches();
+
+						if (items.length && keywordArgs.onItem) {
+							keywordArgs.onItem.call(scope, items[0]);
+						}
+
+					}catch(error) {
+						self._loadInProgress = false;
+						if (keywordArgs.onError) {
+							keywordArgs.onError(error);
+						}
+						throw error;
+					}
+				});
+				getHandler.addErrback(function (error) {
+					self._loadInProgress = false;
+					// Delete item if not found but was previously known.
+					if (keywordArgs.onError) {
+						keywordArgs.onError.call(scope, error, getArgs.status);
+					}
+				});
+			}
 		},
 		
 		_removeArrayElement: function (/*Array*/ arrayOfItems, /*anything*/ element) {
@@ -615,39 +769,12 @@ define(["dojo/_base/array",
 			return false;
 		},
 
-		_removeItems: function (/*Object*/ dataObject ) {
-			// summary:
-			//		Remove/delete the list of  items referenced in the dataObject.  The items
-			//		in the dataObject can be in any order. For example, a directory may appear
-			//		in the list before its children.
-			// dataObject:
-			//		The JavaScript data object containing the files that have successfully
-			//		been deleted from the server.
-			var deletedItems = dataObject.items;
-			var	storeItem, rawItem;
-			var identity;
-			var i;
-			
-			if (deletedItems) {
-				for (i=0; i<deletedItems.length; i++) {
-					rawItem   = deletedItems[i];
-					identity  = rawItem[this._identifier];
-					storeItem = this._getItemByIdentity(identity);
-					// Deleted items may not be available in the store if the deleted item was
-					// a directory child and the directory had not been fully loaded or if the
-					// parent directory was listed BEFORE its children. Therefore, not finding
-					// items in the store is NOT considered an error.
-					if (storeItem) {
-						this._deleteItem(storeItem);
-					}
-				}
-			}
-		},
-		
 		_requestToArgs: function ( /*string*/ requestType, /*object*/ request) {
 			// summary:
 			//		Compile the list of XHR GET arguments base on the request object and
 			//		File Store options/parameters.
+			// requestType:
+			//		Type of XHR request (GET, DELETE or POST)
 			// request:
 			// tags:
 			//		private
@@ -670,6 +797,9 @@ define(["dojo/_base/array",
 			}
 
 			switch( requestType ) {
+				case "DELETE":
+					break;
+
 				case "GET":
 					if (request.query) {
 						reqParams.query = json.toJson(request.query);
@@ -691,7 +821,16 @@ define(["dojo/_base/array",
 					}
 					break;
 
-				case "DELETE":
+				case "POST":
+					if (request.attribute) {
+						reqParams.attribute = request.attribute;
+					}
+					if (request.newValue) {
+						reqParams.newValue	= request.newValue; 
+					}
+					if (request.oldValue) {
+						reqParams.oldValue	= request.oldValue; 
+					}
 					break;
 			}
 
@@ -741,7 +880,8 @@ define(["dojo/_base/array",
 				if (lang.isString(value)) {
 					this.options = value.split(",");
 				} else {
-					throw new Error(this.moduleName + "::_setOptionsAttr: Options must be a comma separated string of keywords"
+					throw new Error(this.moduleName + "::_setOptionsAttr: Options must be a comma"
+																						+ " separated string of keywords"
 																						+ " or an array of keyword strings." );
 				}
 			}
@@ -757,7 +897,7 @@ define(["dojo/_base/array",
 			// newValues:
 			//		New values to be assigned.
 			// tag:
-			//		public
+			//		private
 			var oldValues;
 			var	i;
 			
@@ -781,14 +921,18 @@ define(["dojo/_base/array",
 
 		_uploadDataToStore: function (/*Object*/ dataObject, /*Object*/keywordArgs ) {
 			// summary:
-			//		Function to parse the loaded data into item format and build the internal
-			//		items array. After the initial server response is processed all subsequent
-			//		responses are used to update the existing store.
+			//		Function to parse the server response data into item format and build the
+			//		internal items array. After the initial server response is processed all
+			//		subsequent responses are used to update the existing store.
 			// dataObject:
-			//		The JS data object containing the raw data to convert into item format.
+			//		The JavaScript data object containing the raw data to convert into store 
+			//		item format.
+			// keywordArgs:
+			//		Keyword arguments object of the original request
 			// returns:
 			//		An array of store items.
-			
+			// tag:
+			//		private
 			var rawItems = dataObject.items,
 					childItems,
 					items 	 = [],
@@ -817,7 +961,7 @@ define(["dojo/_base/array",
 				this._sort									= keywordArgs.sort;
 
 				for (i=0; i<rawItems.length; i++) {
-					item = this._newItem( rawItems[i], null );
+					item = this._newItem( rawItems[i], null, true );
 					items.push(item);
 				}
 				this.onLoaded();		// Signal event.
@@ -833,7 +977,7 @@ define(["dojo/_base/array",
 					} else {
 						// If no directory path included it must be a top-level item.
 						if (identity.indexOf("/") === -1) {
-							item = this._newItem( rawItems[i], null );
+							item = this._newItem( rawItems[i], null, true );
 							items.push(item);
 						} else {
 							throw new Error(this.moduleName+"::_uploadDataToStore: Item ["+identity+"] not found in store.");
@@ -844,10 +988,62 @@ define(["dojo/_base/array",
 			return items;
 		},
 
+		_uploadRenamedItem: function (/*Object*/ dataObject, /*Object*/keywordArgs ) {
+			// summary:
+			//		Upload the renamed item to the store. Before deleting the original store
+			//		item its custom attributes are transfered to the renamed item first. The
+			//		renamed item is than added as a new store item.
+			// dataObject:
+			//		The JavaScript data object containing the raw data to convert into item format.
+			// keywordArgs:
+			//		Keyword arguments object of the original request
+			// returns:
+			//		An array of store items.
+			// tag:
+			//		private
+			var oldItem = keywordArgs.item,
+					items 	= [];
+			
+			var newItem = dataObject.items[0];
+			if (newItem) {
+				var oldParent, newParent;
+				var parentId,	last;
+				var custAttr;
+				
+				last 			= newItem.path.lastIndexOf("/");
+				parentId  = newItem.path.substr(0, last);
+				newParent = this._getItemByIdentity( parentId );
+				oldParent = this.getParents(oldItem)[0];
+
+				// Mixin any custom attributes.
+				custAttr = this._getCustomAttributes(oldItem);
+				array.forEach( custAttr, function( attr ){
+						newItem[attr] = oldItem[attr];
+					});
+				this._deleteItem( oldItem, true );
+				// If there is a parent available, reload it so its children are filtered
+				// and sorted correctly.
+				if (newParent) {
+					this._newItem( newItem, newParent, false );
+					newParent[this._itemExpanded] = false;
+					this.loadItem( { item: newParent, queryOptions: this._queryOptions, sort: this._sort} );
+				} else {
+					this._newItem( newItem, null, true );
+				}
+				items.push(newItem);
+			}
+			return items;
+		},
+
+		//=========================================================================
+		// Public Methods
+		
 		close: function (/*dojo.data.api.Request || keywordArgs || null */ request) {
 			// summary:
 			//		See dojo.data.api.Read.close()
 			// request:
+			// tag:
+			//		public
 			if (this.clearOnClose && this._loadFinished && !this._loadInProgress) {
 				//	Reset all internals back to default state. This will force a reload
 				//	on the next fetch. This also checks that the data or url param was
@@ -887,7 +1083,8 @@ define(["dojo/_base/array",
 			return this._containsValue(item, attribute, value, regexp); //boolean.
 		},
 
-		deleteItem: function(/*item*/ item, /*Callback*/ onBegin, /*Callback*/ onError, /*Context*/ scope) {
+		deleteItem: function(/*item*/ item, /*Callback*/ onBegin, /*Callback*/ onComplete, 
+													/*Callback*/ onError, /*Context*/ scope) {
 			// summary:
 			//		Delete an item from the back-end server and store. A XHR delete is issued
 			//		and the server response includes the file(s) that have succesfully been
@@ -899,9 +1096,14 @@ define(["dojo/_base/array",
 			//		will be called just once, before the XHR DELETE request is issued.
 			//		The onBegin callback MUST return true in order to proceed with the
 			//		deletion, any other return value will abort the operation.
+			// onComplete:
+			//		If an onComplete callback function is provided, the callback function
+			//		will be called once on successful completion of the delete operation
+			//		with the list of deleted file store items: onComplete(items)
 			// onError:
-			//		The onError parameter is the callback to invoke when the item load
-			//		encountered an error. It takes only one parameter, the error object
+			//		The onError parameter is the callback to invoke when the item rename
+			//		encountered an error. It takes two parameter, the error object and
+			//		the HTTP status code if available: onError(err, status)
 			// scope:
 			//		If a scope object is provided, all of the callback functions (onBegin,
 			//		onError, etc) will be invoked in the context of the scope object. In
@@ -927,12 +1129,16 @@ define(["dojo/_base/array",
 				var request    = { path: item.path };
 				var getArgs    = this._requestToArgs( "DELETE", request );
 				var getHandler = xhr.del(getArgs);
+				var items;
 
 				getHandler.addCallback(function (data) {
 					try{
 						self._loadInProgress = false;
-						self._removeItems( data );
+						items = self._deleteItems( data );
 						self._handleQueuedFetches();
+						if (onComplete) {
+							onComplete.call(scope, items);
+						}
 					}catch(error) {
 						self._loadInProgress = false;
 						if (onError) {
@@ -947,7 +1153,7 @@ define(["dojo/_base/array",
 					switch( getArgs.status ) {
 						case 404:		// Not Found
 						case 410:		// Gone
-							self._deleteItem( item );
+							self._deleteItem( item, true );
 							break;
 						case 400:		// Bad Request
 						case 405:		// Method Not Allowed
@@ -1074,7 +1280,7 @@ define(["dojo/_base/array",
 						}
 						// If item was found in the store but not on the server, delete it.
 						if (item) {
-							self._deleteItem( item );
+							self._deleteItem( item, true );
 						}
 					} else {
 						if (keywordArgs.onError) {
@@ -1101,6 +1307,27 @@ define(["dojo/_base/array",
 				}
 			}
 			return attributes; // Array
+		},
+
+		getDirectory: function(/*item*/ item ) {
+			// summary:
+			//		Return the directory path of a store item. The directory path of an
+			//		item is the path property of its parent.
+			// item:
+			//		A valid File Store item
+			// tag:
+			//		public			
+			this._assertIsItem(item);
+			var	parent;
+
+			parent = this.getParents(item)[0];
+			if (parent) {
+				return parent[this._identifier];
+			} else {
+				if (this.isRootItem(item)) {
+					return "";
+				}
+			}
 		},
 
 		getFeatures: function () {
@@ -1169,7 +1396,7 @@ define(["dojo/_base/array",
 			//		Get the parent(s) of a item.	
 			// description:
 			//		Get the parent(s) of a FileStore item.	The '_reverseRefMap' property
-			//		is used to fetch the parent(s). (should be only one).
+			//		is used to fetch the parent(s). (there should only be one).
 			// item:
 			//		The File Store item whose parent(s) will be returned.
 
@@ -1273,11 +1500,10 @@ define(["dojo/_base/array",
 		loadItem: function (keywordArgs) {
 			// summary:
 			//		Given an item, this method loads the item so that a subsequent call to
-			//		store.isItemLoaded(item) will return true. If a call to isItemLoaded()
-			//		returns true before loadItem() is even called, then loadItem() need not
-			//		do any work at all and will not even invoke the callback handlers.
-			//		So, before invoking this method, check that the item has not already
-			//		been loaded.
+			//		isItemLoaded(item) will return true. If a call to isItemLoaded() returns
+			//		true before loadItem() is even called, then loadItem() need not do any
+			//		work at all and will not even invoke the callback handlers.	So, before
+			//		invoking this method, check that the item has not already been loaded.
 			// keywordArgs:
 			//		See dojo/data/api/Read.js
 			// tag:
@@ -1323,7 +1549,7 @@ define(["dojo/_base/array",
 					self._loadInProgress = false;
 					// Delete item if not found but was previously known.
 					if( getArgs.status == 404 && item ) {
-						self._deleteItem( item );
+						self._deleteItem( item, true );
 					}
 					if (keywordArgs.onError) {
 						keywordArgs.onError.call(scope, error, getArgs.status);
@@ -1334,7 +1560,7 @@ define(["dojo/_base/array",
 
 		loadStore: function (/*Object?*/ query, /*object?*/ fetchArgs ) {
 			// summary:
-			//		Try a forced synchronous load of the store but only if it has not
+			//		Try a forced load of the entire store but only if it has not
 			//		already been loaded.
 			//
 			// query:
@@ -1360,6 +1586,44 @@ define(["dojo/_base/array",
 				}
 			}
 			return true;
+		},
+
+		renameItem: function(/*item*/ item, /*String*/ newPath, /*Callback?*/ onItem, /*Callback?*/ onError, 
+													/*Context?*/ scope) {
+			// summary:
+			//		Rename a store item. 
+			// item:
+			//		A valid File Store item
+			// newPath:
+			//		The new pathname of the item. (relative to the stores basePath)
+			// onItem:
+			//		The callback function to invoke when the item has been renamed. It
+			//		takes only one parameter, the renamed item: onItem(item)
+			// onError:
+			//		The onError parameter is the callback to invoke when the item rename
+			//		encountered an error. It takes two parameter, the error object and
+			//		the HTTP status code if available: onError(err, status)
+			// scope:
+			//		If a scope object is provided, all of the callback functions (onItem,
+			//		onError, etc) will be invoked in the context of the scope object. In
+			//		the body of the callback function, the value of the "this" keyword
+			//		will be the scope object otherwise window.global is used.
+			// tag:
+			//		Public
+			var scope = scope || window.global;
+
+			this._assertIsItem(item);
+			this._assertIsAttribute(newPath, "renameItem");
+			
+			if (item[this._identifier] !== newPath) {
+				var keywordArgs = { item: item, attribute: this._identifier, oldValue: item[this._identifier], 
+														newValue: newPath, onItem: onItem, onError: onError, scope: scope };
+				this._renameItem( keywordArgs );
+			} else {
+				if (lang.isFunction(onItem) ) {
+					onItem.call(scope, item);
+				}	
+			}
 		},
 
 		set: function (/*String*/ attribute, /*anytype*/ value) {
@@ -1393,7 +1657,9 @@ define(["dojo/_base/array",
 		
 		setValue: function (/*item*/ item, /*attribute*/ attribute, /*anthing*/ newValue ) {
 			// summary:
-			//		Set a new attribute value. 
+			//		Set a new attribute value. Note: this method only allows modification
+			//		of custom attributes. Please refer to renameItem() to change the store
+			//		item identity.
 			// item:
 			//		A valid File Store item
 			// attribute:
@@ -1437,7 +1703,7 @@ define(["dojo/_base/array",
 			this._assertIsItem(item);
 			this._assertIsAttribute(attribute, "setValues");
 
-			if (typeof newValue === "undefined") {
+			if (typeof newValues === "undefined") {
 				throw new Error(this.moduleName+"::setValue: newValue is undefined");
 			}
 			if (this._isReadOnlyAttr(attribute) || this._isPrivateAttr(attribute)) {
@@ -1522,7 +1788,7 @@ define(["dojo/_base/array",
 		},
 		
 		attachToRoot: function() {
-			this._assertNoSupport( "AttachToRoot" );
+			this._assertNoSupport( "attachToRoot" );
 		},
 		
 		detachFromRoot: function() {
@@ -1531,7 +1797,7 @@ define(["dojo/_base/array",
 		
 		itemExist: function (/*Object*/ keywordArgs) {
 			// summary:
-			//		Tests if, and return a store item if it exists.
+			//		Tests if, and return, a store item if it exists.
 			// keywordArgs:
 			//		Object defining the store item properties.
 			// returns:
@@ -1541,7 +1807,7 @@ define(["dojo/_base/array",
 			var	itemIdentity,
 					item;
 			
-			if (typeof keywordArgs != "object" && typeof keywordArgs != "undefined"){
+			if (typeof keywordArgs != "object"){
 				throw new Error(this.moduleName+"::itemExist: argument is not an object.");
 			}
 			if (this._itemsByIdentity) {
