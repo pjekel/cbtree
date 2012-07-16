@@ -242,6 +242,7 @@
 	define( "HTTP_V_FORBIDDEN",					403);
 	define( "HTTP_V_NOT_FOUND",					404);
 	define( "HTTP_V_METHOD_NOT_ALLOWED",	405);
+	define( "HTTP_V_CONFLICT",						409);
 	define( "HTTP_V_GONE",								410);
 	define( "HTTP_V_SERVER_ERROR",				500);
 
@@ -265,7 +266,7 @@
 	}
 
 	// Validate the HTTP QUERY-STRING parameters
-	$args	= getArguments($status);
+	$args	= getArguments($method, $status);
 	if ($args == null ) {
 		cgiResponse( HTTP_V_BAD_REQUEST, "Bad Request", "Malformed query arguments." );
 		return;
@@ -286,6 +287,23 @@
 		}
 
 		switch($method) {
+			case "DELETE":
+				$files = getFile( $fullPath, $rootDir, $args, $status );
+				if ($files) {
+					$files = removeFile( $files[0], $rootDir, $args, $status );
+					// Compile the final result
+					$result							= new stdClass();
+					$result->total			= count($files);
+					$result->status			= $status;
+					$result->items			= $files;
+
+					header("Content-Type: text/json");
+					print( json_encode($result) );
+				} else {
+					cgiResponse( $status, "Not Found", null );
+				}
+				break;
+
 			case "GET":
 				if (!is_string($args->path)) {
 					if ($args->query) {
@@ -318,20 +336,27 @@
 				print( json_encode($result) );
 				break;
 
-			case "DELETE":
-				$files = getFile( $fullPath, $rootDir, $args, $status );
-				if ($files) {
-					$files = removeFile( $files[0], $rootDir, $args, $status );
-					// Compile the final result
-					$result							= new stdClass();
-					$result->total			= count($files);
-					$result->status			= $status;
-					$result->items			= $files;
+			case "POST":
+				switch($args->attribute) {
+					case STORE_C_IDENTIFIER:
+					case STORE_C_LABEL:
+						$files = renameFile( $fullPath, $rootDir, $args, $status );
+						// Compile the final result
+						if ($status == HTTP_V_OK) {
+							$result							= new stdClass();
+							$result->total			= count($files);
+							$result->status			= $status;
+							$result->items			= $files;
 
-					header("Content-Type: text/json");
-					print( json_encode($result) );
-				} else {
-					cgiResponse( $status, "Not Found", null );
+							header("Content-Type: text/json");
+							print( json_encode($result) );
+						} else {
+							cgiResponse( $status, "system error.", "Failed to rename file." );
+						}
+						break;
+					default:
+						cgiResponse( HTTP_V_BAD_REQUEST, "Bad Request", "Attribute not allowed." );
+						break;
 				}
 				break;
 		}
@@ -355,7 +380,7 @@
 		$count   = count($methods);
 		
 		for ($i = 0;$i<$count; $i++) {
-			if ($method == $methods[$i]) {
+			if ($method == trim($methods[$i])) {
 				return true;
 			}
 		}
@@ -448,8 +473,7 @@
 	**/
 	function fileToStruct( /*string*/$fullPath, /*string*/$rootDir, /*string*/$filename, /*object*/$args ) {
 		$uriPath  = $fullPath . "/" . $filename;
-		$realPath = realPath( $uriPath ); 
-		$atts 	  = stat( $realPath );
+		$atts 	  = stat( $uriPath );
 		
 		$relPath  = substr( $uriPath, (strlen($rootDir)+1), strlen($uriPath) );
 		$relPath  = str_replace( "\\", "/", $relPath );
@@ -457,9 +481,9 @@
 		$fileInfo							= new stdClass();
 		$fileInfo->name 			= $filename;
 		$fileInfo->path 			= $relPath;
-		$fileInfo->size 			= filesize($realPath);
+		$fileInfo->size 			= filesize($uriPath);
 		$fileInfo->modified 	= $atts[9];
-		$fileInfo->directory	= is_dir($realPath);
+		$fileInfo->directory	= is_dir($uriPath);
 
 		if ($args->iconClass) {
 			$fileInfo->icon = getIconClass( $fileInfo->name, $fileInfo->directory );
@@ -486,126 +510,172 @@
 	*
 	*	@return		On success an 'args' object otherwise NULL
 	**/
-	function getArguments( /*integer*/&$status ) {
+	function getArguments( $method, /*integer*/&$status ) {
+
+		$status	= HTTP_V_BAD_REQUEST;		// Lets assume its a malformed query string
+		$_ARGS  = null;
+		
 		$args										= new stdClass();
 		$args->authToken				= null;
 		$args->basePath					= "";
-		$args->count						= 0;
 		$args->deep 						= false;
 		$args->dirsOnly 				= false;
-		$args->files 					  = array();
 		$args->iconClass				= false;
-		$args->ignoreCase 			= false;
-		$args->loadAll					= false;
 		$args->path 						= null;
-		$args->query 						= null;
-		$args->rootDir					= "";
 		$args->showHiddenFiles	= false;
 		$args->sortList 			  = null;
-		$args->start						= 0;
-		
-		$status	= HTTP_V_BAD_REQUEST;		// Lets assume its a malformed query string
-		
+				
+		switch ($method) {
+			case "DELETE":
+				$_ARGS = $_GET;
+				if (!array_key_exists("path", $_ARGS)) {
+					return null;
+				}
+				break;
+
+			case "GET":
+				$_ARGS = $_GET;
+
+				$args->count						= 0;
+				$args->files 					  = array();
+				$args->ignoreCase 			= false;
+				$args->loadAll					= false;
+				$args->query 						= null;
+				$args->rootDir					= "";
+				$args->start						= 0;
+
+				// Get the 'options' and 'queryOptions' first before processing any other parameters.
+				if (array_key_exists("options", $_ARGS)) {
+					$options = str_replace("\\\"", "\"", $_ARGS['options']);
+					$options = json_decode($options);
+					if (is_array($options)) {
+						if (array_search("dirsOnly", $options) > -1) {
+							$args->dirsOnly = true;
+						}
+						if (array_search("showHiddenFiles", $options) > -1) {
+							$args->showHiddenFiles = true;
+						}
+						if (array_search("iconClass", $options) > -1) {
+							$args->iconClass = true;
+						}
+					}	
+					else	// options is not an array.
+					{
+						return null;
+					}
+				}
+				if (array_key_exists("queryOptions", $_ARGS)) {
+					$queryOptions = str_replace("\\\"", "\"", $_ARGS['queryOptions']);
+					$queryOptions = json_decode($queryOptions);
+					if (is_object($queryOptions)) {
+						if (property_exists($queryOptions, "deep")) {
+							$args->deep = $queryOptions->deep;
+						}
+						// @note	Options 'deep' and 'loadAll' have the same meaning on the server
+						//				side however, they are handled different by the cbtreeFileStore
+						//				on the client side. For example, if the store is used with a tree
+						//				that requires a strict parent-child relationship ALL files MUST
+						//				be loaded overwriting 'lazy loading'. (see notes on performance
+						//				above).
+
+						if (property_exists($queryOptions, "loadAll")) {
+							$args->loadAll = $queryOptions->loadAll;
+							if( $args->loadAll ) {
+								$args->deep = true;
+							}
+						}
+						if (property_exists($queryOptions, "ignoreCase")) {
+							$args->ignoreCase = $queryOptions->ignoreCase;
+						}
+					}
+					else	// queryOptions is not an object.
+					{
+						return null;
+					}
+				}
+
+				if (array_key_exists("query", $_ARGS)) {
+					// decode query into an associative array.
+					$query = str_replace("\\\"", "\"", $_ARGS['query']);
+					$query = json_decode($query, true);
+
+					if (is_array($query)) {
+						$args->query = getQueryArgs($query, $args->ignoreCase);
+					}
+					else	// query is not an array.
+					{
+						return null;
+					}
+				}
+				if (array_key_exists("sort", $_ARGS)) {
+					$sortFields = str_replace("\\\"", "\"", $_ARGS['sort']);
+					$sortFields = json_decode($sortFields);
+					if (is_array($sortFields)) {
+						$args->sortList = getSortArgs($sortFields);
+					}
+					else	// sort is not an array.
+					{
+						return null;
+					}
+				}
+				if (array_key_exists("start", $_ARGS)) {
+					$start = $_ARGS['start'];
+					if (is_numeric($start)) {
+						$args->start = $start;
+					}
+				}
+				if (array_key_exists("count", $_ARGS)) {
+					$count = $_ARGS['count'];
+					if (is_numeric($count)) {
+						$args->count = $count;
+					}
+				}
+				break;
+
+			case "POST":
+				$_ARGS = $_POST;
+				
+				$args->attribute = null;
+				$args->newValue  = null;
+				
+				if( !array_key_exists("attribute", $_ARGS) || 
+						!array_key_exists("newValue", $_ARGS) || 
+						!array_key_exists("oldValue", $_ARGS) || 
+						!array_key_exists("path", $_ARGS)) {
+					return null;
+				}
+				if (is_string($_ARGS["attribute"])) {
+					$args->attribute = $_ARGS["attribute"];
+				} else {
+					return null;
+				}
+				if (is_string($_ARGS['newValue'])) {
+					$args->newValue = $_ARGS["newValue"];
+				} else {
+					return null;
+				}
+				if (is_string($_ARGS['oldValue'])) {
+					$args->oldValue = $_ARGS["oldValue"];
+				} else {
+					return null;
+				}
+				break;
+		} /* end switch($method) */
+
 		// Get authentication token. There are no restrictions with regards to the content
 		// of the object.
-		if (array_key_exists("authToken", $_GET)) {
-			$authToken = str_replace("\\\"", "\"", $_GET['authToken']);
+		if (array_key_exists("authToken", $_ARGS)) {
+			$authToken = str_replace("\\\"", "\"", $_ARGS['authToken']);
 			$authToken = json_decode($authToken);
 			if ($authToken) { 
 				$args->authToken = $authToken;
 			}
 		}
-		// Get the 'options' and 'queryOptions' first before processing any other parameters.
-		if (array_key_exists("options", $_GET)) {
-			$options = str_replace("\\\"", "\"", $_GET['options']);
-			$options = json_decode($options);
-			if (is_array($options)) {
-				if (array_search("dirsOnly", $options) > -1) {
-					$args->dirsOnly = true;
-				}
-				if (array_search("showHiddenFiles", $options) > -1) {
-					$args->showHiddenFiles = true;
-				}
-				if (array_search("iconClass", $options) > -1) {
-					$args->iconClass = true;
-				}
-			}	
-			else	// options is not an array.
-			{
-				return null;
-			}
-		}
-		if (array_key_exists("queryOptions", $_GET)) {
-			$queryOptions = str_replace("\\\"", "\"", $_GET['queryOptions']);
-			$queryOptions = json_decode($queryOptions);
-			if (is_object($queryOptions)) {
-				if (property_exists($queryOptions, "deep")) {
-					$args->deep = $queryOptions->deep;
-				}
-				// @note	Options 'deep' and 'loadAll' have the same meaning on the server
-				//				side however, they are handled different by the cbtreeFileStore
-				//				on the client side. For example, if the store is used with a tree
-				//				that requires a strict parent-child relationship ALL files MUST
-				//				be loaded overwriting 'lazy loading'. (see notes on performance
-				//				above).
-
-				if (property_exists($queryOptions, "loadAll")) {
-					$args->loadAll = $queryOptions->loadAll;
-					if( $args->loadAll ) {
-						$args->deep = true;
-					}
-				}
-				if (property_exists($queryOptions, "ignoreCase")) {
-					$args->ignoreCase = $queryOptions->ignoreCase;
-				}
-			}
-			else	// queryOptions is not an object.
-			{
-				return null;
-			}
-		}
-
-		if (array_key_exists("query", $_GET)) {
-			// decode query into an associative array.
-			$query = str_replace("\\\"", "\"", $_GET['query']);
-			$query = json_decode($query, true);
-
-			if (is_array($query)) {
-				$args->query = getQueryArgs($query, $args->ignoreCase);
-			}
-			else	// query is not an array.
-			{
-				return null;
-			}
-		}
-		if (array_key_exists("sort", $_GET)) {
-			$sortFields = str_replace("\\\"", "\"", $_GET['sort']);
-			$sortFields = json_decode($sortFields);
-			if (is_array($sortFields)) {
-				$args->sortList = getSortArgs($sortFields);
-			}
-			else	// sort is not an array.
-			{
-				return null;
-			}
-		}
-		if (array_key_exists("start", $_GET)) {
-			$start = $_GET['start'];
-			if (is_numeric($start)) {
-				$args->start = $start;
-			}
-		}
-		if (array_key_exists("count", $_GET)) {
-			$count = $_GET['count'];
-			if (is_numeric($count)) {
-				$args->count = $count;
-			}
-		}
 		// Check for a basePath
 		$args->basePath = getenv("CBTREE_BASEPATH");
 		if (!$args->basePath) {
-			if (array_key_exists("basePath", $_GET)) {
-				$args->basePath = $_GET['basePath'];
+			if (array_key_exists("basePath", $_ARGS)) {
+				$args->basePath = $_ARGS['basePath'];
 			}
 		}
 		if ($args->basePath && !is_string($args->basePath)) {
@@ -613,9 +683,9 @@
 		}
 
 		//	Check if a specific path is specified.
-		if (array_key_exists("path", $_GET)) {
-			if (is_string($_GET['path'])) {
-				$args->path = $_GET['path'];
+		if (array_key_exists("path", $_ARGS)) {
+			if (is_string($_ARGS['path'])) {
+				$args->path = $_ARGS['path'];
 			} else {
 				return null;
 			}
@@ -707,9 +777,7 @@
 	*	@return		An array of 1 FILE_INFO object or NULL in case no match was found.
 	**/
 	function getFile( /*string*/$fullPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
-		$realPath = realPath( $fullPath );
-
-		if( file_exists( $realPath ) ) {
+		if( file_exists( $fullPath ) ) {
 			$files 		= array();
 			$stat			= 0;
 			$segment  = strrchr( $fullPath, "/" );
@@ -902,6 +970,57 @@
 	}
 
 	/**
+	/*	realURL
+	**/
+	function realURL( $path ) {
+		$url = "";
+		do {
+			$p = $path;
+			if (!strncmp( $path, "../", 3) || !strncmp($path,"./", 2)) {
+				$path = substr($path, strpos($path,"/")+1 );
+				continue;
+			}
+			if (!strncmp( $path, "/./", 3)) {
+				$path = "/". substr($path, 3);
+				continue;
+			}
+			if (!strcmp( $path, "/.")) {
+				$path = "/";
+				continue;
+			}
+			if (!strncmp( $path, "/../", 4)) {
+				$path = "/". substr($path, 4);
+				$pos = strrpos($url,"/");
+				$url = substr($url, 0, $pos);
+				continue;
+			}
+			if (!strcmp( $path, "/..")) {
+				$path = "/";
+				$pos = strrpos($url,"/");
+				$url = substr($url, 0, $pos);
+				continue;
+			}
+			if (!strcmp( $path, "..") || !strcmp($path,".")) {
+				break;
+			}
+			if($path[0] == '/' ) {
+				if ($path[1] != '/') {
+					$pos  = strcspn( $path, "/", 1 );
+				} else {
+					$pos = 1;
+				}
+			} else {
+				$pos  = strcspn( $path, "/" );
+			}
+			$segm = substr( $path, 0, $pos );
+			$path = substr( $path, $pos );
+			$url  = $url . $segm;
+			
+		} while( $path != $p );
+		return str_replace( "//", "/", $url );
+	}
+
+	/**
 	*		_removeDirectory
 	*
 	*			Delete a directory. The content of the directory is deleted after which
@@ -947,7 +1066,7 @@
 	*	@return		True on success otherwise false.
 	**/
 	function _removeFile( &$fileList, $fileInfo, $rootDir, $args, &$status ) {
-		$filePath = realPath( $rootDir . "/" . $fileInfo->path );
+		$filePath = $rootDir . "/" . $fileInfo->path;
 		$result   = false;
 		$status		= HTTP_V_OK;
 
@@ -982,7 +1101,6 @@
 	**/
 	function removeFile( $fileInfo, $rootDir, $args, &$status ) {
 		$status = HTTP_V_NO_CONTENT;
-		$result = false;
 		
 		if ($fileInfo) {
 			$fileList = array();
@@ -997,6 +1115,62 @@
 		return null;
 	}
 
+	/**
+	*		renameFile
+	*
+	*			Rename a file
+	*
+	*	@param	fullPath				Full path string (file path)
+	*	@param	rootDir					Root directory
+	*	@param	args						HTTP QUERY-STRING arguments decoded.
+	*	@param	status					Receives the final result (200, 204 or 404).
+	*
+	*	@return		An array of 1 FILE_INFO object or NULL in case no match was found.
+	**/
+	function renameFile( $fullPath, $rootDir, $args, &$status ) {
+		$status = HTTP_V_OK;
+		$newPath;
+		
+		if( file_exists( $fullPath ) ) {
+			$fileList = array();
+			$segment  = strrchr( $fullPath, "/" );
+			$filename = substr( $segment, 1 );
+			$path     = substr( $fullPath, 0, (strlen($fullPath) - strlen($segment)) );
+
+			switch ($args->attribute) {
+				case STORE_C_IDENTIFIER:
+					$newPath = $rootDir."/".$args->newValue;
+					break;
+				case STORE_C_LABEL:
+					$newPath = $path."/".$args->newValue;
+					break;
+				default:
+					$status = HTTP_V_BAD_REQUEST;
+					return null;
+			}
+			$newPath = realURL( $newPath );
+
+			if (!strncmp($newPath, $rootDir, strlen($rootDir))) {
+				if (!file_exists( $newPath )) {
+					if (rename( $fullPath, $newPath )) {
+						$segment  	= strrchr( $newPath, "/" );
+						$filename 	= substr( $segment, 1 );
+						$path     	= substr( $newPath, 0, (strlen($newPath) - strlen($segment)) );
+						$fileList[] = fileToStruct( $path, $rootDir, $filename, $args );
+					} else {
+						$status = HTTP_V_NOT_FOUND;
+					}
+				} else {
+					$status = HTTP_V_CONFLICT;
+				}
+			} else {
+				$status = HTTP_V_FORBIDDEN;
+			}
+			return $fileList;			
+		}
+		return null;
+	}
+	
 	/**
 	*		SortList
 	*
