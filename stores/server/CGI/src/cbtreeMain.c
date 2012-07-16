@@ -349,6 +349,38 @@ int main()
 
 	switch( iMethod )
 	{
+		case HTTP_V_DELETE:
+			// Delete a file or directory
+			if( (pFileList = getFile( cFullPath, cRootDir, pArgs, &iResult )) )
+			{
+				pFileInfo = pFileList->pNext->pvData;	// Get first entry in the list
+				pFileList = removeFile( pFileInfo, cRootDir, pArgs, &iResult );
+
+				if( pFileList )
+				{
+					if( (pcResult = jsonEncode(pFileList, 0)) )
+					{
+						fprintf( phResp, "Content-Type: text/json\r\n" );
+						fprintf( phResp, "\r\n" );
+						// Write the body
+						fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
+								 fileCount(pFileList, false), iResult, pcResult );
+						destroy( pcResult );
+					}
+					else
+					{
+						cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
+					}
+					destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
+				}
+			}
+			else
+			{
+				cgiResponse( iResult, NULL );
+			}
+			cbtDebug( "DELETE \"%s\" %d", cFullPath, iResult );
+			break;
+
 		case HTTP_V_GET:
 			if( !pArgs->pcPath )
 			{
@@ -408,36 +440,41 @@ int main()
 			}
 			break;
 
-		case HTTP_V_DELETE:
-			// Delete a file or directory
-			if( (pFileList = getFile( cFullPath, cRootDir, pArgs, &iResult )) )
+		case HTTP_V_POST:
+			switch( getPropertyId( pArgs->pcAttribute ) )
 			{
-				pFileInfo = pFileList->pNext->pvData;	// Get first entry in the list
-				pFileList = removeFile( pFileInfo, cRootDir, pArgs, &iResult );
-
-				if( pFileList )
-				{
-					if( (pcResult = jsonEncode(pFileList, 0)) )
+				case PROP_V_NAME:
+				case PROP_V_PATH:
+					pFileList = renameFile( cFullPath, cRootDir, pArgs, &iResult );
+					if( pFileList )
 					{
-						fprintf( phResp, "Content-Type: text/json\r\n" );
-						fprintf( phResp, "\r\n" );
-						// Write the body
-						fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
-								 fileCount(pFileList, false), iResult, pcResult );
-						destroy( pcResult );
+						if( (pcResult = jsonEncode(pFileList, 0)) )
+						{
+							fprintf( phResp, "Content-Type: text/json\r\n" );
+							fprintf( phResp, "\r\n" );
+							// Write the body
+							fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
+									 fileCount(pFileList, false), iResult, pcResult );
+							destroy( pcResult );
+						}
+						else
+						{
+							cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
+						}
+						destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
 					}
 					else
 					{
-						cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
+						cgiResponse( iResult, NULL );
 					}
-					destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
-				}
+					break;
+				default:
+					iResult = HTTP_V_BAD_REQUEST;
+					cgiResponse( iResult, "Invalid attribute." );
+					break;
 			}
-			else
-			{
-				cgiResponse( iResult, NULL );
-			}
-			cbtDebug( "DELETE \"%s\" %d", cFullPath, iResult );
+			cbtDebug( "POST [%s] \"%s\" [%s] > [%s]", cRootDir, pArgs->pcAttribute, pArgs->pcOldValue, 
+					  pArgs->pcNewValue );
 			break;
 	}
 	// The END

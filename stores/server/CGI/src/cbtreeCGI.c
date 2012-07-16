@@ -57,6 +57,7 @@ static STATUS	httpStatus[] = {
 		{ HTTP_V_FORBIDDEN,				403, "Forbidden" },
 		{ HTTP_V_NOT_FOUND,				404, "Not Found" },
 		{ HTTP_V_METHOD_NOT_ALLOWED,	405, "Method Not Allowed" },
+		{ HTTP_V_CONFLICT,				409, "Conflict" },
 		{ HTTP_V_GONE,					410, "Gone" },
 		{ HTTP_V_SERVER_ERROR,			500, "Internal Server Error" },
 		{ 0, 0, NULL }
@@ -113,8 +114,7 @@ FILE	*phResp = NULL;
 
 #ifdef _DEBUG
 // When debuging use cDbgQS to inject a QUERY-STRING.
-//char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree&sort=[{\"attribute\":\"name\", \"ignoreCase\":true}]";
-char	cDbgQS[] = "basePath=/Logs&path=markdown";
+char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree&sort=[{\"attribute\":\"name\", \"ignoreCase\":true}]";
 #endif
 
 /**
@@ -205,11 +205,13 @@ void cgiCleanup()
 int cgiInit()
 {
 	METHOD	*pMethod;
-	DATA	*ptQuery,
+	DATA	*ptContent,
+			*ptQuery,
 			*ptArgs,
 			*ptSERVER,
 			*ptCBTREE,
-			*ptGET;
+			*ptGET,
+			*ptPOST;
 	char	cProperty[MAX_BUF_SIZE],
 			cValue[MAX_BUF_SIZE],
 			cArgm[MAX_BUF_SIZE],
@@ -256,32 +258,70 @@ int cgiInit()
 	varSet( cgiGetProperty("QUERY_STRING"), cDbgQS );
 #endif
 
-	if( (ptQuery = cgiGetProperty("QUERY_STRING")) )
+	switch( cgiGetMethodId() )
 	{
-		// Get the list of HTTP query arguments as a new array.
-		ptArgs = varSplit( ptQuery, "&", false );
-		if( (iArgCount = varCount( ptArgs )) )
-		{
-			ptGET = newArray( "_GET" );
-			for( i=0; i < iArgCount; i++ )
+		case HTTP_V_DELETE:
+		case HTTP_V_GET:
+			if( (ptGET = newArray( "_GET" )) )
 			{
-				if( (pcArgm = varGet(varGetByIndex( i, ptArgs ))) )
+				if( (ptQuery = cgiGetProperty("QUERY_STRING")) )
 				{
-					// Decode special characters and treat each argument as a new property.
-					pcSrc  = decodeURI( pcArgm, cArgm, sizeof(cArgm)-1 );
-					iSep   = strcspn( pcSrc, "=" );
-					strncpyz( cProperty, pcSrc, iSep );
-					pcSrc += pcSrc[iSep] ? iSep + 1: iSep;
-					strcpy( cValue, pcSrc );
-					
-					varNewProperty( cProperty, cValue, ptGET );
+					// Get the list of HTTP query arguments as a new array.
+					ptArgs = varSplit( ptQuery, "&", false );
+					ptGET  = newArray( "_GET" );
+					if( (iArgCount = varCount( ptArgs )) )
+					{
+						for( i=0; i < iArgCount; i++ )
+						{
+							if( (pcArgm = varGet(varGetByIndex( i, ptArgs ))) )
+							{
+								// Decode special characters and treat each argument as a new property.
+								pcSrc  = decodeURI( pcArgm, cArgm, sizeof(cArgm)-1 );
+								iSep   = strcspn( pcSrc, "=" );
+								strncpyz( cProperty, pcSrc, iSep );
+								pcSrc += pcSrc[iSep] ? iSep + 1: iSep;
+								strcpy( cValue, pcSrc );
+								
+								varNewProperty( cProperty, cValue, ptGET );
+							}
+						}
+					}
+					destroy( ptArgs );
 				}
+				varPush( cgiEnvironment, ptGET );
 			}
-			varPush( cgiEnvironment, ptGET );
-		}
-		destroy( ptArgs );
+			break;
+			
+		case HTTP_V_POST:
+			if( (ptPOST = newArray( "_POST" )) )
+			{
+				if( fgets(cArgm, sizeof(cArgm)-1, stdin) )
+				{
+					ptContent = newString( "CONTENT", cArgm );
+					ptArgs	  = varSplit( ptContent, "&", false );
+					if( (iArgCount = varCount( ptArgs )) )
+					{
+						for( i=0; i < iArgCount; i++ )
+						{
+							if( (pcArgm = varGet(varGetByIndex( i, ptArgs ))) )
+							{
+								// Decode special characters and treat each argument as a new property.
+								pcSrc  = decodeURI( pcArgm, cArgm, sizeof(cArgm)-1 );
+								iSep   = strcspn( pcSrc, "=" );
+								strncpyz( cProperty, pcSrc, iSep );
+								pcSrc += pcSrc[iSep] ? iSep + 1: iSep;
+								strcpy( cValue, pcSrc );
+								
+								varNewProperty( cProperty, cValue, ptPOST );
+							}
+						}
+					}
+					destroy( ptArgs );
+				}
+				varPush( cgiEnvironment, ptPOST );
+			}
+			break;
 	}
-
 	// Define which HTTP methods are allowed.
 	if( ptCBTREE )
 	{
@@ -344,8 +384,8 @@ int cgiGetMethodId()
 {
 	METHOD	*pMethod;
 	char	*pcMethod;
-	
-	if( (pcMethod = varGet(cgiGetProperty( "REQUEST_METHOD" ))) )
+
+ 	if( (pcMethod = getenv("REQUEST_METHOD" )) )
 	{
 		if( (pMethod = _cgiGetMethodByName(pcMethod)) )
 		{

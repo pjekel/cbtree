@@ -38,6 +38,7 @@ char *getRelativePath( char *pcFullPath, char *pcRootDir, char *pcFilename, char
 LIST *getMatch( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );
 
 LIST *removeFile( FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piResult );
+LIST *renameFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );
 
 #ifdef __cplusplus
 	}

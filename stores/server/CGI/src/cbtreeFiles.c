@@ -780,3 +780,84 @@ LIST *removeFile( FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piRes
 	return pFileList;
 }
 
+/**
+*	renameFile
+*
+*		Rename a file
+*
+*	@param	pcFullPath		Address C-string containing the full directory path.
+*	@param	pcRootDir		Address C-string containing the root directory.
+*	@param	pArgs			Address arguments struct
+*	@param	piResult		Address integer receiving the final result code:
+*							HTTP_V_OK, HTTP_V_NOT_FOUND or HTTP_V_NO_CONTENT
+*
+*	@return		Address LIST struct or NULL in case no match was found.
+**/
+LIST *renameFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult )
+{
+	FILE_INFO	*pFileInfo;
+	LIST		*pFileList = NULL;
+	OS_ARG		OSArg;
+	char		cFilename[MAX_PATH_SIZE],
+				cNewPath[MAX_PATH_SIZE],
+				cPath[MAX_PATH_SIZE];
+	char		*pcFilename = cFilename,
+				*pcPath = cPath;
+		
+	if( (pFileInfo = findFile_NP( pcFullPath, pcRootDir, &OSArg, pArgs, piResult )) )
+	{
+		parsePath( pcFullPath, sizeof(cPath)-1, &pcPath, sizeof(cFilename)-1, &pcFilename );
+		_destroyFileInfo( pFileInfo );
+
+		switch( getPropertyId( pArgs->pcAttribute ) )
+		{
+			case PROP_V_NAME:	// name
+				snprintf( cNewPath, sizeof(cNewPath)-1, "%s/%s", cPath, pArgs->pcNewValue );
+				break;
+			case PROP_V_PATH: // path
+				snprintf( cNewPath, sizeof(cNewPath)-1, "%s/%s", pcRootDir, pArgs->pcNewValue );
+				break;
+			default:
+				*piResult = HTTP_V_BAD_REQUEST;
+				return NULL;
+		}
+		strtrim( normalizePath( cNewPath ), TRIM_M_WSP );
+		if( !strncmp( pcRootDir, cNewPath, strlen(pcRootDir)) )
+		{
+			if(rename(pcFullPath, cNewPath))
+			{
+				switch( errno )
+				{
+					case ENOTEMPTY:	// Directory not empty
+					case EACCES:	// Access denied
+					case EPERM:		// No permission
+					case EBUSY:		// System file
+					case EROFS:		// Read-only File System
+					case EXDEV:		// Two different file systems.
+						*piResult = HTTP_V_UNAUTHORIZED;
+						break;
+					case EEXIST:	
+						*piResult = HTTP_V_CONFLICT;
+						break;
+					case ENOENT:
+						*piResult = HTTP_V_NOT_FOUND;
+						break;
+					default:
+						*piResult = HTTP_V_SERVER_ERROR;
+						break;
+				}
+				cbtDebug( "POST Oldname: [%s], newname: [%s], (error: %d, %s )", 
+						  pcFullPath, cNewPath, errno, strerror(errno) );
+			}
+			else
+			{
+				pFileList = getFile( cNewPath, pcRootDir, pArgs, piResult );
+			}
+		}
+		else
+		{
+			*piResult = HTTP_V_FORBIDDEN;
+		}
+	}
+	return pFileList;
+}

@@ -18,6 +18,7 @@
   #define true  1
 #endif
 
+// HTTP response codes.
 #define	HTTP_V_OK					200
 #define HTTP_V_NO_CONTENT			204
 #define HTTP_V_BAD_REQUEST			400
@@ -25,6 +26,7 @@
 #define	HTTP_V_FORBIDDEN			403
 #define	HTTP_V_NOT_FOUND			404
 #define HTTP_V_METHOD_NOT_ALLOWED	405
+#define HTTP_V_CONFLICT				409
 #define HTTP_V_GONE					410
 #define HTTP_V_SERVER_ERROR			500
 

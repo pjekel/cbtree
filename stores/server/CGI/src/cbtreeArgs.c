@@ -294,7 +294,7 @@ static LIST * _getSortArgs( DATA *pSortObj, int *piResult )
 				(!pIgnoreCase || isBool(pIgnoreCase)) )
 			{
 				iPropId = getPropertyId( varGet( pAttribute ));
-				if( iPropId != -1 )
+				if( iPropId != PROP_V_UNKNOWN )
 				{
 					if( (pSort = (SORT *)calloc(1, sizeof(SORT))) )
 					{
@@ -324,6 +324,38 @@ static LIST * _getSortArgs( DATA *pSortObj, int *piResult )
 	}
 	*piResult = HTTP_V_OK;
 	return pSortList;
+}
+
+/**
+*	_getStringProperty
+*
+*		Helper function
+*
+*	@param	pcProperty		Address C-string containing the property name.
+*	@param	ptARGS			Address of either _GET or _POST
+*	@param	ppcProperty
+*	@param	piResult		Address integer receiving the final result code:
+*							HTTP_V_OK or HTTP_V_BAD_REQUEST
+**/
+static char * _getStringProperty( const char *pcProperty, DATA *ptARGS, char **ppcProperty, int *piResult )
+{
+	DATA	*ptArg;
+	
+	if( ptARGS && (pcProperty && *pcProperty) )
+	{
+		if( (ptArg = varGetProperty(pcProperty, ptARGS)) )
+		{
+			if( isString(ptArg) )
+			{
+				*ppcProperty = varGet( ptArg );
+				*piResult	 = HTTP_V_OK;
+				return *ppcProperty;
+			}
+		}
+	}
+	*piResult	 = HTTP_V_BAD_REQUEST;
+	*ppcProperty = NULL;
+	return NULL;
 }
 
 /**
@@ -439,41 +471,125 @@ void destroyArguments( ARGS **ppArgs )
 ARGS *getArguments( int *piResult )
 {
 	ARGS	*pArgs;
-	DATA	*pGET = NULL,
-			*pCBTREE = NULL;
+	DATA	*pCBTREE = NULL;
 	DATA	*ptQuery,
 			*ptSort,
+			*ptARGS = NULL,
 			*ptArg;
 	int		iResult = HTTP_V_OK;	// Assume success
 	
 	if( (pArgs = (ARGS *)calloc(1, sizeof(ARGS))) )
 	{
 		pCBTREE = cgiGetProperty("_CBTREE");	// Get CBTREE environment variables.
-		if( (pGET = cgiGetProperty( "_GET" )) )
+		switch( cgiGetMethodId() ) 
 		{
-			// Parse the general options, if any..
-			if( !(pArgs->pOptions = _getOptionArgs( pGET, &iResult )) )
-			{
-				destroyArguments( &pArgs );
-				return NULL;
-			}
-			if( hasProperty( "authToken", pGET ) )
-			{
-				if( (ptArg = jsonDecode(varGetProperty("authToken", pGET))) && isObject(ptArg) )
+			case HTTP_V_DELETE:
+				if( (ptARGS = cgiGetProperty( "_GET" )) )
 				{
-					pArgs->pAuthToken = ptArg;
+					if( !hasProperty("path", ptARGS) )
+					{
+						iResult = HTTP_V_BAD_REQUEST;
+					}
 				}
-				else
+				pArgs->pOptions = _getOptionArgs( NULL, &iResult ); 
+				break;
+				
+			case HTTP_V_GET:
+				if( (ptARGS = cgiGetProperty( "_GET" )) )
 				{
-					cbtDebug( "authToken parameter is not a valid JSON object" );
+					// Parse the general options, if any..
+					if( !(pArgs->pOptions = _getOptionArgs( ptARGS, &iResult )) )
+					{
+						destroyArguments( &pArgs );
+						return NULL;
+					}
+					if( (ptArg = varGetProperty("start", ptARGS)) && isInteger( ptArg ) )
+					{
+						pArgs->iStart = (int)varGet( ptArg );
+					}
+					if( (ptArg = varGetProperty("count", ptARGS)) && isInteger( ptArg ) )
+					{
+						pArgs->iCount = (int)varGet( ptArg );
+					}
+
+					if( iResult == HTTP_V_OK )
+					{
+						// Parse the 'query' specifications, if any..
+						if( hasProperty( "query", ptARGS ) )
+						{
+							if( (ptQuery = jsonDecode(varGetProperty("query", ptARGS)) )  )
+							{
+								pArgs->pQueryList = _getQueryArgs( ptQuery, pArgs->pOptions, &iResult );
+								destroy( ptQuery );
+							}
+							else // Invalid query format (not a JSON object)
+							{
+								cbtDebug( "query parameter is not a valid JSON object" );
+								iResult = HTTP_V_BAD_REQUEST;
+							}
+						}
+					}
+					if( iResult == HTTP_V_OK )
+					{
+						// Parse the 'sort' specifications, if any..
+						if( hasProperty( "sort", ptARGS ) )
+						{
+							if( (ptSort = jsonDecode( varGetProperty("sort", ptARGS) )) )
+							{
+								pArgs->pSortList = _getSortArgs( ptSort, &iResult );
+								destroy( ptSort );
+							}
+							else
+							{
+								cbtDebug( "sort parameter is not a valid JSON object" );
+								iResult = HTTP_V_BAD_REQUEST;
+							} 
+						}
+					}
+				}
+				else // No QUERY-STRING
+				{
+					// We need at least an empty options struct.
+					pArgs->pOptions = _getOptionArgs( NULL, &iResult ); 
+				}
+				break;
+
+			case HTTP_V_POST:
+				if( (ptARGS = cgiGetProperty( "_POST" )) )
+				{
+					if( hasProperty("attribute", ptARGS) && 
+						hasProperty("newValue", ptARGS) &&
+						hasProperty("oldValue", ptARGS) && 
+						hasProperty("path", ptARGS) )
+					{
+						if( _getStringProperty("attribute", ptARGS, &pArgs->pcAttribute, &iResult) )
+						{
+							if( _getStringProperty("newValue", ptARGS, &pArgs->pcNewValue, &iResult) )
+							{
+								_getStringProperty("oldValue", ptARGS, &pArgs->pcOldValue, &iResult);
+							}
+						}
+					}
+					else // Missing parameter
+					{
+						iResult = HTTP_V_BAD_REQUEST;
+					}
+				}
+				else // _POST is missing
+				{
 					iResult = HTTP_V_BAD_REQUEST;
 				}
-			}
+				pArgs->pOptions = _getOptionArgs( NULL, &iResult ); 
+				break;
+		}
+
+		if( iResult == HTTP_V_OK )
+		{		
 			// Get and validate the basePath if any.
 			pArgs->pcBasePath = varGet(varGetProperty("CBTREE_BASEPATH", pCBTREE));
 			if( !pArgs->pcBasePath )
 			{
-				if((ptArg = varGetProperty("basePath", pGET)) )
+				if((ptArg = varGetProperty("basePath", ptARGS)) )
 				{
 					if( isString(ptArg) )
 					{
@@ -486,7 +602,7 @@ ARGS *getArguments( int *piResult )
 				}
 			}
 			// Validate the path if any.
-			if( (ptArg = varGetProperty("path", pGET)) )
+			if( (ptArg = varGetProperty("path", ptARGS)) )
 			{
 				if( isString(ptArg) )
 				{
@@ -497,62 +613,27 @@ ARGS *getArguments( int *piResult )
 					iResult = HTTP_V_BAD_REQUEST;
 				}
 			}
-			if( (ptArg = varGetProperty("start", pGET)) && isInteger( ptArg ) )
+			if( hasProperty( "authToken", ptARGS ) )
 			{
-				pArgs->iStart = (int)varGet( ptArg );
-			}
-			if( (ptArg = varGetProperty("count", pGET)) && isInteger( ptArg ) )
-			{
-				pArgs->iCount = (int)varGet( ptArg );
-			}
-
-			if( iResult == HTTP_V_OK )
-			{
-				// Parse the 'query' specifications, if any..
-				if( hasProperty( "query", pGET ) )
+				if( (ptArg = jsonDecode(varGetProperty("authToken", ptARGS))) && isObject(ptArg) )
 				{
-					if( (ptQuery = jsonDecode(varGetProperty("query", pGET)) )  )
-					{
-						pArgs->pQueryList = _getQueryArgs( ptQuery, pArgs->pOptions, &iResult );
-						destroy( ptQuery );
-					}
-					else // Invalid query format (not a JSON object)
-					{
-						cbtDebug( "query parameter is not a valid JSON object" );
-						iResult = HTTP_V_BAD_REQUEST;
-					}
+					pArgs->pAuthToken = ptArg;
 				}
-			}
-			if( iResult == HTTP_V_OK )
-			{
-				// Parse the 'sort' specifications, if any..
-				if( hasProperty( "sort", pGET ) )
+				else
 				{
-					if( (ptSort = jsonDecode( varGetProperty("sort", pGET) )) )
-					{
-						pArgs->pSortList = _getSortArgs( ptSort, &iResult );
-						destroy( ptSort );
-					}
-					else
-					{
-						cbtDebug( "sort parameter is not a valid JSON object" );
-						iResult = HTTP_V_BAD_REQUEST;
-					} 
+					cbtDebug( "authToken parameter is not a valid JSON object" );
+					iResult = HTTP_V_BAD_REQUEST;
 				}
-			}
-			if( iResult != HTTP_V_OK )
-			{
-				destroyArguments( &pArgs );
-				*piResult = iResult;
-				return NULL;
 			}
 		}
-		else // No QUERY-STRING
+		if( iResult != HTTP_V_OK )
 		{
-			// We need at least an empty options struct.
-			pArgs->pOptions = _getOptionArgs( NULL, &iResult ); 
+			destroyArguments( &pArgs );
+			*piResult = iResult;
+			return NULL;
 		}
 		*piResult = HTTP_V_OK;
+
 	}
 	else  // Out of memory
 	{

@@ -30,6 +30,7 @@
 #include "cbtreeString.h"
 #include "cbtreeURI.h"
 
+#define MIN(x,y) (x < y ? x : y)
 /**
 *	decodeURI
 *
@@ -146,6 +147,48 @@ char *encodeReserved( const char *pcSrc, char *pcDst, size_t iDstLen )
 			}
 		}
 		return pcDst;
+	}
+	return NULL;
+}
+
+/**
+*	parsePath
+*
+*	@param	pcPath			Address of Path string
+*	@param	iDirSize
+*	@param	ppcDirectory
+*	@param	iFnamSize
+*	@param	ppcFilename
+*
+*	@return		Address C-string containing the directory (*ppcDirectory)
+**/
+char *parsePath( char *pcPath, size_t iDirSize, char **ppcDirectory, size_t iFnamSize, char **ppcFilename )
+{
+	char	cDirectory[MAX_PATH_SIZE],
+			cFilename[MAX_PATH_SIZE];
+	char	*pcSep;
+	
+	if( ppcDirectory && *ppcDirectory )
+	{
+		*(*ppcDirectory) = '\0';
+		if( pcPath && *pcPath );
+		{
+			if( (pcSep = strrchr(pcPath,'/')) )
+			{
+				strncpyz( cDirectory, pcPath, MIN( (pcSep-pcPath), sizeof(cDirectory)-1));
+				strncpyz( cFilename, ++pcSep, sizeof(cFilename)-1);
+			}
+			else
+			{
+				strncpyz( cFilename, ++pcSep, sizeof(cFilename)-1);
+			}
+		}
+		strncpyz( *ppcDirectory, cDirectory, iDirSize );
+		if( ppcFilename && *ppcFilename) 
+		{
+			strncpyz( *ppcFilename, cFilename, iFnamSize );
+		}
+		return *ppcDirectory;
 	}
 	return NULL;
 }

@@ -314,6 +314,9 @@ DATA *newVar( const char *pcName, void *pvValue )
 			case TYPE_V_STRING:
 				ptNewVar = newString( pcPropNam, ptValue->value.pcString );
 				break;
+			case TYPE_V_NULL:
+				ptNewVar = newNull( pcPropNam );
+				break;
 		}
 	}
 	else /* Value is not a data type, assume it is a C-style string.... */
