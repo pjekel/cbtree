@@ -153,6 +153,8 @@ define(["dojo/_base/array",
 		
 		moduleName: "cbTree/store/FileStore",
 
+		_addIconClass: false,
+		
 		// _identifier:	[private] String
 		//		The default identifier property of the store items. This property can be
 		//		overwritten by the initial server response.
@@ -273,9 +275,6 @@ define(["dojo/_base/array",
 					var oldValue = this.getValues( parent, this.childrenAttr );
 					if (this._removeArrayElement( parent[this.childrenAttr], item )) {
 						var newValue = this.getValues( parent, this.childrenAttr );
-						// IMPORTANT: Do NOT use setValues() because if newValues is an empty
-						//						array setValues() will remove the children attribute.
-						//						Therefore call onSet() direct.
 						this.onSet( parent, this.childrenAttr, oldValue, newValue );
 					}
 				} else {
@@ -340,9 +339,7 @@ define(["dojo/_base/array",
 					// items in the store is NOT considered an error.
 					if (storeItem) {
 						deleted = this._deleteItem(storeItem, true);
-						if (deleted) {
-							items = items.concat(deleted);
-						}
+						items   = items.concat(deleted);
 					}
 				}
 			}
@@ -446,26 +443,6 @@ define(["dojo/_base/array",
 			this._fetchComplete( requestArgs, items );
 		},
 		
-		_getCustomAttributes: function( /*item*/ item ) {
-			// summary:
-			//		Returns a list of custom attributes. A custom attribute is an attribute
-			//		added by the user application in addition to the read-only attributes
-			//		provided by  the back-end server and the private attributes provided by
-			//		the store itself. Custom attributes can be added using either setValue()
-			//		or setValues().
-			// item:
-			//		A valid file store item
-			var attributes = [];
-			
-			for(var key in item){
-				// Save off only the real item attributes, not the read-only or private
-				if ( !this._isPrivateAttr(key) && !this._isReadOnlyAttr(key)) {
-					attributes.push(key);
-				}
-			}
-			return attributes;
-		},
-
 		_getItemByIdentity: function (/*Object*/ identity) {
 			// summary:
 			//		Internal function to look an item up by its identity map.
@@ -474,9 +451,10 @@ define(["dojo/_base/array",
 			//		private
 			var item = null;
 			if (this._itemsByIdentity) {
-				if (Object.hasOwnProperty.call(this._itemsByIdentity, identity)) {
+//				if (Object.hasOwnProperty.call(this._itemsByIdentity, identity)) {
+//					item = this._itemsByIdentity[identity];
+//				}
 					item = this._itemsByIdentity[identity];
-				}
 			}
 			return item; // Object
 		},
@@ -561,23 +539,23 @@ define(["dojo/_base/array",
 			return false;
 		},
 
-		_mergeItems: function (/*item*/ item, /*Object*/ rawItem) {
+		_mergeItems: function (/*item*/ item, /*Object*/ servItem) {
 			// summary:
 			//		Merge item information received from the server with an existing item
 			//		in the in-memory store. If an items properties have changed an onSet()
 			//		event is generated for the property.
 			// item:
 			//		Existing item in the store.
-			// rawItem:
+			// servItem:
 			//		Update (raw) item received from the server.
 			// tags:
 			//		private
 			var name, newVal, empty ={};
 			
 			// Merge non-children properties first.
-			for (name in rawItem) {
+			for (name in servItem) {
 				if (name != this.childrenAttr && name != this._itemExpanded) {
-					newVal = rawItem[name];
+					newVal = servItem[name];
 					if(!(name in item) || (item[name] !== newVal && (!(name in empty) || empty[name] !== newVal))){
 						if (item[this._itemLoaded]) {
 							// Signal if property value changed.
@@ -588,53 +566,55 @@ define(["dojo/_base/array",
 				}
 			}
 			// Merge any children.
-			if (rawItem.directory) {
-				if (rawItem[this._itemExpanded]) {
-					var childItems = rawItem[this.childrenAttr];
-					var orgChild,	rawChild;
+			if (servItem.directory) {
+				if (servItem[this._itemExpanded]) {
+					var childItems = servItem[this.childrenAttr];
+					var orgChild,	servChild;
 					var identity, index;
 					var newChildren = false;
-					var sortOrder   = false;
-					var oldValues = this.getValues( item, this.childrenAttr );
-					var newValues = [];
+					var reOrdered   = false;
+					var childOrder  = this.getValues( item, this.childrenAttr );
+					var oldValues   = this.getValues( item, this.childrenAttr );
+					var newValues   = [];
+					var i;
 					
 					// Check each child, reported by  the server, against the  list of known 
 					// children in the store.  On completion newValues will hold the updated
 					// list of children whereas oldValues holds the list of deleted children.
 					for (i=0; i<childItems.length; i++) {
-						rawChild = childItems[i];
-						identity = rawChild[this._identifier];
-						orgChild = this._getItemByIdentity(identity); 
+						servChild = childItems[i];
+						identity  = servChild[this._identifier];
+						orgChild  = this._getItemByIdentity(identity); 
 
-						index = orgChild ? array.indexOf( oldValues, orgChild ) : -1;
+						index = orgChild ? array.indexOf( childOrder, orgChild ) : -1;
 						if (index === -1) {
-							newValues.push( this._newItem( rawChild, item) );
+							newValues.push( this._newItem( servChild, item) );
 							newChildren = true;
 						} else {
-							this._removeArrayElement( oldValues, orgChild );
-							newValues.push(orgChild);
-							this._mergeItems( orgChild, rawChild );
-							// Test if the sort order has changed.
-							if (index != i) {
-								sortOrder = true;
-							}
+								this._removeArrayElement( oldValues, orgChild );
+								newValues.push(orgChild);
+								this._mergeItems( orgChild, servChild );
 						}
+						reOrdered = !reOrdered ? (index != i) : true;
 					}
 					item[this._itemExpanded] = true;
 					item[this._itemLoaded]   = true;
 
 					// Update the items children if, and only if, new children have been added,
 					// the sort order changed or existing children have been deleted.
-					if (oldValues.length > 0 || newChildren || sortOrder ) {
+					if (oldValues.length > 0 || newChildren || reOrdered) {
 						this._setValues( item, this.childrenAttr, newValues, item[this._itemLoaded] );
 					}
 					// Delete obsolete children, if any
 					if (oldValues.length > 0) {
-						while (orgChild = oldValues.shift() ) {
+						while ( (orgChild = oldValues.shift()) ) {
 							this._deleteItem( orgChild, true );
 						}
 					}
 				}
+			} else {
+				item[this._itemExpanded] = true;
+				item[this._itemLoaded]   = true;
 			}
 		},
 
@@ -691,7 +671,9 @@ define(["dojo/_base/array",
 				parentItem[this.childrenAttr].push(item);
 			}
 			this._arrayOfAllItems.push(item);
-
+			if (this._addIconClass) {
+				this._setIconClass( item );
+			}
 			if (this._loadFinished && onSetCall) {
 				if (parentItem) {
 					if (parentItem[this._itemLoaded]) {
@@ -733,7 +715,6 @@ define(["dojo/_base/array",
 						if (items.length && keywordArgs.onItem) {
 							keywordArgs.onItem.call(scope, items[0]);
 						}
-
 					}catch(error) {
 						self._loadInProgress = false;
 						if (keywordArgs.onError) {
@@ -867,6 +848,31 @@ define(["dojo/_base/array",
 			return false;
 		},
 		
+		_setIconClass: function (item ) {
+			// summary:
+			//		Returns the css icon classname(s) for a store item.
+			// item:
+			//		A valid file store item.
+			// tags:
+			//		private
+			var last = item.name.lastIndexOf(".");
+			var icc;
+			var ext;
+
+			if (last > 0) {
+				ext = item.name.substr(last+1).toLowerCase();
+				ext = ext.replace(/^[a-z]|-[a-zA-Z]/g, function (c) { return c.charAt(c.length-1).toUpperCase(); });
+				icc = "fileIcon" + ext;
+			} else {
+				if (item.directory) {
+					icc = "fileIconDIR";
+				} else {
+					icc = "fileIconUnknown"
+				}
+			}
+			item["icon"] = icc + " fileIcon";
+		},
+		
 		_setOptionsAttr: function (value) {
 			// summary:
 			//		Hook for the set("options", value) call by the constructor.
@@ -874,6 +880,8 @@ define(["dojo/_base/array",
 			//		Comma separated list of keywords or an array of keyword strings.
 			// tags:
 			//		private
+			var i;
+			
 			if (lang.isArray(value)) {
 				this.options = value;
 			}else{
@@ -883,6 +891,11 @@ define(["dojo/_base/array",
 					throw new Error(this.moduleName + "::_setOptionsAttr: Options must be a comma"
 																						+ " separated string of keywords"
 																						+ " or an array of keyword strings." );
+				}
+			}
+			for(i=0; i<this.options.length;i++) {
+				if (this.options[i] === "iconClass") {
+					this._addIconClass = true;
 				}
 			}
 			return this.options;
@@ -904,7 +917,7 @@ define(["dojo/_base/array",
 			oldValues = this.getValues(item, attribute);
 
 			if (lang.isArray(newValues)) {
-				if (newValues.length === 0) {
+				if (newValues.length === 0 && attribute !== this.childrenAttr) {
 					delete item[attribute];
 					newValues = undefined;
 				} else {
@@ -933,13 +946,13 @@ define(["dojo/_base/array",
 			//		An array of store items.
 			// tag:
 			//		private
-			var rawItems = dataObject.items,
+			var servItems = dataObject.items,
 					childItems,
 					items 	 = [],
 					item, i,
 					identity;
 					
-			if (!rawItems) {
+			if (!servItems) {
 				// dataObject has no items property.
 				throw new Error(this.moduleName+"::_uploadDataToStore: Malformed server response.");
 			}
@@ -960,24 +973,24 @@ define(["dojo/_base/array",
 				this._queryOptions				  = keywordArgs.queryOptions;
 				this._sort									= keywordArgs.sort;
 
-				for (i=0; i<rawItems.length; i++) {
-					item = this._newItem( rawItems[i], null, true );
+				for (i=0; i<servItems.length; i++) {
+					item = this._newItem( servItems[i], null, true );
 					items.push(item);
 				}
 				this.onLoaded();		// Signal event.
 			}
 			else // Store already loaded, go update instead.
 			{
-				for (i=0; i<rawItems.length; i++) {
-					identity = rawItems[i][this._identifier];
+				for (i=0; i<servItems.length; i++) {
+					identity = servItems[i][this._identifier];
 					item = this._getItemByIdentity( identity );
 					if (item) {
-						this._mergeItems( item, rawItems[i] );
+						this._mergeItems( item, servItems[i] );
 						items.push(item);
 					} else {
 						// If no directory path included it must be a top-level item.
 						if (identity.indexOf("/") === -1) {
-							item = this._newItem( rawItems[i], null, true );
+							item = this._newItem( servItems[i], null, true );
 							items.push(item);
 						} else {
 							throw new Error(this.moduleName+"::_uploadDataToStore: Item ["+identity+"] not found in store.");
@@ -990,9 +1003,9 @@ define(["dojo/_base/array",
 
 		_uploadRenamedItem: function (/*Object*/ dataObject, /*Object*/keywordArgs ) {
 			// summary:
-			//		Upload the renamed item to the store. Before deleting the original store
-			//		item its custom attributes are transfered to the renamed item first. The
-			//		renamed item is than added as a new store item.
+			//		Upload the renamed item to the store. The original store item is deleted and
+			//		a new one with its new name and/or path is created. As a result the original
+			//		item is no longer a valid store item and any custom attributes are lost.
 			// dataObject:
 			//		The JavaScript data object containing the raw data to convert into item format.
 			// keywordArgs:
@@ -1006,29 +1019,30 @@ define(["dojo/_base/array",
 			
 			var newItem = dataObject.items[0];
 			if (newItem) {
-				var oldParent, newParent;
+				var newParent;
 				var parentId,	last;
-				var custAttr;
 				
 				last 			= newItem.path.lastIndexOf("/");
 				parentId  = newItem.path.substr(0, last);
 				newParent = this._getItemByIdentity( parentId );
-				oldParent = this.getParents(oldItem)[0];
 
-				// Mixin any custom attributes.
-				custAttr = this._getCustomAttributes(oldItem);
-				array.forEach( custAttr, function( attr ){
-						newItem[attr] = oldItem[attr];
-					});
 				this._deleteItem( oldItem, true );
 				// If there is a parent available, reload it so its children are filtered
 				// and sorted correctly.
 				if (newParent) {
-					this._newItem( newItem, newParent, false );
-					newParent[this._itemExpanded] = false;
-					this.loadItem( { item: newParent, queryOptions: this._queryOptions, sort: this._sort} );
+					this._newItem( newItem, newParent, true );
+					this.loadItem( { item: newParent, 
+														queryOptions: this._queryOptions, 
+														sort: this._sort, 
+														forceLoad: true
+													} );
 				} else {
-					this._newItem( newItem, null, true );
+					// If there is a parentId but no parent it means the parent directory has
+					// not been loaded yet. On the other hand, if there is not parentId it is
+					// a top-level store entry.
+					if (!parentId) {
+						this._newItem( newItem, null, true );
+					}
 				}
 				items.push(newItem);
 			}
@@ -1510,15 +1524,17 @@ define(["dojo/_base/array",
 			//		public
 			
 			var queryOptions = keywordArgs.queryOptions || null;
+			var forceLoad		 = keywordArgs.forceLoad || false;
 			var scope 			 = keywordArgs.scope || window.global;
 			var sort	 			 = keywordArgs.sort || null;
 			var item = keywordArgs.item;
 			var self = this;
 			
-			if (this.isItemLoaded(item)) {
-				return;
+			if (forceLoad !== true) {
+				if (this.isItemLoaded(item)) {
+					return;
+				}
 			}
-
 			if (this._loadInProgress) {
 				this._queuedFetches.push({args: keywordArgs, func: this.loadItem, scope: self});
 			} else {
