@@ -279,7 +279,29 @@ define([
 
 		pasteItem: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ oldParentItem, /*dojo.data.item*/ newParentItem, 
 												 /*Boolean*/ bCopy, /*int?*/ insertIndex, /*String?*/ childrenAttr){
-			throw new Error(this.moduleName+"pasteItem(): Operation not allowed on a File Store.");
+			// summary:
+			//		Move or copy an item from one parent item to another.
+			//		Used in drag & drop
+			// tags:
+			//		extension
+			var newParentDir = "",
+					childItemDir = "";
+					
+			// The child item MUST be an existing item in this.store
+			if (this.store.isItem(childItem)) {
+				childItemDir = this.store.getDirectory(childItem);
+				if (newParentItem !== this.root){
+					if (this.store.getValue(newParentItem, "directory")) {
+						newParentDir = this.store.getIdentity(newParentItem);
+					} else {
+						newParentDir = this.store.getDirectory(newParentItem);
+					}
+				}
+				if (childItemDir !== newParentDir) {
+					var newPath = newParentDir + "/" + this.store.getValue(childItem, "name");
+					this.store.renameItem( childItem, newPath );
+				}
+			}
 		},
 
 		// =======================================================================
