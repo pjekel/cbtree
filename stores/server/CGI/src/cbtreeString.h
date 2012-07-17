@@ -33,8 +33,6 @@ char *strncpyz( char *dst, const char *src, size_t len );
 char *strpair( char *src, int iLvalue, int iRvalue );
 char *strtrim( char *src, int flag );
 
-char *getIconClass( char *filename, bool isDirectory );
-
 #ifdef __cplusplus
 	}
 #endif

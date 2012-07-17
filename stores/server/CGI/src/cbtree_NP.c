@@ -78,6 +78,7 @@ static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFile
 	FILE_INFO		*pFileInfo = NULL;
 	char			cRelPath[MAX_PATH_SIZE],
 					*pcRelPath = cRelPath;
+	(void)pArgs;
 		
 	if( (pFileInfo = (FILE_INFO *)calloc(1, sizeof(FILE_INFO))) )
 	{
@@ -89,11 +90,6 @@ static FILE_INFO *_fileToStruct( char *pcFullPath, char *pcRootDir, void *pvFile
 		pFileInfo->bIsHidden	= (psFileData->dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) ? 1: 0;
 		pFileInfo->lSize		= psFileData->nFileSizeLow;
 		pFileInfo->lModified	= (long)_fileTimeToTime( &psFileData->ftLastWriteTime );
-
-		if( pArgs->pOptions->bIconClass ) 
-		{
-			pFileInfo->pcIconClass	= mstrcpy( getIconClass( pFileInfo->pcName, pFileInfo->directory ) );
-		}
 	}
 	return pFileInfo;
 #else

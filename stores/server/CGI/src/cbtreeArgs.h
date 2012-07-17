@@ -23,7 +23,6 @@ typedef struct options {
 	bool	bIgnoreCase;			// Match filename and path case insensitive.
 	bool	bShowHiddenFiles;		// Indicate if hidden files are to be included.
 	bool	bDirsOnly;				// Indicate if only directories are to be included.
-	bool	bIconClass;				// Indicates if the icon property is to be included.
 	bool	bDebug;					// Indicate if debug information need to be generated.
 } OPTIONS;
 

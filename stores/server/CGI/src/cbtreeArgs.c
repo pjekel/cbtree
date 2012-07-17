@@ -106,7 +106,6 @@ static OPTIONS * _getOptionArgs( DATA *pGET, int *piResult )
 			{
 				pOptions->bShowHiddenFiles = varInArray("showHiddenFiles", ptOptions);
 				pOptions->bDirsOnly		   = varInArray("dirsOnly", ptOptions);
-				pOptions->bIconClass	   = varInArray("iconClass", ptOptions);
 				pOptions->bDebug		   = varInArray("debug", ptOptions);
 
 				destroy( ptOptions );

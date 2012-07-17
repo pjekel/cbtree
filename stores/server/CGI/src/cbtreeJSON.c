@@ -615,11 +615,6 @@ static int _jsonEncodeFileInfo( LIST *pFileList, char **ppcResp, size_t *piSize,
 			*ppcDest += snprintf( *ppcDest, iFree, ",\"size\":%d", pFileInfo->lSize );
 			*ppcDest += snprintf( *ppcDest, iFree, ",\"modified\":%d", pFileInfo->lModified );
 
-			if( (pFileInfo->pcIconClass && (imFlags & JSON_M_INCLUDE_ICON)) )
-			{
-				*ppcDest += snprintf( *ppcDest, iFree, ",\"icon\":\"%s\"", pFileInfo->pcIconClass );
-			}
-			
 			// Include directory related info if, and only if, it is a directory...
 			if( pFileInfo->directory ) {
 				*ppcDest += snprintf( *ppcDest, iFree, ",\"directory\":true" );

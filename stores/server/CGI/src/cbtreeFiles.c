@@ -770,7 +770,6 @@ LIST *removeFile( FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piRes
 	// Set the appropriate options so we catch hidden files and don't include more
 	// info than we need in the output.
 	pArgs->pOptions->bShowHiddenFiles = true;
-	pArgs->pOptions->bIconClass		  = false;
 	pArgs->pOptions->bDeep			  = false;
 
 	if( pFileInfo )

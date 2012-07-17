@@ -216,13 +216,12 @@
 *			identifier	  ::= '"identifier"' ':' quoted-string
 *			label		  ::= '"label"' ':' quoted-string
 *			file-list	  ::= '"items"' ':' '[' file-info* ']'
-*			file-info	  ::= '{' name ',' path ',' size ',' modified (',' icon)? ',' directory 
+*			file-info	  ::= '{' name ',' path ',' size ',' modified ',' directory 
 *							  (',' children ',' expanded)? '}'
 *			name		  ::= '"name"' ':' json-string
 *			path		  ::= '"path"' ':' json-string
 *			size		  ::= '"size"' ':' number
 *			modified	  ::= '"modified"' ':' number
-*			icon		  ::= '"icon"' ':' classname-string
 *			directory	  ::= '"directory"' ':' ('true' | 'false')
 *			children	  ::= '[' file-info* ']'
 *			expanded	  ::= '"_EX"' ':' ('true' | 'false')
@@ -282,8 +281,7 @@ int main()
 			cFullPath[MAX_PATH_SIZE]  = "",
 			cPathEnc[MAX_PATH_SIZE*2] = "";			
 	char	*pcResult;
-	int		iMaskJSON = 0,
-			iMethod,
+	int		iMethod,
 			iResult;
 	
 	cgiInit();		// Initialize the CGI environment.
@@ -402,9 +400,8 @@ int main()
 			{
 				pSlice     = fileSlice( pFileList, pArgs->iStart, pArgs->iCount );
 				iResult    = listIsEmpty( pSlice ) ? HTTP_V_NO_CONTENT : HTTP_V_OK;
-				iMaskJSON |= pArgs->pOptions->bIconClass ? JSON_M_INCLUDE_ICON : 0;
 
-				if( (pcResult = jsonEncode(pSlice, iMaskJSON)) )
+				if( (pcResult = jsonEncode(pSlice, 0)) )
 				{
 					// Write the header(s)
 					fprintf( phResp, "Content-Type: text/json\r\n" );

@@ -95,7 +95,7 @@
 	*
 	*				The options parameter is a JSON array of strings. Each string specifying a
 	*				search options to be enabled. Currently the following options are supported:
-	*				"dirsOnly", "iconClass" and "showHiddenFiles".
+	*				"dirsOnly" and "showHiddenFiles".
 	*
 	*				Example:	options=["dirsOnly", "showHiddenFiles"]
 	*
@@ -208,13 +208,12 @@
 	*					identifier		::= '"identifier"' ':' quoted-string
 	*					label		  		::= '"label"' ':' quoted-string
 	*					file-list			::= '"items"' ':' '[' file-info* ']'
-	*					file-info			::= '{' name ',' path ',' size ',' modified (',' icon)? ',' directory 
+	*					file-info			::= '{' name ',' path ',' size ',' modified ',' directory 
 	*														(',' children ',' expanded)? '}'
 	*					name					::= '"name"' ':' json-string
 	*					path					::= '"path"' ':' json-string
 	*					size					::= '"size"' ':' number
 	*					modified			::= '"modified"' ':' number
-	*					icon		  		::= '"icon"' ':' classname-string
 	*					directory			::= '"directory"' ':' ('true' | 'false')
 	*					children			::= '[' file-info* ']'
 	*					expanded			::= '"_EX"' ':' ('true' | 'false')
@@ -485,9 +484,6 @@
 		$fileInfo->modified 	= $atts[9];
 		$fileInfo->directory	= is_dir($uriPath);
 
-		if ($args->iconClass) {
-			$fileInfo->icon = getIconClass( $fileInfo->name, $fileInfo->directory );
-		}
 		if ($fileInfo->directory) {
 			$fileInfo->children = array();
 			$fileInfo->_EX      = false;
@@ -520,7 +516,6 @@
 		$args->basePath					= "";
 		$args->deep 						= false;
 		$args->dirsOnly 				= false;
-		$args->iconClass				= false;
 		$args->path 						= null;
 		$args->showHiddenFiles	= false;
 		$args->sortList 			  = null;
@@ -554,9 +549,6 @@
 						}
 						if (array_search("showHiddenFiles", $options) > -1) {
 							$args->showHiddenFiles = true;
-						}
-						if (array_search("iconClass", $options) > -1) {
-							$args->iconClass = true;
 						}
 					}	
 					else	// options is not an array.
@@ -692,35 +684,6 @@
 		}
 		$status = HTTP_V_OK;		// Return success
 		return $args;
-	}
-
-	/**
-	*		getIconClass
-	*
-	*			Returns the icon classname for a given file extension. If the file is
-	*			a directory the class name extension is uppercase 'DIR' to distinguish
-	*			between the file extension 'dir'.
-	*
-	*	@param	filename				String containing a filename
-	*	@param	isDirectory			Boolean indicating if this file is a directory.
-	*
-	*	@return		String containing the icon classname
-	**/
-	function getIconClass( $filename, $isDirectory ) {
-		$iconClass = "fileIcon";
-		if (!$isDirectory) {
-			$info = pathInfo($filename);
-			if (array_key_exists("extension", $info)) {
-				$iconClass = $iconClass . ucFirst(strtolower($info['extension']));
-			} else {
-				$iconClass = $iconClass . "Unknown";
-			}
-		} else {
-			$iconClass = $iconClass . "DIR";
-		}
-		// Append a generic icon classname in case the css classname for the file 
-		// extension is not defined on the client side.
-		return (trim( $iconClass . " fileIcon"));
 	}
 
 	/**
@@ -1106,7 +1069,6 @@
 			$fileList = array();
 
 			$args->showHiddenFiles = true;
-			$args->iconClass			 = false;
 			$args->deep						 = false;
 
 			$result = _removeFile( $fileList, $fileInfo, $rootDir, $args, $status );
