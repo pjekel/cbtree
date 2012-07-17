@@ -556,8 +556,9 @@ At the end of this document you can find a complete example of an application us
 *********************************************
 #### renameItem( item, newPath, onItem, onError, scope) ####
 > Rename a store item. The file associated with the store item will be renamed.
-> On successful completion the function onItem is called with a new store item,
-> as a result parameter *item* is no longer a valid store item.  
+> On successful completion the function *onItem()* is called with a new store item,
+> as a result parameter *item* is no longer a valid store item and any custom
+> attributes are lost.
 
 > *NOTE:* HTTP POST must be enabled to support rename operations. See the 
 > [Server Side Configuration](#server-side-configuration) for details.
@@ -570,8 +571,8 @@ At the end of this document you can find a complete example of an application us
 
 *onItem:* Function (Optional)
 > The callback function to invoke when the item has successfully been renamed.
-> It takes only one parameter, the renamed item: onItem(item). 
-> Please note that the parameter *item* is a new store item.
+> It takes only one parameter, the renamed item: *onItem(newItem)*. 
+> Please note that the parameter *newItem* is a new store item.
 
 *onError:* Function (Optional)
 > The onError parameter is the callback to invoke when the item rename encountered

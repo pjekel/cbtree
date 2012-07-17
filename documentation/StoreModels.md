@@ -129,10 +129,10 @@ servers file system, add lazy loading and provide limited support for store writ
 Please refer to the [File Store](FileStore.md) documentation for details. 
 
 The File Store Model implements a subset of the Forest Store Model and [Store Model API](StoreModelAPI.md) functionality.
-Because the content of a File Store is treated as read-only, that is, you can't change
-file properties such as the name and path or programmatically add items to the store,
-any attempt to do so will throw an error. You can however add custom properties to store 
-items which will be writeable.
+Because the content of a File Store is treated as read-only, that is, you can't add new
+items to the store, any attempt to do so will throw an error. You can however add custom
+properties to store items which will be writeable or rename store items. The File Store
+Model also supports drag and drop operations using the File Store rename capabilities.
 
 In addition to the common Store Model Properties, the File Store Model has an
 additional set of properties to help query the File Store. Also, because of the
