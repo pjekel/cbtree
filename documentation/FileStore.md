@@ -111,19 +111,6 @@ if configurred properly, is outside your document root.
 For Apache users, please refer to the [CGI configuration](http://httpd.apache.org/docs/2.2/howto/cgi.html)
 instructions for details.
 
-##### External Dependency #####
-
-The ANSI-C CGI implementation requires the 'Perl Compatible Regular Expressions' library to be 
-available on your system. The cbtree/stores/server/CGI/PCRE directory contains
-a PCRE 8.10 windows version of the library. You can get the latest version of the PCRE
-source code [here](http://pcre.org/)
-
-***NOTE:*** 
-> Please make sure the PCRE sharable image (pcre.dll on Windows) is included in your system
-> path ***AND*** has been given the proper access privileges. The easies way of installing 
-> PCRE on your server is to include it in your installation directory, this will also avoid
-> any incompatability issues in case your system path already includes an instance of PCRE.
-
 #### Write your own application ####
 
 If, for whatever reason, you have to or want to write your own server side application use 
@@ -269,7 +256,7 @@ arguments to the File Store constructor.
 > The File Store client does not put any restrictions on the content of the object.
 
 #### basePath: ####
-> String (""), The basePath property is a URI reference (rfc 3986) relative to the
+> String ("."), The basePath property is a URI reference (rfc 3986) relative to the
 > server's document root and used by the server side application to compose the root 
 > directory, as a result the root directory is defined as:
 >
@@ -298,8 +285,6 @@ arguments to the File Store constructor.
 > String[] ([]). A comma separated string of keywords or an array of keyword strings. 
 > The list of options is passed to the back-end server. The following
 > keywords are supported by both Server Side Applications:
-> #### dirsOnly ####
-> Include only directories in the response.
 > #### iconClass ####
 > Include the css classname for files and directories in the response. See *Fancy Tree Styling* 
 > below.
@@ -415,6 +400,19 @@ At the end of this document you can find a complete example of an application us
 > or may be a simple anonymous object. (See dojo.data.api.Read.fetch for details).
 
 *********************************************
+#### fetchChildren( keywordArgs ) ####
+> Given an item, this method returns the children of the item through the keywordArgs onItem 
+> and/or onComplete callbacks.
+
+*keywordArgs:* Object
+> An anonymous object that defines the item to locate and callbacks to invoke when the
+> item has been located and load has completed. The format of the object is as follows:  
+
+> { *item*: item, *onItem*: Function, *onComplete*: Function, *onError*: Function, *scope*: Object }  
+
+> (See dojo.data.api.Read.fetch for additional details).
+
+*********************************************
 #### fetchItemByIdentity( keywordArgs ) ####
 > Given the identity of an item, this method returns the item that has that identity through
 > the keywordArgs onItem callback.
@@ -422,7 +420,9 @@ At the end of this document you can find a complete example of an application us
 *keywordArgs:* Object
 > An anonymous object that defines the item to locate and callbacks to invoke when the
 > item has been located and load has completed. The format of the object is as follows:
-> { *identity*: string|object, *onItem*: Function, *onError*: Function, *scope*: object }  
+  
+> { *identity*: string|object, *onItem*: Function, *onError*: Function, *scope*: Object }  
+
 > (See dojo.data.api.Identity.fetchItemByIdentity for additional details).
 
 *********************************************
@@ -591,7 +591,7 @@ At the end of this document you can find a complete example of an application us
 > Assign a new value to the items attribute/property. This method only allows
 > modification of custom attributes, that is, any read-only or store private
 > attributes are excluded. Please refer to *renameItem()* to change the 
-> identity (filename) of a store item. 
+> identity (path) of a store item. 
 
 *item:* store.item
 > A valid file.store item.

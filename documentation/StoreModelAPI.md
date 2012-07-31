@@ -9,11 +9,15 @@ or use an existing data store and use the Store Model API to add, move, remove o
 change store items.
 
 ### File Store Model Restrictions ###
-When used with the FileStoreModel ***ONLY*** the functionality that query the 
+When used with the FileStoreModel ***ONLY*** the functionality to query the 
 [File Store](FileStore.md) is supported. You can not, for example, add items to
-or remove from a File Store nor can you change any of the File Store item properties deemed 
-'read-only'. In addition, the cbtree/FileStore does not accept a JSON dataset like the
-the dojo/data/ItemFileWriteStore does.
+a File Store nor can you change any of the File Store item properties deemed 
+'read-only'. The File Store does however support its own *rename()* function
+allowing you to rename files.
+
+With the addition of the FileStore, several functions have been extended to support the
+optional parameter *storeOnly*. Please refer to *fetchItemsWitchChecked()* for a detailed
+description of the *storeOnly* parameter.
 
 ### Loading the API ###
 The Store Model API is implemented as an extension to the [Store Models](StoreModels.md)
@@ -69,7 +73,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 > A valid dojo.data.store item.
 
 ******************************************
-#### check( query, onComplete, scope) ####
+#### check( query, onComplete, scope, storeOnly ) ####
 > Check all store items that match the query.
 
 *query:* Object | String
@@ -89,6 +93,11 @@ You can test the availability of the Store Model API using the command `has("cbt
 > context of the scope object. In the body of the callback function, the value
 > of the "this" keyword will be the scope object. If no scope is provided, 
 > onComplete will be called in the context of the model.
+
+*storeOnly:* Boolean (optional)
+> If the store model property *checkedStrict* is enabled this parameter will be automatically 
+> set to *true*.  
+> See *fetchItemsWithChecked()* for more details.
 
 ******************************************
 #### detachFromRoot( storeItem ) ####
@@ -132,6 +141,24 @@ You can test the availability of the Store Model API using the command `has("cbt
 > context of the scope object. In the body of the callback function, the value
 > of the "this" keyword will be the scope object. If no scope is provided, 
 > onComplete will be called in the context of the model.
+
+*storeOnly:* Boolean (optional)
+> Indicates if the fetch operation should be limited to the in-memory store
+> only. Some stores may fetch data from a back-end server when performing a
+> deep search. When querying store item attributes, some attributes may ***ONLY***
+> be available in the in-memory store as is the case with a File Store.
+> As an example, the *checked* state of a store item is an attribute in the 
+> in-memory File Store, custom created by the store model but not available on,
+> or maintained by, the back-end server.
+
+> Limiting the fetch operation to the store will prevent it from requesting, 
+> potentially large, datasets from the server that don't have the required 
+> attribute(s) to begin with. However, limiting a fetch to the 
+> in-memory store may not return all possible matches if the store isn't fully
+> loaded. For example, if lazy loading is used and not all tree branches have
+> been fully expanded the result of a fetch may be unpredictable.
+
+> The default value of *storeOnly* is *true*.
 
 ******************************************
 #### get( attribute ) ####
@@ -217,7 +244,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 > New value to be assigned to the property *attribute*
 
 ******************************************
-#### uncheck( query, onComplete, scope ) ####
+#### uncheck( query, onComplete, scope, storeOnly ) ####
 > Uncheck all store items that match the query.
 
 *query:* Object | String
@@ -238,6 +265,10 @@ You can test the availability of the Store Model API using the command `has("cbt
 > of the "this" keyword will be the scope object. If no scope is provided, 
 > onComplete will be called in the context of the model.
 
+*storeOnly:* Boolean (optional)
+> If the store model property *checkedStrict* is enabled this parameter will be automatically 
+> set to *true*.  
+> See *fetchItemsWithChecked()* for details.
 
 <h2 id="sample-application">Sample Application</h2>
 ****************************************
