@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+  <head> 
+		<meta charset="utf-8">
+    <title>Dijit CheckBox Tree using the cbtree File Store</title>     
+
+     <style type="text/css">
+      @import "../../dijit/themes/claro/claro.css";
+      @import "../../dijit/themes/claro/document.css";
+      @import "../../dijit/tests/css/dijitTests.css";
+			@import "../../dojox/grid/resources/claroGrid.css";
+      @import "../../cbtree/icons/cbtreeIcons.css";
+      @import "../../cbtree/icons/fileIconsMS.css";
+      @import "../themes/claro/claro.css";
+    </style>
+
+    <style>
+      html,body { 
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+      }
+      #appLayout {
+        height: 100%;
+      }
+      #textBox {
+        height: 500px;
+      }
+      #code {
+        background-color: #d0e9fc;
+        padding: 5px;
+      }
+      .claro .demoLayout .edgeTop {
+        background-color: #d0e9fc;
+      }
+      .claro .textBox {
+        border-style:solid;
+        border-color:#d0e9fc;
+				height: 20px;
+        overflow-y:none;
+      }
+    </style>
+
+    <script type="text/javascript">
+      var dojoConfig = {
+            async: true,
+            parseOnLoad: true,
+            isDebug: true,
+            baseUrl: "../../",
+            packages: [
+              { name: "dojo",  location: "dojo" },
+              { name: "dojox", location: "dojox" },
+              { name: "dijit", location: "dijit" },
+              { name: "cbtree",location: "cbtree" }
+            ]
+      };
+    </script>
+
+    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script>
+      require([ "dijit/layout/BorderContainer",
+                "dijit/layout/TabContainer",
+                "dijit/layout/ContentPane"
+              ]);
+    </script>
+
+
+    <script type="text/javascript">
+      require([ "dojo/_base/array",
+                "dojo/_base/connect",
+                "dojo/_base/lang",
+                "dojo/dom",
+                "dojo/parser",
+                "dojo/ready",
+								"dojox/grid/DataGrid",
+                "cbtree/Tree",                   // Checkbox Tree
+                "cbtree/TreeStyling",           // Tree Styling extensions
+                "cbtree/stores/FileStore",      // Forest Store Model
+                "cbtree/models/FileStoreModel"  // Forest Store Model
+              ], function( array, connect, lang, dom, parser, ready, DataGrid, 
+														Tree, TreeStyling, 
+														FileStore, FileStoreModel ) {
+
+					lang.extend( DataGrid, {
+						_onNew: function() {},
+						_onDelete: function() {}
+					});
+
+					var layoutFiles = [
+						 [
+							{ field: "name", name: "Filename", width: 20 },
+							{ field: "size", name: "File Size (bytes)", width: 10 },
+							{ field: "directory", name: "Is Directory", width: 10 },
+							{ field: "path", name: "Path", width: 'auto' }
+							]
+					];
+
+					var store = new FileStore( { url: "../../cbtree/stores/server/php/cbtreeFileStore.php", 
+																			 cache: true, 
+																			 options:["iconClass"],
+																				basePath:"."
+																	});
+
+          // Create the cbtree store model
+          var model = new FileStoreModel( {
+                  store: store,
+                  rootLabel: 'My Files',
+									iconAttr: "icon",
+                  checkedRoot: true,
+                  checkedStrict: false,
+									queryOptions: {ignoreCase:true},
+									query: {directory:true},
+									labelAttr: "name"
+                  }); 
+
+          // Create the tree (which will be empty). Make sure 'autoExpand' is enabled otherwise
+          // you will miss alot of the action...
+          var tree = new Tree( {
+                  model: model,
+                  id: "MenuTree",
+                  checkBoxes: false,
+                  persist: false
+                  });
+          
+
+          connect.connect( tree, "onClick", model, treeClicked );
+
+          var grid = new DataGrid( { 
+							store: store, 
+							structure:layoutFiles, 
+							query: { path: pathToRegex(".") },
+							queryOptions: {deep:true},
+							sortFields: [{attribute:"directory", descending:true},{attribute:"name", ignoreCase:true}],
+							selectionMode:"multiple",
+							rowsPerPage:80 
+					});
+
+          connect.connect( grid, "onSelected", model, gridClicked );
+
+					tree.placeAt( "CheckboxTree" );
+					grid.placeAt( "myGrid" );
+					grid.startup();
+
+					function pathToRegex( path ) {
+						var segm  = path.split("/");
+						var regex = "(^\\.";
+						var i;
+						
+						for( i=0; i<segm.length; i++) {
+							if (segm[i] !== ".") {
+								regex = regex + "\\/" + segm[i];
+							}
+						}
+						regex = regex + "\\/[^\\/]*$)"
+						return regex;
+					}
+					
+					function setQuery( path ) {
+						grid.setQuery( {path: pathToRegex(path)}, {deep: true} );
+						dom.byId("pathString").innerHTML = "<strong>"+path+"</strong>"
+//						grid.selection.deselectAll();
+					}
+
+					function updateGrid( item ) {
+						if (!store.isItemLoaded(item)) {
+							store.loadItem( { item: item,	onItem: lang.hitch( this, updateGrid ) });
+						} else {
+							setQuery( store.getValue(item,"path") );
+						}
+					}
+
+          function treeClicked( item, nodeWidget, evt ) {
+						if (nodeWidget !== tree.rootNode) {
+							updateGrid( item );
+						} else {
+							setQuery( "." );
+						}
+					}
+
+          function gridClicked(rowIndex) {
+						var item = grid.getItem(rowIndex);
+						if (item.directory) {
+							updateGrid(item);
+						}
+          }
+      });
+
+    </script> 
+  </head>
+    
+  <body class="claro">
+    <div id="appLayout" class="demoLayout" data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design: 'headline'">      
+      <div id="CheckboxTree" class="edgePanel" data-dojo-type="dijit.layout.ContentPane" 
+					 data-dojo-props="region: 'left', splitter: true" style="width:25%;">
+      </div>
+
+      <div id="mainLevel" class="centerPanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'center'">
+				<div id="pathString" class="textBox" style="width: 98%;">
+				</div>
+				<div id="myGrid" style="width: 99%; height: 600px;">
+				</div>
+      </div>
+    </div>
+  </body>
+</html>
