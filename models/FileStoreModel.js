@@ -16,8 +16,9 @@ define([
 	"dojo/_base/declare", // declare
 	"dojo/_base/lang",    // lang.hitch
 	"dojo/_base/window",  // win.global
+	"dojo/aspect",				// aspect.after
 	"./TreeStoreModel"
-], function(array, declare, lang, win, TreeStoreModel){
+], function(array, declare, lang, win, aspect, TreeStoreModel){
 
 		// module:
 		//		cbtree/models/FileStoreModel
@@ -65,7 +66,9 @@ define([
 
 		// rootId: String
 		//		ID of fabricated root item
-		rootId: "$root$",
+		rootId: "$rootDir$",
+
+		// validateStore: Boolean
 
 		// End of parameters to constructor
 		//=================================
@@ -78,6 +81,8 @@ define([
 			// tags:
 			//		private
 
+			var store = this.store;
+
 			// Make dummy root item
 			this.root = {
 				store: this,
@@ -87,13 +92,24 @@ define([
 				children: params.rootChildren	// optional param
 			};
 			this.root[this.checkedAttr] = this.checkedState;
-			this.hasFakeRoot = true;
+			this.hasFakeRoot    = true;
+
+			// Because a File Store does not provide any initial checked state information
+			// there is no need to validate the store at startup.
+			this._validateStore = false;
 
 			if (params.queryOptions) {
 				this._setQueryOptions(params.queryOptions);
 			}
 			if (params.sort) {
 				this._setSortFields(params.sort);
+			}
+
+			// if the store supports Notification, subscribe to the notification events
+			if(store.getFeatures()['dojo.data.api.Notification']){
+				this.connects = this.connects.concat([
+					aspect.after(store, "onClose", lang.hitch(this, "onStoreClose"), true)
+				]);
 			}
 		},
 
@@ -123,29 +139,40 @@ define([
 		// =======================================================================
 		// Methods for traversing hierarchy
 
-		getChildren: function(/*dojo.data.Item*/ parentItem, /*function(items)*/ callback, /*function*/ onError, 
-													 /*(String|String[])?*/ childrenLists ){
+		getChildren: function(/*dojo.data.Item*/ parentItem, /*function(items)*/ onComplete, /*function*/ onError ) {
 			// summary:
 			//		 Calls onComplete() with array of child items of given parent item, all loaded.
+			var store = this.store;
+			var scope = this;
+
 			if(parentItem === this.root){
 				if(this.root.children){
 					// already loaded, just return
-					callback(this.root.children);
-				}else{
-					this.store.fetch( this._mixinFetch( 
-						{
-							query: this.query,
-							onComplete: lang.hitch(this, function(items){
-								this.root.children = items;
-								callback(items);
-							}),
-							onError: onError
-						})
-					);
+					onComplete(this.root.children);
+				} else {
+					this.store.fetch( { query: this.query,
+															queryOptions: this.queryOptions, 
+															sort: this.sort,	
+															onComplete: lang.hitch(this, function(items){
+																this.root.children = items;
+																onComplete(items);
+															}),
+															onError: onError
+														}	);
 				}
-			}else{
-				this.inherited(arguments);
+			} else {
+				store.fetchChildren( { item: parentItem, 
+															 query: this.query, 
+															 queryOptions: this.queryOptions, 
+															 sort: this.sort,	
+															 onError: onError, 
+															 scope: scope,
+															 onComplete: function (items) {
+																 onComplete(items);
+															 }
+														 } );
 			}
+			return;
 		},
 
 		getParents: function (/*dojo.data.item*/ storeItem) {
@@ -184,7 +211,7 @@ define([
 
 		fetchItemByIdentity: function(/* object */ keywordArgs){
 			if(keywordArgs.identity == this.root.id){
-				var scope = keywordArgs.scope?keywordArgs.scope:win.global;
+				var scope = keywordArgs.scope ? keywordArgs.scope : win.global;
 				if(keywordArgs.onItem){
 					keywordArgs.onItem.call(scope, this.root);
 				}
@@ -291,14 +318,14 @@ define([
 			if (this.store.isItem(childItem)) {
 				childItemDir = this.store.getDirectory(childItem);
 				if (newParentItem !== this.root){
-					if (this.store.getValue(newParentItem, "directory")) {
-						newParentDir = this.store.getIdentity(newParentItem);
+					if (newParentItem.directory) {
+						newParentDir = this.store.getPath(newParentItem);
 					} else {
 						newParentDir = this.store.getDirectory(newParentItem);
 					}
 				}
 				if (childItemDir !== newParentDir) {
-					var newPath = newParentDir + "/" + this.store.getValue(childItem, "name");
+					var newPath = newParentDir + "/" + this.store.getLabel(childItem);
 					this.store.renameItem( childItem, newPath );
 				}
 			}
@@ -370,16 +397,11 @@ define([
 			this.inherited(arguments);
 		},
 
-		_mixinFetch: function (/*object*/ fetchArgs ) {
-			// summary:
-			//		This overwrites the TreeStoreModel _mixinFetch() method allowing the
-			//		FileStoreModel to pass additional parameters to any store fetch style
-			//		method like fetch(), loadStore() and loadItem().
-			
-			var queryArgs = {	queryOptions: this.queryOptions,	sort: this.sort };
-			var newArgs   = fetchArgs || {};
-			
-			return lang.mixin( newArgs, queryArgs );
+		onStoreClose: function (/*boolean*/ reset ) {
+		// Summary:
+		//		Handler for when the store is closed.
+		// reset:
+		//		Indicates if th store was reset to its original state.
 		},
 
 		_requeryTop: function (){
@@ -390,22 +412,21 @@ define([
 			//		private
 
 			var oldChildren = this.root.children || [];
-			this.store.fetch( this._mixinFetch( 
-				{
-					query: this.query,
-					onComplete: lang.hitch(this, function (newChildren){
-						this.root.children = newChildren;
-						// If the list of children or the order of children has changed...
-						if (oldChildren.length != newChildren.length ||
-							array.some(oldChildren, function (item, idx){ 
-									return newChildren[idx] != item;
-								})) {
-							this.onChildrenChange(this.root, newChildren);
-							this._updateCheckedParent(newChildren[0], true);
-						}
-					}) /* end hitch() */
-				}) /* end _mixinFetch */
-			); /* end fetch() */
+			this.store.fetch(	{	query: this.query, 
+													queryOptions: this.queryOptions,	
+													sort: this.sort,
+													onComplete: lang.hitch(this, function (newChildren){
+														this.root.children = newChildren;
+														// If the list of children or the order of children has changed...
+														if (oldChildren.length != newChildren.length ||
+															array.some(oldChildren, function (item, idx){ 
+																	return newChildren[idx] != item;
+																})) {
+															this.onChildrenChange(this.root, newChildren);
+															this._updateCheckedParent(newChildren[0], true);
+														}
+													}) /* end hitch() */
+												}); /* end fetch() */
 		}
 
 	});

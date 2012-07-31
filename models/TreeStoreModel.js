@@ -154,6 +154,9 @@ define([
 		//		changed value.
 		_queryAttrs: [],
 
+		// _validateStore: Boolean
+		_validateStore: true,
+
 		// _validating: [private] Number
 		//		If not equal to zero it indicates store validation is on going.
 		_validating: 0,
@@ -186,7 +189,7 @@ define([
 			// if the store supports Notification, subscribe to the notification events
 			if(store.getFeatures()['dojo.data.api.Notification']){
 				this.connects = this.connects.concat([
-					aspect.after(store, "onLoaded", lang.hitch(this, "onStoreLoaded"), true),
+					aspect.after(store, "onLoad", lang.hitch(this, "onStoreLoaded"), true),
 					aspect.after(store, "onNew", lang.hitch(this, "onNewItem"), true),
 					aspect.after(store, "onDelete", lang.hitch(this, "onDeleteItem"), true),
 					aspect.after(store, "onSet", lang.hitch(this, "onSetItem"), true),
@@ -358,29 +361,6 @@ define([
 		// =======================================================================
 		// Private Checked state handling
 		
-		_normalizeState: function (/*dojo.data.item*/ storeItem, /*Boolean|String*/ state) {
-			// summary:
-			//		Normalize the checked state value so we don't store an invalid state
-			//		for a store item.
-			//	storeItem:
-			//		The store item whose checked state is normalized.
-			//	state:
-			//		The checked state: 'mixed', true or false.
-			// tags:
-			//		private
-			
-			if (typeof state == "boolean") {
-				return state;
-			}
-			if (this.multiState && state == "mixed") {
-				if (this.normalize && !this.mayHaveChildren(storeItem)){
-						return true;
-				}
-				return state;
-			}
-			return state ? true : false;
-		},
-
 		_getCompositeState: function (/*dojo.data.item[]*/ children) {
 			// summary:
 			//		Compile the composite state based on the checked state of a group
@@ -419,6 +399,29 @@ define([
 			return newState;
 		},
 		
+		_normalizeState: function (/*dojo.data.item*/ storeItem, /*Boolean|String*/ state) {
+			// summary:
+			//		Normalize the checked state value so we don't store an invalid state
+			//		for a store item.
+			//	storeItem:
+			//		The store item whose checked state is normalized.
+			//	state:
+			//		The checked state: 'mixed', true or false.
+			// tags:
+			//		private
+			
+			if (typeof state == "boolean") {
+				return state;
+			}
+			if (this.multiState && state == "mixed") {
+				if (this.normalize && !this.mayHaveChildren(storeItem)){
+						return true;
+				}
+				return state;
+			}
+			return state ? true : false;
+		},
+
 		_setChecked: function (/*dojo.data.item*/ storeItem, /*Boolean|String*/ newState) {
 			// summary:
 			//		Set/update the checked state on the dojo.data store. Returns true if
@@ -565,15 +568,8 @@ define([
 
 			var children,	currState, newState;
 			this._validating += 1;
-					
-			children	= lang.isArray(children) ? children : [children];
-			newState	= this._getCompositeState(children);
-			currState = this.getChecked(parent);
 
-			if (currState !== undefined && newState !== undefined) {
-				this._setChecked(parent, newState);
-			}
-			
+			children	= lang.isArray(children) ? children : [children];
 			array.forEach(children, 
 				function (child) {
 					if (this.mayHaveChildren(child)) {
@@ -582,10 +578,22 @@ define([
 							}),	
 							this.onError, 
 							childrenLists);
+					} else {
+						currState = this.getChecked(child);
+						if (currState && typeof currState !== "boolean") {
+							child[this.checkedAttr] = [this._normalizeState(child, currState)];
+						}
 					}
 				}, 
 				this
 			);
+			newState	= this._getCompositeState(children);
+			currState = this.getChecked(parent);
+
+			if (currState !== undefined && newState !== undefined) {
+				this._setChecked(parent, newState);
+			}
+
 			// If the validation count drops to zero we're done.
 			this._validating -= 1;
 			if (!this._validating) {
@@ -686,18 +694,23 @@ define([
 				// already been validated.
 				if (!this.store.isValidated()) {
 					// Force a store load.
-					if (this.store.loadStore( this.query, this._mixinFetch() )) {
-						if (has("tree-model-setChecked")) {
-							this.getRoot( lang.hitch(this, function (rootItem) {
-									this.getChildren(rootItem, lang.hitch(this, function(children) {
-											this._validateChildren(rootItem, children, this._checkedChildrenAttrs);
-										}), this.onError)
-								}), this.onError)
-
-						} else {
-							console.warn(this.moduleName+"::validateData(): store is not write enabled.");
-						}
-					}
+					this.store.loadStore( {
+						onComplete: function (count) {
+													if (has("tree-model-setChecked")) {
+														if (this._validateStore) {
+															this.getRoot( lang.hitch(this, function (rootItem) {
+																	this.getChildren(rootItem, lang.hitch(this, function(children) {
+																			this._validateChildren(rootItem, children, this._checkedChildrenAttrs);
+																		}), this.onError)
+																}), this.onError)
+														}
+													} else {
+														console.warn(this.moduleName+"::validateData(): store is not write enabled.");
+													}
+												}, 
+						onError: function (err) {}, 
+						scope: this
+					});
 				} 
 				else	// Store already validated.
 				{
@@ -1033,7 +1046,12 @@ define([
 				// Store item's children list changed
 				this.getChildren(storeItem, lang.hitch(this, function (children){
 					// See comments in onNewItem() about calling getChildren()
-					this._updateCheckedParent(children[0], true);
+					if (children[0]) {
+						this._updateCheckedParent(children[0], true);
+					} else {
+						// If no children left, set the default checked state.
+						this._setChecked( storeItem, this.checkedState);
+					}
 					this.onChildrenChange(storeItem, children);
 				}));
 			}else{
@@ -1046,7 +1064,7 @@ define([
 			}
 		},
 
-		onStoreLoaded: function() {
+		onStoreLoaded: function( count ) {
 			// summary:
 			//		Update the current labelAttr property by fetching it from the store.
 			// tag:
@@ -1139,8 +1157,6 @@ define([
 			//		Any model that inherits from this model (TreeStoreModel) and requires
 			//		additional parameters to be passed in a store fetch(), loadStore() or
 			//		loadItem() call must overwrite this method.
-			//
-			//		See the FileStoreModel for an example.
 			return fetchArgs;
 		}
 

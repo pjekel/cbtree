@@ -204,23 +204,65 @@ define([
 			return item;
 		},
 		
-		loadStore: function () {
+		loadStore: function ( keywordArgs ) {
 			// summary:
-			//		Try a forced synchronous load of the store but only if it has not
+			//		Try a forced load of the entire store but only if it has not
 			//		already been loaded.
 			//
-			if (!this._loadFinished) {
-				try {
-					this._forceLoad();
-				} catch(err) {
-					console.err(err);
-					return false;
+			// keywordArgs:
+			// 		onComplete:
+			//				If an onComplete callback function is provided, the callback function
+			//				will be called once on successful completion of the load operation
+			//				with the total number of items loaded: onComplete(count)
+			// 		onError:
+			//				The onError parameter is the callback to invoke when loadStore()
+			//				encountered an error. It takes one parameter, the error object.
+			// 		scope:
+			//				If a scope object is provided, all of the callback functions (onComplete,
+			//				onError, etc) will be invoked in the context of the scope object. In
+			//				the body of the callback function, the value of the "this" keyword
+			//				will be the scope object otherwise window.global is used.
+			// tag:
+			//		public
+			var scope = keywordArgs.scope || window.global;
+			var self  = this;
+			
+			function loadComplete( count, requestArgs ) {
+				// summary:
+				var loadArgs = requestArgs.loadArgs || null;
+				var scope    = loadArgs.scope;
+
+				self.onLoad( count );
+
+				if (loadArgs) {
+					if (loadArgs.onComplete) {
+						loadArgs.onComplete.call(scope, count);
+					}
 				}
 			}
-			this.onLoaded();
-			return true;
-		},
 
+			if (!this._loadFinished) {
+				var request  = { queryOptions: {deep: true}, 
+												 loadArgs: keywordArgs, 
+												 onBegin: loadComplete, 
+												 onError: keywordArgs.onError, 
+												 scope: this};
+				try {
+					this.fetch(request);
+				} catch(err) {
+					if (onError) {
+						onError.call(scope, err);
+					} else {
+						throw err;
+					}
+				}
+			} else {
+				if (onComplete) {
+					onComplete.call(scope, this._allFileItems.length);
+				}
+			}
+		},
+		
 		onDelete: function(/*dojo.data.item*/ deletedItem){
 			// summary:
 			//		See dojo.data.api.Notification.onDelete()
@@ -243,10 +285,12 @@ define([
 			}
 		},
 		
-		onLoaded: function () {
+		onLoad: function ( count ) {
 			// summary:
 			//		Invoked when loading the store completes. This method is only called
 			//		when the loadStore() is used.
+			// count:
+			//		Number of store items loaded.
 			// tag:
 			//		callback.
 		},

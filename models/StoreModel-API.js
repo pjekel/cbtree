@@ -27,14 +27,13 @@ define([
 		// Private Methods related to checked states
 
 		_checkOrUncheck: function (/*String|Object*/ query, /*Boolean*/ newState, /*Callback*/ onComplete, 
-																/*Context*/ scope) {
+																/*Context*/ scope, /*Boolean*/ storeOnly) {
 			// summary:
-			//		Check or uncheck the checked state of all store items that match the query.
-			// description:
 			//		Check or uncheck the checked state of all store items that match the
-			//		query. This method is called by either the public methods 'check' or
-			//		'uncheck' providing an easy way to programmatically alter the checked
-			//		state of a set of store items associated with the tree nodes.
+			//		query and have a checked state.
+			//		This method is called by either the public methods 'check' or 'uncheck'
+			//		providing an easy way to programmatically alter the checked state of a
+			//		set of store items associated with the tree nodes.
 			//
 			// query:
 			//		A query object or string. If query is a string the label attribute of
@@ -51,6 +50,8 @@ define([
 			//		in the context of the scope object. In the body of the callback function,
 			//		the value of the "this" keyword will be the scope object. If no scope is
 			//		is provided, onComplete will be called in the context of tree.model.
+			// storeOnly:
+			//		See fetchItemsWithChecked() 
 			// tag:
 			//		private
 
@@ -68,7 +69,7 @@ define([
 				if (onComplete) {
 					onComplete.call((scope ? scope : this), matches, updates);
 				}
-			}, this);
+			}, this, storeOnly);
 		},
 
 		// =======================================================================
@@ -379,7 +380,8 @@ define([
 			}
 		},
 		
-		fetchItemsWithChecked: function (/*String|Object*/ query, /*Callback*/ onComplete, /*Context*/ scope) {
+		fetchItemsWithChecked: function (/*String|Object*/ query, /*Callback?*/ onComplete, /*Context?*/ scope, 
+																			/*Boolean?*/ storeOnly) {
 			// summary:
 			//		Get the list of store items that match the query and have a checked 
 			//		state, that is, a checkedAttr property.
@@ -401,27 +403,43 @@ define([
 			//		in the context of the scope object. In the body of the callback function,
 			//		the value of the "this" keyword will be the scope object. If no scope 
 			//		object is provided, onComplete will be called in the context of tree.model.
+			// storeOnly:
+			//		Indicates if the fetch operation should be limited to the in-memory store
+			//		only. Some stores may fetch data from a back-end server when perfroming a
+			//		deep search. However, when querying attributes, some attributes may only
+			//		be available in the in-memory store such is the case with a FileStore 
+			//		having custom attributes. (See FileStore.fetch() for additional details).
 			// tag:
 			//		public
 			
 			var storeQuery = this._anyToQuery( query, null );
 			var storeItems = [];
-				
+			var storeOnly  = (storeOnly !== undefined) ? storeOnly : true;
+			var scope      = scope || this;
+			
 			if (lang.isObject(storeQuery)){
 				this.store.fetch({	
 					query: storeQuery,
 					//	Make sure ALL items are searched, not just top level items.
-					queryOptions: { deep: true },
+					queryOptions: { deep: true, storeOnly: storeOnly },
 					onItem: function (storeItem, request) {
 						// Make sure the item has the appropriate attribute so we don't inadvertently
-						// start adding checked state properties.
+						// start adding checked state properties unless 'checkedAll' is true.
 						if (this.store.hasAttribute(storeItem, this.checkedAttr)) {
 							storeItems.push(storeItem);
+						} else {
+							// If the checked attribute is missing it can be an indication the item
+							// has not been rendered yet in any tree. Therefore check if it should
+							// have the attribute and, if so, create it and apply the default state.
+							if (this.checkedAll) {
+								this.setChecked(storeItem, this.checkedState);
+								storeItems.push(storeItem);
+							}
 						}
 					},
 					onComplete: function () {
 						if (onComplete) {
-							onComplete.call((scope ? scope : this), storeItems);
+							onComplete.call(scope, storeItems);
 						}
 					},
 					onError: this.onError,
@@ -481,9 +499,9 @@ define([
 			}
 		},
 		
-		check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope) {
+		check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope, /*Boolean?*/ storeOnly) {
 			// summary:
-			//		Check all store items that match the query.
+			//		Check all store items that match the query and have a checked state.
 			// description:
 			//		See description _checkOrUncheck()
 			//	example:
@@ -492,7 +510,12 @@ define([
 			// tag:
 			//		public
 			
-			this._checkOrUncheck(query, true, onComplete, scope);
+			// If in strict checked mode the store is already loaded and therefore no
+			// need to fetch the store again.
+			if (this.checkedStrict) {
+				storeOnly = true;
+			}
+			this._checkOrUncheck(query, true, onComplete, scope, storeOnly);
 		},
 		
 		detachFromRoot: function (/*dojo.data.item*/ storeItem) {
@@ -561,9 +584,9 @@ define([
 			}
 		},
 		
-		uncheck: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope) {
+		uncheck: function (/*Object|String*/ query, /*Callback*/ onComplete, /*Context*/ scope, /*Boolean?*/ storeOnly) {
 			// summary:
-			//		Uncheck all store items that match the query.
+			//		Uncheck all store items that match the query and have a checked state.
 			// description:
 			//		See description _checkOrUncheck()
 			//	example:
@@ -572,7 +595,12 @@ define([
 			// tag:
 			//		public
 			
-			this._checkOrUncheck(query, false, onComplete, scope);
+			// If in strict checked mode the store is already loaded and therefore no
+			// need to fetch the store again.
+			if (this.checkedStrict) {
+				storeOnly = true;
+			}
+			this._checkOrUncheck(query, false, onComplete, scope, storeOnly);
 		},
 
 		// =======================================================================
