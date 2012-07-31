@@ -1,1 +1,0 @@
-### WARNING ###The binary images included in this directory are for the use with the Microsoft WindowsOperating System and provided for your convenience only.The PCRE images included are based on PCRE-8.10## Getting PCRE ##To get the latest version of Perl Compatible Regular Expressions (PCRE) source codeplease refer to [http://pcre.org](http://pcre.org)
