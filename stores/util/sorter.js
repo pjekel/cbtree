@@ -46,8 +46,13 @@ define (["dojo/_base/declare",
 					valA = valA.toLowerCase();
 					valB = valB.toLowerCase();
 				}
-				if( valB == null || valA > valB ) return desc * 1;
-				if( valA == null || valA < valB ) return desc * -1;
+				if (valA == valB) continue;
+				if (valB == null || valA > valB) {
+					return desc * 1;
+				}
+				if(valA == null || valA < valB) {
+					return desc * -1;
+				}
 			}
 			return 0;
 		},
