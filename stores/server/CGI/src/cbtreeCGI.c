@@ -114,7 +114,8 @@ FILE	*phResp = NULL;
 
 #ifdef _DEBUG
 // When debuging use cDbgQS to inject a QUERY-STRING.
-char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree&sort=[{\"attribute\":\"name\", \"ignoreCase\":true}]";
+//char	cDbgQS[] = "basePath=%2Fjs%2Fdojotoolkit%2Fcbtree";
+char	cDbgQS[] = "basePath=%2FLogs&path=./markdown/test";
 #endif
 
 /**
@@ -295,6 +296,7 @@ int cgiInit()
 		case HTTP_V_POST:
 			if( (ptPOST = newArray( "_POST" )) )
 			{
+				// Read the content from stdin
 				if( fgets(cArgm, sizeof(cArgm)-1, stdin) )
 				{
 					ptContent = newString( "CONTENT", cArgm );

@@ -616,9 +616,10 @@ static int _jsonEncodeFileInfo( LIST *pFileList, char **ppcResp, size_t *piSize,
 			*ppcDest += snprintf( *ppcDest, iFree, ",\"modified\":%d", pFileInfo->lModified );
 
 			// Include directory related info if, and only if, it is a directory...
-			if( pFileInfo->directory ) {
+			if( (pFileInfo->iPropMask & PROP_M_DIRECTORY)  )
+			{
 				*ppcDest += snprintf( *ppcDest, iFree, ",\"directory\":true" );
-				if( pFileInfo->bIsExpanded ) 
+				if( (pFileInfo->iPropMask & PROP_M_CHILDREN)  )
 				{
 					*ppcDest += snprintf( *ppcDest, iFree, ",\"_EX\":true" );
 					*ppcDest += snprintf( *ppcDest, iFree, ",\"children\":[" );
@@ -630,6 +631,10 @@ static int _jsonEncodeFileInfo( LIST *pFileList, char **ppcResp, size_t *piSize,
 					*ppcDest += snprintf( *ppcDest, iFree, ",\"_EX\":false" );
 					*ppcDest += snprintf( *ppcDest, iFree, ",\"children\":[]" );
 				}
+			}
+			if( (pFileInfo->iPropMask & PROP_M_OLDPATH)  )
+			{
+				*ppcDest += snprintf( *ppcDest, iFree, ",\"oldPath\":\"%s\"", pFileInfo->pcOldPath );
 			}
 			*(*ppcDest)++ = '}';
 			if( pEntry->pNext != pFileList )

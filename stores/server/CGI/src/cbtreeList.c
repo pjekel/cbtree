@@ -207,7 +207,7 @@ LIST *mergeList( LIST *pDest, LIST *pSource )
 			pDest->pPrev->pNext = pDest;
 
 			pSource->pNext = pSource;
-			pSource->pNext = pSource;
+			pSource->pPrev = pSource;
 		}
 	}
 	return pDest;

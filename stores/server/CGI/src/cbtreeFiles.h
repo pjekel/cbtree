@@ -5,22 +5,26 @@
 #include "cbtreeList.h"
 
 // Define symbolic file properties
-#define PROP_V_UNKNOWN		-1
-#define PROP_V_NAME			0
-#define PROP_V_PATH			1
-#define PROP_V_DIRECTORY	2
-#define PROP_V_SIZE			3
-#define PROP_V_MODIFIED		4
+#define PROP_M_UNKNOWN		0X00
+#define PROP_M_NAME			0x01
+#define PROP_M_PATH			0x02
+#define PROP_M_DIRECTORY	0x04
+#define PROP_M_SIZE			0x08
+#define PROP_M_MODIFIED		0x10
+#define PROP_M_CHILDREN		0X20
+#define PROP_M_OLDPATH		0X40
+
+#define PROP_M_DEFAULT		PROP_M_NAME | PROP_M_PATH | PROP_M_SIZE | PROP_M_MODIFIED
 
 typedef struct fileInfo {
+	int		iPropMask;			// Properties mask (indicates which of the following properties are set).
 	char	*pcName;			// Pointer to C-string containing the filename
-	char	*pcPath;			// Pointer to C-string containing the file path
-	char	*pcIconClass;		// Pointer to C-string containinf the iconClass;
+	char	*pcPath;
+	char	*pcOldPath;			// Pointer to C-string containing the old path (rename only).
 	long	lSize;				// File size
 	long	lModified;			// Last modified (seconds since Jan 1, 1970)
 	bool	directory;			// True if file is a directory
 	bool	bIsHidden;			// True if file is marked as hidden.
-	bool	bIsExpanded;		// True if pChildren holds the list of children.
 	LIST	*pChildren;			// List of children (directory only).
 } FILE_INFO;
 
@@ -30,12 +34,11 @@ typedef struct fileInfo {
 
 void  destroyFileList( LIST **ppList );
 int	  fileCount( LIST *pFileList, bool iDeep );
-LIST *fileSlice( LIST *pFileList, int iStart, int iCount );
 int   getPropertyId( const char *pcProperty );
 LIST *getDirectory( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );
 LIST *getFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );
+
 char *getRelativePath( char *pcFullPath, char *pcRootDir, char *pcFilename, char **ppcPath );
-LIST *getMatch( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );
 
 LIST *removeFile( FILE_INFO *pFileInfo, char *pcRootDir, ARGS *pArgs, int *piResult );
 LIST *renameFile( char *pcFullPath, char *pcRootDir, ARGS *pArgs, int *piResult );

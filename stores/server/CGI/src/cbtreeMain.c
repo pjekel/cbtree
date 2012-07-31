@@ -9,14 +9,14 @@
 *
 *	@author		Peter Jekel
 *
-*	@date		07/01/2012
+*	@date		08/01/2012
 *
-*	@version	1.0
-*
-*	@note		See external dependencies below.
+*	@version	1.1
 *
 *	History:
 *
+*		1.1		08/01/12	Removed handling of queries and sorting, removed the PCRE 
+*							dependencies.
 *		1.0		07/01/12	Initial release
 *
 ****************************************************************************************
@@ -27,22 +27,17 @@
 *		required to enable the dojo cbtree FileStore and is part of the github project
 *		'cbtree'.
 *
-*		The cbtree FileStore CGI application is invoked by means of a HTTP GET or DELETE
-*		request, the basic ABNF format of a request looks like:
+*		The cbtree FileStore CGI application is invoked by means of a HTTP GET, DELETE
+*		or POST request, the basic ABNF format of a request looks like:
 *
 *			HTTP-request  ::= uri ('?' query-string)?
 *			query-string  ::= (qs-param ('&' qs-param)*)?
-*			qs-param	  ::= authToken | basePath | path | query | queryOptions | options | 
-*							  start | count | sort
+*			qs-param	  ::= authToken | basePath | path | query | queryOptions | options 
 *			authToken	  ::= 'authToken' '=' json-object
 *			basePath	  ::= 'basePath' '=' path-rfc3986
 *			path		  ::= 'path' '=' path-rfc3986
-*			query		  ::= 'query' '=' json-object
 *			query-options ::= 'queryOptions' '=' json-object
 *			options		  ::= 'options' '=' json-array
-*			start		  ::= 'start' '=' number
-*			count		  ::= 'count' '=' number
-*			sort		  ::= 'sort' '=' json-array
 *
 *		Please refer to http://json.org for the correct JSON encoding of the
 *		parameters.
@@ -73,14 +68,6 @@
 *
 *				full-path = root_dir '/' path?
 *
-*		query:
-*
-*			The query parameter is a JSON object with a set of JSON 'property:value'
-*			pairs. If specified, only files that match the query criteria are returned.
-*			If the property value is a string it is treated as a pattern string.
-*
-*				query={"name":"*.js"}
-*
 *		queryOptions:
 *
 *			The queryOptions parameter specifies a set of JSON 'property:value' pairs
@@ -93,33 +80,10 @@
 *		options:
 *
 *			The options parameter is a JSON array of strings. Each string specifying a
-*			search options to be enabled. Currently the following options are supported:
-*			"dirsOnly", "iconClass" and "showHiddenFiles".
+*			search options to be enabled. Currently the following option is supported:
+*			"showHiddenFiles".
 *
-*				options=["dirsOnly", "showHiddenFiles"]
-*
-*		start:
-*
-*			The start parameter identifies the first entry in the files list to be returned
-*			to the caller. The default is 0. Note: start is a zero-based index.
-*
-*		count:
-*
-*			Parameter count specifies the maximum number of files to be returned. If zero
-*			(default) all files, relative to the start position, are returned.
-*
-*		sort:
-*
-*			Parameter sort is a JSON array of JSON objects. If specified the files list
-*			is sorted in the order the JSON objects are arranged in the array.
-*			The properties allowed are: "attribute", "descending" and "ignoreCase". Each
-*			sort field object MUST have the "attribute" property defined.
-*
-*				sort=[{"attribute":"directory", "descending":true},{"attribute":"name", 
-*					   "ignoreCase":true}]
-*
-*			The example sort will return the file list with the directories first and
-*			all names in ascending order. (A typical UI file tree).
+*				options=["showHiddenFiles"]
 *
 ****************************************************************************************
 *
@@ -192,37 +156,24 @@
 *
 ****************************************************************************************
 *
-*	EXTERNAL DEPENDENCIES:
-*
-*		To build this CGI application you must either have or get the PCRE 'Perl
-*		Compatible Regular Expression' library. The library can be found at:
-*
-*			http://www.pcre.org/
-*
-*		The PCRE directory includes a Microsoft Windows PCRE DLL and associated link
-*		library version 8.10 for your conveniance.
-*
-***************************************************************************************
-*
 *	RESPONSE:
 *
 *		Assuming a valid HTTP GET or DELETE request was received the response to
 *		the client complies with the following ABNF notation:
 *
-*			response	  ::= '[' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list ']'
+*			response	  ::= '{' (totals ',')? (status ',')? file-list '}'
 *			totals 		  ::= '"total"' ':' number
 *			status		  ::= '"status"' ':' status-code
-*			status-code	  ::=	'200' | '204'
-*			identifier	  ::= '"identifier"' ':' quoted-string
-*			label		  ::= '"label"' ':' quoted-string
+*			status-code	  ::=	'200' | '204' | '401'
 *			file-list	  ::= '"items"' ':' '[' file-info* ']'
-*			file-info	  ::= '{' name ',' path ',' size ',' modified ',' directory 
-*							  (',' children ',' expanded)? '}'
+*			file-info	  ::= '{' name ',' path ',' size ',' modified ',' (',' directory)? 
+*								(',' oldPath)? (',' children ',' expanded)? '}'
 *			name		  ::= '"name"' ':' json-string
 *			path		  ::= '"path"' ':' json-string
 *			size		  ::= '"size"' ':' number
 *			modified	  ::= '"modified"' ':' number
 *			directory	  ::= '"directory"' ':' ('true' | 'false')
+*			oldPath		  ::= '"oldPath"' ':' json-string
 *			children	  ::= '[' file-info* ']'
 *			expanded	  ::= '"_EX"' ':' ('true' | 'false')
 *			quoted-string ::= '"' CHAR* '"'
@@ -231,8 +182,6 @@
 *
 *	Notes:
 *
-*		-	The file-info path is returned as a so-called rootless path, that is,
-*			without a leading dot and forward slash. (see rfc-3986 for details).
 *		-	The expanded property indicates if a deep search was performed on a 
 *			directory. Therefore, if expanded is true and children is empty we
 *			are dealing with an empty directory and not a directory that hasn't
@@ -255,6 +204,7 @@
 #include "cbtreeString.h"
 #include "cbtreeFiles.h"
 #include "cbtreeDebug.h"
+#include "cbtree_NP.h"
 
 #define	STORE_C_IDENTIFIER	"path"
 #define STORE_C_LABEL		"name"
@@ -273,12 +223,13 @@ int main()
 {
 	ARGS	*pArgs = NULL;
 	FILE_INFO	*pFileInfo;
-	LIST	*pFileList,
-			*pSlice;
+	LIST	*pFileList;
 	
 	char	cDocRoot[MAX_PATH_SIZE]   = "",
 			cRootDir[MAX_PATH_SIZE]   = "",
 			cFullPath[MAX_PATH_SIZE]  = "",
+			cTempPath[MAX_PATH_SIZE]   = "",
+			cPath[MAX_PATH_SIZE]   = "",
 			cPathEnc[MAX_PATH_SIZE*2] = "";			
 	char	*pcResult;
 	int		iMethod,
@@ -299,7 +250,6 @@ int main()
 		cbtDebug( "Invalid method: %d", iMethod );
 		return 0;
 	}
-
 	// Get the application specific arguments and options.
 	if( !(pArgs = getArguments( &iResult )) )
 	{
@@ -328,12 +278,16 @@ int main()
 		cbtDebug( "No DOCUMENT_ROOT available." );
 		return 0;
 	}
-	snprintf( cDocRoot, sizeof(cDocRoot)-1, "%s/", varGet( cgiGetProperty( "DOCUMENT_ROOT" )) );
-	strtrim( normalizePath( cDocRoot ), TRIM_M_WSP );
-	snprintf( cRootDir, sizeof(cRootDir)-1, "%s%s/", cDocRoot, (pArgs->pcBasePath ? pArgs->pcBasePath : "") );
-	strtrim( normalizePath( cRootDir ), TRIM_M_WSP );
+	snprintf( cDocRoot, sizeof(cDocRoot)-1, "%s", varGet( cgiGetProperty( "DOCUMENT_ROOT" )) );
+	strtrim( normalizePath( cDocRoot ), (TRIM_M_WSP | TRIM_M_SLASH) );
+	snprintf( cRootDir, sizeof(cRootDir)-1, "%s/%s", cDocRoot, (pArgs->pcBasePath ? pArgs->pcBasePath : "") );
+	strtrim( normalizePath( cRootDir ), (TRIM_M_WSP | TRIM_M_SLASH) );
 
-	snprintf( cFullPath, sizeof(cFullPath)-1, "%s%s", cRootDir, (pArgs->pcPath ? pArgs->pcPath : "*") );
+	snprintf( cTempPath, sizeof(cTempPath)-1, "./%s", pArgs->pcPath ? pArgs->pcPath : "" );
+	snprintf( cPath, sizeof(cPath)-1, "./%s", normalizePath(cTempPath) );
+	strtrim( cPath, TRIM_M_SLASH );
+	
+	snprintf( cFullPath, sizeof(cFullPath)-1, "%s/%s", cRootDir, cPath );
 	strtrim( normalizePath( cFullPath ), TRIM_M_SLASH );
 
 	// Make sure the caller is not backtracking by specifying paths like '../../../../'
@@ -380,35 +334,19 @@ int main()
 			break;
 
 		case HTTP_V_GET:
-			if( !pArgs->pcPath )
-			{
-				if( pArgs->pQueryList ) 
-				{
-					pFileList = getMatch( cFullPath, cRootDir, pArgs, &iResult );
-				}
-				else // No query parameters
-				{
-					pFileList = getDirectory( cFullPath, cRootDir, pArgs, &iResult );
-				}
-			}
-			else // A specific path is specified.
-			{
-				pFileList = getFile( cFullPath, cRootDir, pArgs, &iResult );
-			}
-
+			pFileList = getFile( cFullPath, cRootDir, pArgs, &iResult );
 			if( pFileList )
 			{
-				pSlice     = fileSlice( pFileList, pArgs->iStart, pArgs->iCount );
-				iResult    = listIsEmpty( pSlice ) ? HTTP_V_NO_CONTENT : HTTP_V_OK;
+				iResult = listIsEmpty( pFileList ) ? HTTP_V_NO_CONTENT : HTTP_V_OK;
 
-				if( (pcResult = jsonEncode(pSlice, 0)) )
+				if( (pcResult = jsonEncode(pFileList, 0)) )
 				{
 					// Write the header(s)
 					fprintf( phResp, "Content-Type: text/json\r\n" );
 					fprintf( phResp, "\r\n" );
 					// Write the body
-					fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\",\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
-							 STORE_C_IDENTIFIER, STORE_C_LABEL, fileCount(pSlice, false), iResult, pcResult );
+					fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
+							 fileCount(pFileList, false), iResult, pcResult );
 					destroy( pcResult );
 				}
 				else
@@ -416,7 +354,6 @@ int main()
 					cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
 				}
 				destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
-				destroyList( &pSlice, NULL );	// Destroy list only.
 			}
 			else
 			{
@@ -425,8 +362,7 @@ int main()
 					fprintf( phResp, "Content-Type: text/json\r\n" );
 					fprintf( phResp, "\r\n" );
 
-					fprintf( phResp, "{\"identifier\":\"%s\",\"label\":\"%s\",\"total\":%d,\"status\":%d,\"items\":[]}\r\n", 
-							 STORE_C_IDENTIFIER, STORE_C_LABEL, iResult );
+					fprintf( phResp, "{\"total\":0,\"status\":%d,\"items\":[]}\r\n", iResult );
 				}
 				else
 				{
@@ -438,40 +374,29 @@ int main()
 			break;
 
 		case HTTP_V_POST:
-			switch( getPropertyId( pArgs->pcAttribute ) )
+			pFileList = renameFile( cFullPath, cRootDir, pArgs, &iResult );
+			if( pFileList )
 			{
-				case PROP_V_NAME:
-				case PROP_V_PATH:
-					pFileList = renameFile( cFullPath, cRootDir, pArgs, &iResult );
-					if( pFileList )
-					{
-						if( (pcResult = jsonEncode(pFileList, 0)) )
-						{
-							fprintf( phResp, "Content-Type: text/json\r\n" );
-							fprintf( phResp, "\r\n" );
-							// Write the body
-							fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
-									 fileCount(pFileList, false), iResult, pcResult );
-							destroy( pcResult );
-						}
-						else
-						{
-							cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
-						}
-						destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
-					}
-					else
-					{
-						cgiResponse( iResult, NULL );
-					}
-					break;
-				default:
-					iResult = HTTP_V_BAD_REQUEST;
-					cgiResponse( iResult, "Invalid attribute." );
-					break;
+				if( (pcResult = jsonEncode(pFileList, 0)) )
+				{
+					fprintf( phResp, "Content-Type: text/json\r\n" );
+					fprintf( phResp, "\r\n" );
+					// Write the body
+					fprintf( phResp, "{\"total\":%d,\"status\":%d,\"items\":%s}\r\n", 
+							 fileCount(pFileList, false), iResult, pcResult );
+					destroy( pcResult );
+				}
+				else
+				{
+					cgiResponse( HTTP_V_SERVER_ERROR, "JSON encoding failed" );
+				}
+				destroyFileList( &pFileList );	// Destroy list AND associated FILE_INFO.
 			}
-			cbtDebug( "POST [%s] \"%s\" [%s] > [%s]", cRootDir, pArgs->pcAttribute, pArgs->pcOldValue, 
-					  pArgs->pcNewValue );
+			else
+			{
+				cgiResponse( iResult, NULL );
+			}
+			cbtDebug( "POST [%s] > [%s]", cFullPath, pArgs->pcNewValue );
 			break;
 	}
 	// The END
