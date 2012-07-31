@@ -10,12 +10,14 @@
 	*
 	*	@author		Peter Jekel
 	*
-	*	@date			07/01/2012
+	*	@date			08/01/2012
 	*
-	*	@version	1.0
+	*	@version	1.1
 	*
 	*	History:
 	*
+	*		1.1			08/01/12	Removed handling of queries and sorting, improved performance,
+	*											reduced the overall JSON response sizes.
 	*		1.0			07/01/12	Initial release
 	*
 	*****************************************************************************************
@@ -28,22 +30,17 @@
 	*			Alternatively, an ANSI-C CGI application is also available. See the notes on
 	*			performance below.
 	*
-	*			The cbtree FileStore.php application is invoked by means of a HTTP GET or DELETE
-	*			request, the basic ABNF format of a request looks like:
+	*			The cbtree FileStore.php application is invoked by means of a HTTP GET, DELETE
+	*			or POST request, the basic ABNF format of a request looks like:
 	*
 	*				HTTP-request	::= uri ('?' query-string)?
 	*				query-string  ::= (qs-param ('&' qs-param)*)?
-	*				qs-param		  ::= authToken | basePath | path | query | queryOptions | options | 
-	*								 				  start | count | sort
+	*				qs-param		  ::= authToken | basePath | path | query | queryOptions | options
 	*				authToken			::= 'authToken' '=' json-object
 	*				basePath		  ::= 'basePath' '=' path-rfc3986
 	*				path				  ::= 'path' '=' path-rfc3986
-	*				query			  	::= 'query' '=' json-object
 	*				query-options ::= 'queryOptions' '=' json-object
 	*				options			  ::= 'options' '=' json-array
-	*				start			  	::= 'start' '=' number
-	*				count				  ::= 'count' '=' number
-	*				sort 					::= 'sort' '=' json-array
 	*
 	*			Please refer to http://json.org for the correct JSON encoding of the
 	*			parameters.
@@ -74,14 +71,6 @@
 	*
 	*					full-path = root_dir '/' path?
 	*
-	*			query:
-	*
-	*				The query parameter is a JSON object with a set of JSON 'property:value'
-	*				pairs. If specified, only files that match the query criteria are returned.
-	*				If the property value is a string it is treated as a pattern string.
-	*
-	*				Example:	query={"name":"*.js"}
-	*
 	*			queryOptions:
 	*
 	*				The queryOptions parameter specifies a set of JSON 'property:value' pairs
@@ -94,33 +83,10 @@
 	*			options:
 	*
 	*				The options parameter is a JSON array of strings. Each string specifying a
-	*				search options to be enabled. Currently the following options are supported:
-	*				"dirsOnly" and "showHiddenFiles".
+	*				search options to be enabled. Currently the following option is supported:
+	*				"showHiddenFiles".
 	*
-	*				Example:	options=["dirsOnly", "showHiddenFiles"]
-	*
-	*			start:
-	*
-	*				The start parameter identifies the first entry in the files list to be returned
-	*				to the caller. The default is 0. Note: start is a zero-based index.
-	*
-	*			count:
-	*
-	*				Parameter count specifies the maximum number of files to be returned. If zero
-	*				(default) all files, relative to the start position, are returned.
-	*
-	*			sort:
-	*
-	*				Parameter sort is a JSON array of JSON objects. If specified the files list
-	*				is sorted in the order the JSON objects are arranged in the array.
-	*				The properties allowed are: "attribute", "descending" and "ignoreCase". Each
-	*				sort field object MUST have the "attribute" property defined.
-	*
-	*				Example:	sort=[{"attribute":"directory", "descending":true},{"attribute":"name",
-	*												 "ignoreCase":true}]
-	*
-	*				The example sort will return the file list with the directories first and
-	*				all names in ascending order. (A typical UI file tree).
+	*				Example:	options=["showHiddenFiles"]
 	*
 	****************************************************************************************
 	*
@@ -201,20 +167,19 @@
 	*				Assuming a valid HTTP GET or DELETE request was received the response to
 	*				the client complies with the following ABNF notation:
 	*
-	*					response	  	::= '[' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list ']'
+	*					response	  	::= '{' (totals ',')? (status ',')? file-list '}'
 	*					totals 				::= '"total"' ':' number
 	*					status				::= '"status"' ':' status-code
-	*					status-code		::=	'200' | '204'
-	*					identifier		::= '"identifier"' ':' quoted-string
-	*					label		  		::= '"label"' ':' quoted-string
+	*					status-code		::=	'200' | '204' | '401'
 	*					file-list			::= '"items"' ':' '[' file-info* ']'
-	*					file-info			::= '{' name ',' path ',' size ',' modified ',' directory 
-	*														(',' children ',' expanded)? '}'
-	*					name					::= '"name"' ':' json-string
+	*					file-info			::= '{' name ',' path ',' size ',' modified (',' directory)? 
+	*														(',' oldPath)? (',' children ',' expanded)? '}'
 	*					path					::= '"path"' ':' json-string
+	*					name					::= '"name"' ':' json-string
 	*					size					::= '"size"' ':' number
 	*					modified			::= '"modified"' ':' number
 	*					directory			::= '"directory"' ':' ('true' | 'false')
+	*					oldPath		  	::= '"oldPath"' ':' json-string
 	*					children			::= '[' file-info* ']'
 	*					expanded			::= '"_EX"' ':' ('true' | 'false')
 	*					quoted-string ::= '"' CHAR* '"'
@@ -223,8 +188,6 @@
 	*
 	*		Notes:
 	*
-	*				-	The file-info path is returned as a so-called rootless path, that is,
-	*					without a leading dot and forward slash. (see rfc-3986 for details).
 	*				-	The expanded property indicates if a deep search was performed on a 
 	*					directory. Therefore, if expanded is true and children is empty we
 	*					are dealing with an empty directory and not a directory that hasn't
@@ -245,21 +208,20 @@
 	define( "HTTP_V_GONE",								410);
 	define( "HTTP_V_SERVER_ERROR",				500);
 
-	define( "STORE_C_IDENTIFIER", "path" );
-	define( "STORE_C_LABEL", "name" );
-	
 	$docRoot = $_SERVER["DOCUMENT_ROOT"];
 
-	$method = null;
-	$files	= null;
-	$total	= 0;
-	$status	= 0;
+	$relPath = "";
+	$method  = null;
+	$files	 = null;
+	$total	 = 0;
+	$status	 = 0;
 
 	$method = $_SERVER["REQUEST_METHOD"];
 
 	// Check the HTTP method first.
 	if (!cgiMethodAllowed($method)) {
 		cgiResponse( HTTP_V_METHOD_NOT_ALLOWED, "Method Not Allowed", NULL);
+		header("Allow: " . getenv("CBTREE_METHODS"));
 		error_log( "Invalid or unsupported method: [".$method."]");
 		return;
 	}
@@ -287,9 +249,8 @@
 
 		switch($method) {
 			case "DELETE":
-				$files = getFile( $fullPath, $rootDir, $args, $status );
+				$files = deleteFile( $fullPath, $rootDir, $args, $status );
 				if ($files) {
-					$files = removeFile( $files[0], $rootDir, $args, $status );
 					// Compile the final result
 					$result							= new stdClass();
 					$result->total			= count($files);
@@ -304,29 +265,10 @@
 				break;
 
 			case "GET":
-				if (!is_string($args->path)) {
-					if ($args->query) {
-						$files = getMatch( $fullPath, $rootDir, $args, $status );
-					} else {
-						$files = getDirectory( $fullPath, $rootDir, $args, $status );
-					}
-				} else {
-					$files = getFile( $fullPath, $rootDir, $args, $status );
-				}
-				if( ($total = count($files)) ) {
-					// sort, slice and dice
-					if ($args->sortList != null) {
-						usort($files, array($args->sortList, "fileCompare"));
-					}
-					if( $args->start || $args->count ) {
-						$files = array_slice($files, $args-start, $args->count);
-						$total = count($files);
-					}
-				}
+				$files = getFile( $fullPath, $rootDir, $args, $status );
+				$total = count($files);
 				// Compile the final result
 				$result							= new stdClass();
-				$result->identifier = STORE_C_IDENTIFIER;
-				$result->label			= STORE_C_LABEL;
 				$result->total			= $total;
 				$result->status			= $total ? HTTP_V_OK : HTTP_V_NO_CONTENT;
 				$result->items			= $files;
@@ -336,26 +278,18 @@
 				break;
 
 			case "POST":
-				switch($args->attribute) {
-					case STORE_C_IDENTIFIER:
-					case STORE_C_LABEL:
-						$files = renameFile( $fullPath, $rootDir, $args, $status );
-						// Compile the final result
-						if ($status == HTTP_V_OK) {
-							$result							= new stdClass();
-							$result->total			= count($files);
-							$result->status			= $status;
-							$result->items			= $files;
+				$files = renameFile( $fullPath, $rootDir, $args, $status );
+				// Compile the final result
+				if ($status == HTTP_V_OK) {
+					$result							= new stdClass();
+					$result->total			= count($files);
+					$result->status			= $status;
+					$result->items			= $files;
 
-							header("Content-Type: text/json");
-							print( json_encode($result) );
-						} else {
-							cgiResponse( $status, "system error.", "Failed to rename file." );
-						}
-						break;
-					default:
-						cgiResponse( HTTP_V_BAD_REQUEST, "Bad Request", "Attribute not allowed." );
-						break;
+					header("Content-Type: text/json");
+					print( json_encode($result) );
+				} else {
+					cgiResponse( $status, "system error.", "Failed to rename file." );
 				}
 				break;
 		}
@@ -367,7 +301,7 @@
 	*		cgiMethodAllowed
 	*
 	*			Returns true if the HTTP method is allowed, that is, supported by this
-	*			application.
+	*			application. (See the description 'ENVIRONMENT VARIABLE' above).
 	*
 	*		@param	method				Method name string.
 	*
@@ -404,10 +338,93 @@
 	}
 
 	/**
+	*		_deleteDirectory
+	*
+	*			Delete a directory including its content. All successfully deleted files 
+	*			are returned as an array of strings.
+	*
+	*	@param	dirPath					Directory path string
+	*	@param	rootDir					Root directory
+	*	@param	args						HTTP QUERY-STRING arguments decoded.
+	*	@param	status					Receives the final result (200, 204 or 404).
+	*
+	*	@return		An array of FILE_INFO objects or NULL in case no match was found.
+	**/
+	function _deleteDirectory( /*string*/$dirPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
+		// Set permission on the directory first.
+		chmod($dirPath, 0777);
+
+		if( ($dirHandle = opendir($dirPath)) ) {
+			$files   = array();
+
+			while($file = readdir($dirHandle)) {
+				if ($file != "." && $file != "..") {
+					$fileInfo = fileToStruct( $dirPath, $rootDir, $file, $args );
+					$filePath = $dirPath . "/" . $file;
+					if (is_dir($filePath)) {
+						$children = _deleteDirectory( $filePath, $rootDir, $args, $stat );
+						$files    = array_merge( $files, $children );
+						$result   = rmdir( $filePath );
+					} else {
+						chmod($path, 0666);
+						$result = unlink($filePath);
+					}
+					if ($result) {
+						$files[] = $fileInfo;
+					} else {
+						$status = HTTP_V_UNAUTHORIZED;
+					}
+				}
+			}
+			closedir($dirHandle);
+			return $files;
+		}
+		$status = HTTP_V_NOT_FOUND;
+		return null;
+	}
+	
+	/**
+	*		deleteFile
+	*
+	*				Delete a file.
+	*
+	*	@param	filePath				File path string
+	*	@param	rootDir					Root directory
+	*	@param	args						HTTP QUERY-STRING arguments decoded.
+	*	@param	status					Receives the final result (200, 204 or 404).
+	*
+	*	@return		An array of FILE_INFO objects or NULL in case no match was found.
+	**/
+	function deleteFile( /*string*/$filePath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
+		if( file_exists( $filePath ) ) {
+			$status   = HTTP_V_OK;
+			$files 	  = array();
+			$uri 		  = parsePath( $filePath, $rootDir );
+			$fileInfo = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
+
+			if (is_dir($filePath)) {
+				$files  = _deleteDirectory( $filePath, $rootDir, $args, $stat );
+				$result = rmdir( $filePath );
+			} else {
+				chmod($filePath, 0666);
+				$result = unlink($filePath);
+			}
+			if ($result) {
+				$files[] = $fileInfo;
+			} else {
+				$status = HTTP_V_UNAUTHORIZED;
+			}
+			return $files;
+		}
+		$status = HTTP_V_NOT_FOUND;
+		return null;
+	}
+
+	/**
 	*		fileFilter
 	*
 	*			Returns true if a file is to be exlcuded (filtered) based on the HTTP query
-	*			string parameters such as 'dirsOnly' or 'showHiddenFiles', otherwise false.
+	*			string parameters such as 'showHiddenFiles', otherwise false.
 	*			The current and parent directory entries are excluded by default.
 	*
 	*	@param	fileInfo
@@ -417,7 +434,6 @@
 	**/
 	function fileFilter( /*object*/$fileInfo, /*object*/$args ) {
 		if ( (!$args->showHiddenFiles && $fileInfo->name[0] == ".") ||
-				 ($args->dirsOnly && !$fileInfo->directory) ||
 				 ($fileInfo->name == ".." || $fileInfo->name == ".") ) {
 					return true;
 		}
@@ -425,68 +441,33 @@
 	}
 
 	/**
-	*		fileMatchQuery
-	*
-	*			Returns true if a file matches all query arguments otherwise false.
-	*
-	*	@param	fileInfo				File info object.
-	*	@param	query						Query object containing an array of query arguments.
-	*
-	*	@return		True if the file matches ALL query arguments otherwise false.
-	**/
-	function fileMatchQuery( /*object*/$fileInfo, /*object*/$query ) {
-		$match = true;
-		for ($i = 0; $i < $query->count && $match == true; $i++) {
-			$queryArgm = $query->argm[$i];
-			$property	 = $queryArgm->property;
-
-			$propVal  = property_exists($fileInfo, $property) ? $fileInfo->$property : null;
-			$queryVal = $queryArgm->propVal;
-
-			if ($queryArgm->pattern) {
-				$match = (bool)preg_match($queryArgm->pattern, $propVal);
-			} else {
-				if(	$propVal != $queryVal ) {
-					$match = false;
-				}
-			}
-		}
-		return $match;
-	}
-
-	/**
 	*		fileToStruct
 	*
 	*			Create a FILE_INFO object
 	*
-	*	@param	fullPath				Full path string (directory path)
+	*	@param	dirPath					Directory path string
 	*	@param	rootDir					Root directory
 	*	@param	filename				Filename
 	*
 	*	@return		FILE_INFO object.
-	*
-	*	@TODO		Remove directory property on normal files without impacting the
-	*					preformance too much making the result returned identical to the
-	*					ANSI-C CGI implementation. 
-	*					(PHP generates an error when referencing non-existing properties).
 	**/
-	function fileToStruct( /*string*/$fullPath, /*string*/$rootDir, /*string*/$filename, /*object*/$args ) {
-		$uriPath  = $fullPath . "/" . $filename;
-		$atts 	  = stat( $uriPath );
+	function fileToStruct( /*string*/$dirPath, /*string*/$rootDir, /*string*/$filename, /*object*/$args ) {
+		$fullPath = $dirPath . "/" . $filename;
+		$atts     = stat( $fullPath );
 		
-		$relPath  = substr( $uriPath, (strlen($rootDir)+1), strlen($uriPath) );
-		$relPath  = str_replace( "\\", "/", $relPath );
+		$relPath  = "./" . substr( $fullPath, (strlen($rootDir)+1) );
+		$relPath  = trim( str_replace( "\\", "/", $relPath ), "/");
 
 		$fileInfo							= new stdClass();
 		$fileInfo->name 			= $filename;
-		$fileInfo->path 			= $relPath;
-		$fileInfo->size 			= filesize($uriPath);
+		$fileInfo->path				= $relPath;
+		$fileInfo->size 			= filesize($fullPath);
 		$fileInfo->modified 	= $atts[9];
-		$fileInfo->directory	= is_dir($uriPath);
 
-		if ($fileInfo->directory) {
-			$fileInfo->children = array();
-			$fileInfo->_EX      = false;
+		if (is_dir($fullPath)) {
+			$fileInfo->directory = true;
+			$fileInfo->children  = array();
+			$fileInfo->_EX       = false;
 		}
 		return $fileInfo;
 	}
@@ -515,10 +496,8 @@
 		$args->authToken				= null;
 		$args->basePath					= "";
 		$args->deep 						= false;
-		$args->dirsOnly 				= false;
 		$args->path 						= null;
 		$args->showHiddenFiles	= false;
-		$args->sortList 			  = null;
 				
 		switch ($method) {
 			case "DELETE":
@@ -531,22 +510,14 @@
 			case "GET":
 				$_ARGS = $_GET;
 
-				$args->count						= 0;
-				$args->files 					  = array();
 				$args->ignoreCase 			= false;
-				$args->loadAll					= false;
-				$args->query 						= null;
 				$args->rootDir					= "";
-				$args->start						= 0;
 
 				// Get the 'options' and 'queryOptions' first before processing any other parameters.
 				if (array_key_exists("options", $_ARGS)) {
 					$options = str_replace("\\\"", "\"", $_ARGS['options']);
 					$options = json_decode($options);
 					if (is_array($options)) {
-						if (array_search("dirsOnly", $options) > -1) {
-							$args->dirsOnly = true;
-						}
 						if (array_search("showHiddenFiles", $options) > -1) {
 							$args->showHiddenFiles = true;
 						}
@@ -563,19 +534,6 @@
 						if (property_exists($queryOptions, "deep")) {
 							$args->deep = $queryOptions->deep;
 						}
-						// @note	Options 'deep' and 'loadAll' have the same meaning on the server
-						//				side however, they are handled different by the cbtreeFileStore
-						//				on the client side. For example, if the store is used with a tree
-						//				that requires a strict parent-child relationship ALL files MUST
-						//				be loaded overwriting 'lazy loading'. (see notes on performance
-						//				above).
-
-						if (property_exists($queryOptions, "loadAll")) {
-							$args->loadAll = $queryOptions->loadAll;
-							if( $args->loadAll ) {
-								$args->deep = true;
-							}
-						}
 						if (property_exists($queryOptions, "ignoreCase")) {
 							$args->ignoreCase = $queryOptions->ignoreCase;
 						}
@@ -585,60 +543,15 @@
 						return null;
 					}
 				}
-
-				if (array_key_exists("query", $_ARGS)) {
-					// decode query into an associative array.
-					$query = str_replace("\\\"", "\"", $_ARGS['query']);
-					$query = json_decode($query, true);
-
-					if (is_array($query)) {
-						$args->query = getQueryArgs($query, $args->ignoreCase);
-					}
-					else	// query is not an array.
-					{
-						return null;
-					}
-				}
-				if (array_key_exists("sort", $_ARGS)) {
-					$sortFields = str_replace("\\\"", "\"", $_ARGS['sort']);
-					$sortFields = json_decode($sortFields);
-					if (is_array($sortFields)) {
-						$args->sortList = getSortArgs($sortFields);
-					}
-					else	// sort is not an array.
-					{
-						return null;
-					}
-				}
-				if (array_key_exists("start", $_ARGS)) {
-					$start = $_ARGS['start'];
-					if (is_numeric($start)) {
-						$args->start = $start;
-					}
-				}
-				if (array_key_exists("count", $_ARGS)) {
-					$count = $_ARGS['count'];
-					if (is_numeric($count)) {
-						$args->count = $count;
-					}
-				}
 				break;
 
 			case "POST":
 				$_ARGS = $_POST;
 				
-				$args->attribute = null;
 				$args->newValue  = null;
 				
-				if( !array_key_exists("attribute", $_ARGS) || 
-						!array_key_exists("newValue", $_ARGS) || 
-						!array_key_exists("oldValue", $_ARGS) || 
+				if( !array_key_exists("newValue", $_ARGS) || 
 						!array_key_exists("path", $_ARGS)) {
-					return null;
-				}
-				if (is_string($_ARGS["attribute"])) {
-					$args->attribute = $_ARGS["attribute"];
-				} else {
 					return null;
 				}
 				if (is_string($_ARGS['newValue'])) {
@@ -646,16 +559,11 @@
 				} else {
 					return null;
 				}
-				if (is_string($_ARGS['oldValue'])) {
-					$args->oldValue = $_ARGS["oldValue"];
-				} else {
-					return null;
-				}
 				break;
 		} /* end switch($method) */
 
 		// Get authentication token. There are no restrictions with regards to the content
-		// of the object.
+		// of this object.
 		if (array_key_exists("authToken", $_ARGS)) {
 			$authToken = str_replace("\\\"", "\"", $_ARGS['authToken']);
 			$authToken = json_decode($authToken);
@@ -677,11 +585,13 @@
 		//	Check if a specific path is specified.
 		if (array_key_exists("path", $_ARGS)) {
 			if (is_string($_ARGS['path'])) {
-				$args->path = $_ARGS['path'];
+				$args->path = realURL($_ARGS['path']);
 			} else {
 				return null;
 			}
 		}
+		$args->path = trim( ("./" . $args->path), "/" );
+
 		$status = HTTP_V_OK;		// Return success
 		return $args;
 	}
@@ -691,27 +601,23 @@
 	*
 	*			Returns the content of a directory as an array of FILE_INFO objects.
 	*
-	*	@param	fullPath				Full path string (directory path)
+	*	@param	dirPath					Directory path string
 	*	@param	rootDir					Root directory
 	*	@param	args						HTTP QUERY-STRING arguments decoded.
 	*	@param	status					Receives the final result (200, 204 or 404).
 	*
 	*	@return		An array of FILE_INFO objects or NULL in case no match was found.
 	**/
-	function getDirectory( /*string*/$fullPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
-		if( ($dirHandle = opendir($fullPath)) ) {
+	function getDirectory( /*string*/$dirPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
+		if( ($dirHandle = opendir($dirPath)) ) {
 			$files = array();
 			$stat	 = 0;
 			while($file = readdir($dirHandle)) {
-				$fileInfo = fileToStruct( $fullPath, $rootDir, $file, $args );
+				$fileInfo = fileToStruct( $dirPath, $rootDir, $file, $args );
 				if (!fileFilter( $fileInfo, $args )) {
-					if ($fileInfo->directory && $args->deep) {
-						$path = $rootDir . "/" . $fileInfo->path;
-						$children = getDirectory( $path, $rootDir, $args, $stat );
-						if ($children && $args->sortList != null) {
-							usort($children, array($args->sortList, "fileCompare"));
-						}
-						$fileInfo->children = $children;
+					if (property_exists($fileInfo, "directory") && $args->deep) {
+						$subDirPath = $dirPath . "/" . $fileInfo->name;
+						$fileInfo->children = getDirectory( $subDirPath, $rootDir, $args, $stat );
 						$fileInfo->_EX      = true;
 					}
 					$files[] = $fileInfo;
@@ -732,30 +638,28 @@
 	*			If the designated file is a directory the directory content is returned
 	*			as the children of the file.
 	*
-	*	@param	fullPath				Full path string (file path)
+	*	@param	filePath				File path string
 	*	@param	rootDir					Root directory
 	*	@param	args						HTTP QUERY-STRING arguments decoded.
 	*	@param	status					Receives the final result (200, 204 or 404).
 	*
 	*	@return		An array of 1 FILE_INFO object or NULL in case no match was found.
 	**/
-	function getFile( /*string*/$fullPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
-		if( file_exists( $fullPath ) ) {
+	function getFile( /*string*/$filePath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
+		if( file_exists( $filePath ) ) {
 			$files 		= array();
-			$stat			= 0;
-			$segment  = strrchr( $fullPath, "/" );
-			$filename = substr( $segment, 1 );
-			$path     = substr( $fullPath, 0, (strlen($fullPath) - strlen($segment)) );
-			$fileInfo = fileToStruct( $path, $rootDir, $filename, $args );
+			$uri 			= parsePath( $filePath, $rootDir );
+			$fileInfo = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
 
 			if (!fileFilter( $fileInfo, $args )) {
-				if ($fileInfo->directory) {
-					$children = getDirectory( $fullPath, $rootDir, $args, $stat );
-					if ($children && $args->sortList != null) {
-						usort($children, array($args->sortList, "fileCompare"));
-					}
-					$fileInfo->children = $children;
+				if (property_exists($fileInfo, "directory")) {
+					$fileInfo->children = getDirectory( $filePath, $rootDir, $args, $status );
 					$fileInfo->_EX      = true;
+				}
+				// Don't give out details about the root directory.
+				if ($filePath === $rootDir) {
+					$fileInfo->name = ".";
+					$fileInfo->size = 0;
 				}
 				$files[] = $fileInfo;
 			}
@@ -767,173 +671,41 @@
 	}
 
 	/**
-	*		getMatch
+	*		parsePath
 	*
-	*			Returns an array of FILE_INFO objects that match ALL query arguments. Whenever
-	*			a deep (recursive) search is requested all sub-directories are searched and
-	*			any matching children are merged with the top-level matches. Therefore, the
-	*			list returned does NOT have a tree structure, instead it is a flat file list.
+	*			Helper function to normalize and seperate a URI into its components. This
+	*			is a simplified implementation as we only extract what may be needed.
 	*
-	*	@param	fullPath				Full path string (directory path)
+	*	@param	fullPath				Full path string
 	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 204 or 404).
 	*
-	*	@return		An array of FILE_INFO objects or NULL in case no match was found.
+	*	@return
 	**/
-	function getMatch( /*string*/$fullPath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
-		if( ($dirHandle = opendir($fullPath)) ) {
-			$files = array();
-			$stat	 = 0;
-			while($file = readdir($dirHandle)) {
-				$fileInfo = fileToStruct( $fullPath, $rootDir, $file, $args );
-				if (!fileFilter( $fileInfo, $args )) {
-					if (fileMatchQuery( $fileInfo, $args->query )) {
-						$files[] = $fileInfo;
-					}
-					if ($fileInfo->directory && $args->deep) {
-						$path = $rootDir . "/" . $fileInfo->path;
-						$subFiles = getMatch( $path, $rootDir, $args, $stat );
-						if( $subFiles ) {
-							$files = array_merge( $files, $subFiles );
-						}
-					}
-				}
-			}
-			$status = $files ? HTTP_V_OK : HTTP_V_NO_CONTENT;
-			closedir($dirHandle);
-			return $files;
-		}
-		$status = HTTP_V_NOT_FOUND;
-		return null;
-	}
-	
-	/**
-	*		getQueryArgs
-	*
-	*			Returns a query object containing an array of query arguments.   Parameter query
-	*			represents the JSON decoded 'query' argument of the HTTP QUERY-STRING. If a query
-	*			parameter value is a pattern string it is converted to a Perl Compatible Regular
-	*			Expression (PCRE)
-	*
-	*	@param	query						JSON decoded array of query arguments.
-	*	@param	ignoreCase			Indicates if regular expression are case insensitive.
-	*
-	*	@return		query object or null in case the query array was empty.
-	**/
-	function getQueryArgs( /*array*/$query, /*object*/$ignoreCase ) {
-		$keys  = array_keys($query);	
-		if (($total = count($keys))) {
-			$queryObj				 = new stdClass;
-			$queryObj->count = 0;
-			$queryObj->argm	 = array();
+	function parsePath ($fullPath, $rootDir) {
+		$fullPath = str_replace( "\\", "/", $fullPath );
+		$fullPath = realURL( $fullPath );
 		
-			for ($i = 0; $i < $total; $i++) {
-				$queryArgm 						= new stdClass;
-				$queryArgm->property	= $keys[$i];
-				
-				$propVal = $query[$queryArgm->property];
-				if (is_string($propVal)) {
-					$queryArgm->pattern = patternToRegExp($propVal, $ignoreCase);
-					$queryArgm->propVal = null;
-				} else {
-					$queryArgm->propVal = $propVal;
-					$queryArgm->pattern = null;
-				}
-				$queryObj->argm[] = $queryArgm;
-				$queryObj->count++;
-			}
-			return $queryObj;
-		}
-		return null;			// Empty query object
+		$lsegm    = strrpos($fullPath,"/");
+		$filename = substr( $fullPath, ($lsegm ? $lsegm + 1 : 0));
+		$dirPath  = substr( $fullPath, 0, $lsegm);
+			
+		$relPath  = substr( $fullPath, (strlen($rootDir)+1));
+		$relPath  = trim( ("./" . $relPath), "/" );
+
+		$uri 						= new stdClass();
+		$uri->relPath		= $relPath;
+		$uri->dirPath		= $dirPath;
+		$uri->filename	= $filename;
+		
+		return $uri;
 	}
 
 	/**
-	*		getSortArgs
+	*		realURL
 	*
-	*			Returns a sort object/class containing an array of valid sort arguments (fields).
+	*			Remove all dot (.) segment according to RFC-3986 $5.2.4
 	*
-	*	@param	sortFields			An array of sort field objects
-	*
-	*	@return		SortList object or null.
-	**/
-	function getSortArgs(/*array*/$sortFields) {
-		if (($total = count($sortFields))) {
-			$sortObj = new SortList;
-
-			for ($i = 0; $i < $total; $i++) {
-				$sortField = $sortFields[$i];
-				// The sort field object must have the 'attribute' property.
-				if (property_exists($sortField, "attribute")) {
-					$sortArgm	= new stdClass;
-					$sortArgm->property		= $sortField->attribute;
-					$sortArgm->descending = property_exists($sortField, "descending") ? $sortField->descending : false;
-					$sortArgm->ignoreCase = property_exists($sortField, "ignoreCase") ? $sortField->ignoreCase : false;
-
-					$sortObj->addSortArgm($sortArgm);
-				}
-			}
-			return ($sortObj->count ? $sortObj : null);
-		}
-		return null;
-	}
-
-	/**
-	*		patterToRegExp
-	*
-	*			Convert a pattern string to a Perl Compatible Regular Expression (PCRE).
-	*
-	*	@param	pattern					String containing the pattern string
-	*	@param	ignoreCase			Indicates if matching is case insensitive.
-	*
-	*	@return		Regular expression string.
-	**/
-	function patternToRegExp(/*String*/$pattern, /*Boolean*/ $ignoreCase){
-		$regExp = "";
-		$char 	= "";
-		$len		= strlen($pattern);
-
-		for ($i = 0; $i < $len; $i++) {
-			$char = $pattern[$i];
-			switch ($char) {
-				case '\\':
-					$regExp = $regExp.$char;
-					$i++;
-					$regExp = $regExp.$pattern[$i];
-					break;
-				case '*':
-					$regExp = $regExp.".*"; break;
-				case '?':
-					$regExp = $regExp."."; break;
-				case '$':
-				case '^':
-				case '/':
-				case '+':
-				case '.':
-				case '|':
-				case '(':
-				case ')':
-				case '{':
-				case '}':
-				case '[':
-				case ']':
-					$regExp = $regExp."\\";
-					/* NO BREAK HERE */
-				default:
-					$regExp = $regExp . $char;
-					break;
-			}
-		}
-		if ($ignoreCase) {
-			$regExp = "(^" . $regExp . "$)i";
-		} else {
-			$regExp = "(^" . $regExp . "$)";
-		}
-		return $regExp;
-	}
-
-	/**
-	/*	realURL
+	*	@param	path						Path string
 	**/
 	function realURL( $path ) {
 		$url = "";
@@ -984,100 +756,6 @@
 	}
 
 	/**
-	*		_removeDirectory
-	*
-	*			Delete a directory. The content of the directory is deleted after which
-	*			the directory itself is delete.
-	*
-	*	@param	fileList				Array of deleted files.
-	*	@param	filePath				Full path string
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 401 or 404).
-	**/
-	function _removeDirectory( &$fileList, $filePath, $rootDir, $args, &$status ) {
-		$files = getFile( $filePath, $rootDir, $args, $status );
-		if ($files) {
-			$directory = $files[0];
-			$childList = $directory->children;
-
-			// Set permission on the directory first.
-			chmod($filePath, 0777);
-
-			foreach($childList as $childInfo) {
-				_removeFile($fileList, $childInfo, $rootDir, $args, $status );
-			}
-			return @rmdir( $filePath );
-		}
-		$status = HTTP_V_NOT_FOUND;
-		return false;
-	}
-
-	/**
-	*		_removeFile
-	*
-	*			Delete a file or directory. If the file is a directory the content of the
-	*			directory is deleted resurcive. Deleted file(s) are added to the list of
-	*			deleted files 'fileList'
-	*
-	*	@param	fileList				Array of deleted files.
-	*	@param	fileInfo				FILE_INFO struct
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 401 or 404).
-	*
-	*	@return		True on success otherwise false.
-	**/
-	function _removeFile( &$fileList, $fileInfo, $rootDir, $args, &$status ) {
-		$filePath = $rootDir . "/" . $fileInfo->path;
-		$result   = false;
-		$status		= HTTP_V_OK;
-
-		if ($fileInfo->directory) {
-			$result = _removeDirectory( $fileList, $filePath, $rootDir, $args, $status );
-		} else {
-			chmod($filePath, 0666);
-			$result = @unlink($filePath);
-		}
-		if ($result) {
-			$fileList[] = $fileInfo;
-			$result			= true;
-		} else {
-			$status = HTTP_V_UNAUTHORIZED;
-		}
-		return $result;
-	}
-
-	/**
-	*		removeFile
-	*
-	*			Delete a file or directory. If the file is a directory the content of the
-	*			directory is deleted resurcive.
-	*
-	*	@param	fileInfo				FILE_INFO struct
-	*	@param	fullPath				Full path string (file path)
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 204 or 404).
-	*
-	*	@return		The list of delete files.
-	**/
-	function removeFile( $fileInfo, $rootDir, $args, &$status ) {
-		$status = HTTP_V_NO_CONTENT;
-		
-		if ($fileInfo) {
-			$fileList = array();
-
-			$args->showHiddenFiles = true;
-			$args->deep						 = false;
-
-			$result = _removeFile( $fileList, $fileInfo, $rootDir, $args, $status );
-			return $fileList;
-		}
-		return null;
-	}
-
-	/**
 	*		renameFile
 	*
 	*			Rename a file
@@ -1091,34 +769,19 @@
 	**/
 	function renameFile( $fullPath, $rootDir, $args, &$status ) {
 		$status = HTTP_V_OK;
-		$newPath;
 		
 		if( file_exists( $fullPath ) ) {
 			$fileList = array();
-			$segment  = strrchr( $fullPath, "/" );
-			$filename = substr( $segment, 1 );
-			$path     = substr( $fullPath, 0, (strlen($fullPath) - strlen($segment)) );
-
-			switch ($args->attribute) {
-				case STORE_C_IDENTIFIER:
-					$newPath = $rootDir."/".$args->newValue;
-					break;
-				case STORE_C_LABEL:
-					$newPath = $path."/".$args->newValue;
-					break;
-				default:
-					$status = HTTP_V_BAD_REQUEST;
-					return null;
-			}
-			$newPath = realURL( $newPath );
+			$newPath  = realURL($rootDir."/".realURL($args->newValue));
 
 			if (!strncmp($newPath, $rootDir, strlen($rootDir))) {
 				if (!file_exists( $newPath )) {
 					if (rename( $fullPath, $newPath )) {
-						$segment  	= strrchr( $newPath, "/" );
-						$filename 	= substr( $segment, 1 );
-						$path     	= substr( $newPath, 0, (strlen($newPath) - strlen($segment)) );
-						$fileList[] = fileToStruct( $path, $rootDir, $filename, $args );
+						$uri     = parsePath( $newPath, $rootDir );
+						$newFile = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
+
+						$newFile->oldPath = "./" . substr( $fullPath, (strlen($rootDir)+1));
+						$fileList[] = $newFile;
 					} else {
 						$status = HTTP_V_NOT_FOUND;
 					}
@@ -1131,79 +794,6 @@
 			return $fileList;			
 		}
 		return null;
-	}
-	
-	/**
-	*		SortList
-	*
-	*			The SortList class acts as a container of sort arguments. A sort argument is
-	*			an object identifying the file property to operate on, the sort order, that
-	*			is, ascending or descending and if the comparason is case insensitive.
-	*			
-	**/
-	class SortList {
-		var	$sortArgm	= array();
-		var	$count 		= 0;
-
-		/**
-		*		addSortArgm
-		*
-		*			Add a sort argument to the list of sort arguments.
-		*
-		*	@param	sortArgm
-		**/
-		function addSortArgm(/*object*/$sortArgm) {
-			$this->sortArgm[] = $sortArgm;
-			$this->count++;
-		}
-
-		/**
-		*		fileCompare
-		*
-		*			Compare file A and file B.   All sort arguments (fields) are tested until
-		*			a comparison test returns a non-zero value or there are no more arguments
-		*			left to test.
-		*
-		*	@param	fileA					File info object
-		*	@param	fileB					File info object
-		*
-		*	@return		-1, 0 or 1
-		**/
-		function fileCompare(/*object*/$fileA, /*object*/$fileB) {
-
-			$result = 0;
-
-			for ($i = 0; $i < $this->count && !$result; $i++) {
-				$sortArgm = $this->sortArgm[$i];
-				$property = $sortArgm->property;
-
-				$valA = (property_exists($fileA, $property) ? $fileA->$property : null);
-				$valB = (property_exists($fileB, $property) ? $fileB->$property : null);
-
-				if (is_string($valA) && is_string($valB)) {
-					if ($sortArgm->ignoreCase) {
-						$result = strcasecmp($valA, $valB);
-					} else {
-						$result = strcmp($valA, $valB);
-					}
-				} 
-				else	// valA and/or valB is not a string
-				{
-					if($valA !== null || $valB !== null) {
-						if($valB === null || $valA > $valB ) {
-							$result = 1;
-						} else if($valA === null || $valA < $valB ) {
-							$result = -1;
-						}
-					}
-				}
-				if ($sortArgm->descending == true) {
-					$result = $result * -1;
-				}
-			}
-			// Normalize the result returned.
-			return ($result ? ($result > 0 ? 1: -1): 0);
-		}
 	}
 
 ?>

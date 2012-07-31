@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\PCRE"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\..\PCRE\pcre.lib"
+				Version="1.1"
 				LinkIncremental="1"
 				GenerateManifest="true"
 				GenerateDebugInformation="true"
@@ -120,7 +120,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\PCRE"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
@@ -141,8 +141,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\..\PCRE\pcre.lib"
-				Version="0.9.1"
+				Version="1.1"
 				LinkIncremental="1"
 				GenerateManifest="true"
 				GenerateDebugInformation="false"
@@ -171,7 +170,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) ..\..\bin\$(TargetName).cgi&#x0D;&#x0A;copy ..\..\PCRE\pcre.dll ..\..\bin&#x0D;&#x0A;"
+				CommandLine="copy $(TargetPath) ..\..\bin\$(TargetName).cgi&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
