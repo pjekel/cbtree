@@ -16,18 +16,21 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/event",
 	"dojo/_base/lang", 
-	"dojo/_base/window",
 	"dojo/DeferredList",
 	"dojo/dom-construct",
-	"dojo/dom-prop",
 	"dojo/text!./templates/cbtreeNode.html",
 	"dijit/_Container",
 	"dijit/registry",
 	"dijit/Tree",
 	"./CheckBox"
-], function (array, declare, event, lang, win, DeferredList, domConstruct, domProp, NodeTemplate, _Container, registry, Tree, 
-							CheckBox) {
+], function (array, declare, event, lang, DeferredList, domConstruct, 
+							NodeTemplate, _Container, registry, Tree, CheckBox) {
 
+	// module:
+	//		cbtree/Tree
+	// Note:
+	//		This implementation is compatible with dojo 1.7.x
+	
 	var TreeNode = declare([Tree._TreeNode], {
 		// templateString: String
 		//		Specifies the HTML template to be used.
