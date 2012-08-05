@@ -461,13 +461,15 @@
 		$fileInfo							= new stdClass();
 		$fileInfo->name 			= $filename;
 		$fileInfo->path				= $relPath;
-		$fileInfo->size 			= filesize($fullPath);
 		$fileInfo->modified 	= $atts[9];
 
 		if (is_dir($fullPath)) {
 			$fileInfo->directory = true;
 			$fileInfo->children  = array();
 			$fileInfo->_EX       = false;
+			$fileInfo->size      = 0;
+		} else {
+			$fileInfo->size      = filesize($fullPath);
 		}
 		return $fileInfo;
 	}
