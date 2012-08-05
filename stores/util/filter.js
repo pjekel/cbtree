@@ -13,7 +13,7 @@ define (["dojo/_base/lang"
 		//	description:
 		//		Returns a regular expression object that conforms to the defined conversion
 		//		rules. If the pattern string is enclosed in brackets the string without the
-		//		outer brackets is treated as a regular expression, convertion takes place.
+		//		outer brackets is treated as a regular expression, no convertion takes place.
 		//
 		//		For example:
 		//			ca*   -> /^ca.*$/

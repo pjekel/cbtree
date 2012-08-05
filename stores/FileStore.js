@@ -53,12 +53,12 @@ define(["dojo/_base/array",
 	//			Please refer to the File Store documentation for details on the Server Side
 	//			Application. (cbtree/documentation/FileStore.md)
 
-	var C_STORE_REF_PROP = "_S";   // Default name for the store reference to attach to every item.
-	var C_STORE_ROOT     = "_SR";  // Identifies a store item as the store root. (only one allowed).
-	var C_PARENT_REF     = "_PRM"; // Default attribute for constructing a parent reference map.
-	var C_ITEM_EXPANDED  = "_EX";  // Attribute indicating if a directory item is fully expanded.
+	var C_STORE_REF_PROP = "_S";       // Default name for the store reference to attach to every item.
+	var C_STORE_ROOT     = "_SR";      // Identifies a store item as the store root. (only one allowed).
+	var C_PARENT_REF     = "_PRM";     // Default attribute for constructing a parent reference map.
+	var C_ITEM_EXPANDED  = "_EX";      // Attribute indicating if a directory item is fully expanded.
 	var C_CHILDREN_ATTR  = "children";
-	var C_PATH_ATTR      = "path";
+	var C_PATH_ATTR      = "path";     // Path attribute (used as the identifier)
 	
 	var FileStore = declare([Evented],{
 		constructor: function (/*Object*/ args) {
@@ -265,22 +265,23 @@ define(["dojo/_base/array",
 						if (keywordArgs.onComplete) {
 							keywordArgs.onComplete.call(scope, items);
 						}
-						self._handleQueuedRequest();
-					}catch(error) {
+					} catch (error) {
 						self._loadInProgress = false;
 						if (keywordArgs.onError) {
 							keywordArgs.onError.call(scope, error);
 						}	else {
-							throw error;
+							console.error(error);
 						}
 					}
+					self._handleQueuedRequest();
 				});
 				delHandler.addErrback(function (error) {
 					self._loadInProgress = false;
 					switch(delArgs.status) {
 						case 404:		// Not Found
 						case 410:		// Gone
-							self._deleteFromStore(item, true);
+							// item was already deleted on the server
+							self._resyncStore(item, true);
 							break;
 						case 400:		// Bad Request
 						case 405:		// Method Not Allowed
@@ -291,11 +292,12 @@ define(["dojo/_base/array",
 							}
 							break;
 					}
+					self._handleQueuedRequest();
 				});
 			}
 		},
 
-		_deleteFromStore: function (/*item*/ item, /*Boolean*/ onDeleteCall) {
+		_deleteFromStore: function (/*item*/ item, /*Boolean*/ onSetCall) {
 			// summary:
 			//		Delete an item from the store. This function is internal to the store.
 			// item:
@@ -331,7 +333,7 @@ define(["dojo/_base/array",
 			item["deleted"]        = true;
 			delItems.push(item);
 
-			this._setValues(parent, C_CHILDREN_ATTR, siblings, onDeleteCall);
+			this._setValues(parent, C_CHILDREN_ATTR, siblings, onSetCall);
 			this.onDelete(item);
 			return delItems;
 		},
@@ -548,6 +550,7 @@ define(["dojo/_base/array",
 
 		_renameItem: function (/*Object*/ keywordArgs) {
 			// summary:
+			//		Rename a file on the back-end server.
 			// keywordArgs:
 			// tag:
 			//		Private
@@ -572,21 +575,28 @@ define(["dojo/_base/array",
 						if (keywordArgs.onItem) {
 							keywordArgs.onItem.call(scope, self._getItemByIdentity(newPath));
 						}
-						self._handleQueuedRequest();
 					} catch(error) {
 						self._loadInProgress = false;
 						if (keywordArgs.onError) {
 							keywordArgs.onError(error);
+						} else {
+							console.error( error );
 						}
-						throw error;
 					}
+					self._handleQueuedRequest();
 				});
 				postHandler.addErrback(function (error) {
 					self._loadInProgress = false;
-					// Delete item if not found but was previously known.
+					switch(postArgs.status) {
+						case 404:		// Not Found
+						case 410:		// Gone
+							self._resyncStore(item);
+							break;
+					}
 					if (keywordArgs.onError) {
 						keywordArgs.onError.call(scope, error, postArgs.status);
 					}
+					self._handleQueuedRequest();
 				});
 			}
 		},
@@ -649,6 +659,38 @@ define(["dojo/_base/array",
 									sync: sync }
 
 			return xhrArgs;
+		},
+
+		_resyncStore: function (/*item*/) {
+			// summary:
+			//		Resynchronize the store. Whenever a XHR request on an existing store item
+			//		returns the HTTP status codes 404 or 410 it is an indication the store is
+			//		out of sync.  This can happen when the file system on the back-end server
+			//		changed due to other processes.
+			//		To resynchronize the store an attempt is made to reload the parent of the
+			//		failed item  so any other changes to the parent directory are captured at
+			// 		the same time.   This process is recursive until a parent in the upstream
+			//		chain is successfully reloaded, in which case _updateFileStore(), called
+			//		by loadItem, will take care of the cleanup process OR until the failing
+			//		item has no parent. In the latter case it basically means the stores root
+			//		directory has been deleted or the File Store is corrupt.
+			// item:
+			//		Store item that returned a 404 or 410 HTTP status code.
+			// tag:
+			//		Private
+			var parent = this.getParents(item)[0];
+			
+			if (parent) {
+				var request = { item: parent, forceLoad: true };
+				this.loadItem( request );
+			} else {
+				// Regardless of the condition, we can't recover from this.
+				if (item === this._rootDir) {
+					throw new Error(this.moduleName+"::_resyncStore(): Store root directory failed to reload.");
+				} else {
+					throw new Error(this.moduleName+"::_resyncStore(): File Store is corrupt.");
+				}
+			}
 		},
 
 		_setAuthTokenAttr: function (/*Object*/ token) {
@@ -821,7 +863,7 @@ define(["dojo/_base/array",
 				return newDir;
 			}
 		
-			function mergeFiles (/*item*/ storeItem , /*raw_item*/ servItem) {
+			function mergeFiles (/*item*/ storeItem , /*raw_item*/ servItem, /*Boolean*/ onSetCall) {
 				// summary:
 				//		Merge item information received from the server with an existing item
 				//		in the in-memory store. If an items properties have changed an onSet()
@@ -830,20 +872,27 @@ define(["dojo/_base/array",
 				//		Existing item in the store.
 				// servItem:
 				//		Update (raw) item received from the server.
+				// onSetCall:
+				//		Indicates if onSet() should be called when a property changed.
 				// return:
 				//		Returns true if any of the store item properties have changed.
 				var hasChanged = false;
 				var empty = {};
-				var newVal;
+				var newVal, oldValue;
 				var name;
 				// Merge non-children properties first.
 				for (name in servItem) {
 					if (name != C_CHILDREN_ATTR && name != C_ITEM_EXPANDED) {
 						newVal = servItem[name];
-						if(!(name in storeItem) || (storeItem[name] !== newVal && (!(name in empty) || empty[name] !== newVal))) {
+						if(!(name in storeItem) || (storeItem[name] !== newVal && (!(name in empty) || 
+								empty[name] !== newVal))) {
+
 							// Signal if property value changed.
-							self.onSet(storeItem, name, storeItem[name], newVal);
+							oldValue = storeItem[name];
 							storeItem[name] = newVal;
+							if (onSetCall) {
+								self.onSet(storeItem, name, oldValue, newVal);
+							}
 							hasChanged = true;
 						}
 					}
@@ -1019,10 +1068,13 @@ define(["dojo/_base/array",
 					file = null;
 				}
 				if (file) {
-					mergeFiles(file, item);
+					mergeFiles(file, item, true);
 				} else {
 					if (item.directory) {
+						// Create a new directory but don't fire any onSet() events while
+						// merging the data.
 						file = makeDirectory(newPath);
+						mergeFiles(file, item, false);
 					} else {
 						file = newFile(item, directory, true);
 					}
@@ -1200,7 +1252,6 @@ define(["dojo/_base/array",
 			var scope        = keywordArgs.scope || window.global;
 			var queryOptions = keywordArgs.queryOptions || null;
 			var storeOnly    = queryOptions ? queryOptions.storeOnly : false;
-			var deep         = queryOptions ? queryOptions.deep : false;
 			var oper         = "GET";
 			var self         = this;
 
@@ -1221,23 +1272,24 @@ define(["dojo/_base/array",
 							self._updateFileStore(oper, data, keywordArgs);
 							self._loadInProgress = false;
 							self._fetchFinal(keywordArgs, self._getItemsArray(queryOptions));
-							self._handleQueuedRequest();
 						} catch(error) {
 							self._loadInProgress = false;
 							if (keywordArgs.onError) {
 								keywordArgs.onError.call(scope, error);
 							} else {
-								throw error;
+								console.error(error);
 							}
 						}
+						self._handleQueuedRequest();
 					});
 					getHandler.addErrback(function (error) {
 						self._loadInProgress = false;
 						if (keywordArgs.onError) {
 							keywordArgs.onError.call(scope, error, getArgs.status);
 						} else {
-							throw error;
+							console.error(error);
 						}
+						self._handleQueuedRequest();
 					});
 				}
 			}
@@ -1283,15 +1335,17 @@ define(["dojo/_base/array",
 			//		See dojo/data/api/Identity.js
 			// tag:
 			//		Public
-			var scope = keywordArgs.scope || window.global;
-			var path  = keywordArgs.identity || keywordArgs[C_PATH_ATTR];
-			var oper  = "GET";
-			var self  = this;
+			var scope        = keywordArgs.scope || window.global;
+			var path         = keywordArgs.identity || keywordArgs[C_PATH_ATTR];
+			var queryOptions = keywordArgs.queryOptions || null;
+			var storeOnly    = queryOptions ? queryOptions.storeOnly : false;
+			var oper         = "GET";
+			var self         = this;
 			var item;
 
 			// Check store in case it already exists.
 			item = this._getItemByIdentity(path);
-			if (this.cache && this._loadFinished) {
+			if ((this.cache || storeOnly) && this._loadFinished) {
 				if (item) {
 					if (keywordArgs.onItem) {
 						keywordArgs.onItem.call(scope, item);
@@ -1315,31 +1369,31 @@ define(["dojo/_base/array",
 							item = self._getItemByIdentity(path);
 							keywordArgs.onItem.call(scope, item);
 						}
-						self._handleQueuedRequest();
 					} catch(error) {
 						self._loadInProgress = false;
 						if (keywordArgs.onError) {
 							keywordArgs.onError.call(scope, error);
 						} else {
-							throw error;
+							console.error(error);
 						}
 					}
+					self._handleQueuedRequest();
 				});
 				getHandler.addErrback(function (error) {
 					self._loadInProgress = false;
-					if (getArgs.status == 404) {
-						if (keywordArgs.onItem) {
-							keywordArgs.onItem.call(scope, null);
-						}
-						// If item was found in the store but not on the server, delete it.
-						if (item) {
-							self._deleteFromStore(item, true);
-						}
-					} else {
-						if (keywordArgs.onError) {
-							keywordArgs.onError.call(scope, error, getArgs.status);
-						}
+					switch (getArgs.status) {
+						case 404:
+						case 410:
+							if (item) {
+								self._resyncStore( item );
+							}
+							// NO BREAK HERE
+						default:
+							if (keywordArgs.onError) {
+								keywordArgs.onError.call(scope, error, getArgs.status);
+							}
 					}
+					self._handleQueuedRequest();
 				});
 			}
 		},
@@ -1596,6 +1650,9 @@ define(["dojo/_base/array",
 			var oper         = "GET";
 			var self         = this;
 			
+			if (!this.isItem(item)) {
+				return;
+			}
 			if (forceLoad !== true) {
 				if (this.isItemLoaded(item)) {
 					return;
@@ -1618,24 +1675,32 @@ define(["dojo/_base/array",
 							item = self._getItemByIdentity(path);
 							keywordArgs.onItem.call(scope, item);
 						}
-						self._handleQueuedRequest();
 					}catch(error) {
 						self._loadInProgress = false;
 						if (keywordArgs.onError) {
 							keywordArgs.onError(error);
+						} else {
+							console.error(error);
 						}
-						throw error;
 					}
+					self._handleQueuedRequest();
 				});
 				getHandler.addErrback(function (error) {
 					self._loadInProgress = false;
 					// Delete item if not found but was previously known.
-					if(getArgs.status == 404 && item) {
-						self._deleteFromStore(item, true);
+					if (item !== self._rootDir) {
+						switch (getArgs.status) {
+							case 404:
+							case 410:
+								// File Store is out of sync....
+								self._resyncStore(item);
+								break;
+						}
 					}
 					if (keywordArgs.onError) {
 						keywordArgs.onError.call(scope, error, getArgs.status);
 					}
+					self._handleQueuedRequest();
 				});
 			}
 		},
@@ -1730,15 +1795,17 @@ define(["dojo/_base/array",
 			this._assertIsItem(item);
 			this._assertIsAttribute(newPath, "renameItem");
 			
-			if (item[C_PATH_ATTR] !== newPath) {
-				// Create an arguments object so we can queue and defer the request if required.
-				var keywordArgs = { item: item, newValue: newPath, onItem: onItem, onError: onError, 
-														 scope: scope };
-				this._renameItem(keywordArgs);
-			} else {
-				if (lang.isFunction(onItem)) {
-					onItem.call(scope, item);
-				}	
+			if (item != this._rootDir) {
+				if (item[C_PATH_ATTR] !== newPath) {
+					// Create an arguments object so we can queue and defer the request if required.
+					var keywordArgs = { item: item, newValue: newPath, onItem: onItem, onError: onError, 
+															 scope: scope };
+					this._renameItem(keywordArgs);
+				} else {
+					if (lang.isFunction(onItem)) {
+						onItem.call(scope, item);
+					}	
+				}
 			}
 		},
 
@@ -1854,12 +1921,12 @@ define(["dojo/_base/array",
 			//		callback.
 		},
 
-		onDelete: function (/*item*/ deletedItem) {
+		onDelete: function (/*item*/ item) {
 			// summary: 
 			//		See dojo.data.api.Notification.onDelete()
 			// tag:
 			//		Callback
-			var parent = deletedItem[C_PARENT_REF];
+			var parent = item[C_PARENT_REF];
 			if (parent && parent[C_STORE_ROOT]) {
 				this.onRoot(item, "delete");
 			}
