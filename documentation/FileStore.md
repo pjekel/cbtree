@@ -7,7 +7,7 @@ and the HTTP back-end server aplication *cbtreeFileStore.php* or *cbtreeFileStor
 and is dynamically loaded by issueing HTTP GET requests to the back-end server
 serving the active HTML page.
 
-Please note that the HTTP GET, DELETE and POST methods are support but only GET is enabled 
+Please note that the HTTP GET, DELETE and POST methods are supported but only GET is enabled 
 by default. See the Server Side Application [configuration](#server-side-configuration) for
 details.
 
@@ -47,8 +47,9 @@ page you must configure a so-called HTTP proxy server. (**HTTP server configurat
 scope of this document**).
 
 The content of the in-memory File Store in treated as read-only, as a result, you can not change
-file properties such as the name or path. You can however, using the setValue() or setValues() 
-methods, add custom attribute/properties to any item in the store which will be writeable.
+file properties such as the name or path using *setValue()*. To rename a file use rename() instead. 
+You can however use the setValue() or setValues() methods to add custom attribute/properties to
+items in the store which will be writeable.
 For example, the CheckBox Tree FileStoreModel adds a property called 'checked' to each item 
 in the store. Custom attributes/properties are not stored on the back-end server, as soon as
 you application terminates the custom attributes, and their values, are lost. 
@@ -74,7 +75,7 @@ The primary selection criteria are:
 
 If your server only support PHP or CGI but not both the choice is simple. If, on the other hand, 
 both are supported and your application requires a full store load, that is, load all available
-information up-front like with the FileStoreModel that has strict parent-child relationship enabled, 
+information up-front like with the TreeStoreModel that has strict parent-child relationship enabled, 
 than the last question will determine the final outcome. If you operate on a large file system with
 10,000+ files it is highly recommended you use the ANSI-C CGI implementation.
 
@@ -135,10 +136,10 @@ Below you'll find the ABNF notation for the server request and response.
 
 ##### Response: #####
 
-	response	  ::= '[' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list ']'
+	response	  ::= '{' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list '}'
 	totals 		  ::= '"total"' ':' number
 	status		  ::= '"status"' ':' status-code
-	status-code	  ::=	'200' | '204'
+	status-code	  ::=	'200' | '204' | '401'
 	identifier	  ::= '"identifier"' ':' quoted-string
 	label		  ::= '"label"' ':' quoted-string
 	file-list	  ::= '"items"' ':' '[' file-info* ']'
@@ -156,7 +157,7 @@ Below you'll find the ABNF notation for the server request and response.
 	number		  ::= DIGIT+
 	DIGIT		  ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
-Please refer to [http://json.org/](http://json.org/) for the JSON encoding rules.
+Please refer to [http://json.org/](http://json.org/) for the proper JSON encoding rules.
 
 
 <h2 id="server-side-configuration">Server Side Configuration</h2>
@@ -168,7 +169,7 @@ CBTREE_BASEPATH
 
 > The basePath is a URI reference (rfc 3986) relative to the server's document root used to
 > compose the root directory.  If this variable is set it overwrites the basePath parameter
-> in any query string and therefore becomes the server wide basepath.
+> in any HTTP query string and therefore becomes the server wide basepath.
 
 	CBTREE_BASEPATH /system/wide/path
 
@@ -268,14 +269,11 @@ arguments to the File Store constructor.
 #### cache: ####
 > Boolean (false)
 
-#### childrenAttr: ####
-> String ("children"), The attribute/property name of an item that specify that items children.
-> Children in the context of the file store represent the content of a directory.
-
 #### clearOnClose: ####
 > Boolean (false), ClearOnClose allows the users to specify if a close call should force
 > a reload or not. If set true, the store will be reset to default state.  Note that by doing
-> this, all item handles will become invalid and a new fetch must be issued.
+> this, all item handles will become invalid and a new fetch must be issued. Care should be
+> taken when multiple models operate on the same store.
 
 #### failOk: ####
 > Boolean (false), Specifies if it is OK for the XHR calls to fail silently. If false
@@ -295,10 +293,76 @@ arguments to the File Store constructor.
 > String (""), The public URL of the Server Side Application serving the File Store.  
 > For example: **http://MyServer/cgi-bin/cbtreeFileStore.cgi**
 
+<h2 id="querying-the-store">Querying the Store</h2>
+
+#### The Query Argument ####
+Several store operations provide support for a *query* attribute as part of the *keywordArgs*
+parameter. The query attribute is a JavaScript 'name:value' pairs type object. 
+The value can be any data type that is allowed in a JavaScript conditional
+test. By default, string values or interpreted as simple pattern strings which will be converted
+ into regular expressions. If however, the string value is enclosed in brackets the outer most
+ brackets are removed and the remainder is treated as a literal regular expression. 
+
+For example, in the following query: {name:"ab\*"}, the pattern string "ab\*" translates into the
+regular expression: /^ab.\*$/  
+Other pattern string conversion samples are:
+
+<table border="1">
+  <thead>
+	  <th style="width:150px;">Pattern</th> <th style="width:200px;">Regular Expression</th>
+  </thead>
+  <tbody>
+	  <tr> <td>*ab*</td> <td>/^.*ab.*$/</td> </tr>
+	  <tr> <td>*a\*b*</td> <td>/^.*a\*b.*$/</td> </tr>
+	  <tr> <td>*a\*b?*</td> <td>/^.*a\*b..*$/</td> </tr>
+  </tbody>
+</table>
+
+In case of a query like: {path:(^\\.\\/ab[^\\/]\*$)}, the path value (^\\.\\/ab[^\\/]\*$) will be 
+treated as a literal regular expression: /^\\.\\/ab[^\\/]\*$/ and no convertion is applied.
+
+#### The Query Options ####
+In addition to the query argument you can specify query options as part of the *keywordArgs* parameter.
+The options influence both the behavour of the Server Side Application and the File Store itself.
+
+<table border="1">
+  <thead>
+	  <th style="width:15%;">Option</th> <th style="width:auto;">Description</th>
+  </thead>
+  <tbody>
+	<tr> 
+	  <td style="vertical-align:top">deep</td> 
+	  <td>
+		If <strong>true</strong>, forces the File Store to perform a deep search including all 
+		available items in the search. If query option <i>storeOnly</i> is false all items
+		relative to the path property in <i>keywordArgs</i> will be fetched from the back-end server.
+		if query option <i>deep</i> is <strong>false</strong> only the immediate children of the 
+		base path are included in the search. (the content of the root directory)
+	  </td>
+	</tr>
+	<tr> 
+	  <td style="vertical-align:top">ignoreCase</td> 
+	  <td>
+		If <strong>true</strong>, any regular expression will match strings case insensitive.
+	  </td> 
+	</tr>
+	<tr>
+	  <td style="vertical-align:top">storeOnly</td>
+	  <td>
+		If <strong>true</strong>, limits the search to items currently loaded in the in memory store 
+		otherwise, depending on the other <i>keywordArgs</i> parameters, data may be fetched from the back-end
+		server before the actual search is executed.
+	  </td>
+	</tr>
+  </tbody>
+</table>
+
+
+
 <h2 id="fancy-tree-styling">Fancy Tree Styling</h2>
 
-The Server Side Applications support the option *iconClass* which will tell them to include a CSS
-classname for each file. The classname is based on the file extension. If the *iconClass* option is
+The File Store supports the option *iconClass* which will force it to include a CSS icon
+classname for each store item (file). The classname is based on the file extension. If the *iconClass* option is
 set two css classnames are included in the server response and are formatted as follows:
 
 	classname ::= 'fileIcon' fileExtension WSP 'fileIcon'
@@ -321,9 +385,9 @@ icons. The css definitions for these icon sets must be loaded explicitly, load e
 
     <link rel="stylesheet" href="/js/dojotoolkit/cbtree/icons/fileIconsMS.css" />
 
-The included icon sprites and CCS definitions serve as an example only, they certainly do not cover all
-possible file extensions. Also the Server Side Application only looks at the file extension when generating
-the classname and does not look at the files content type.
+The icon sprites and CCS definitions included in the package serve as an example only, they certainly do
+not cover all possible file extensions. Also the File Store only looks at the file extension when
+generating the classname and does not look at the files content type.
 
 ### Prerequisites ###
 To enable and use the Fancy Tree Styling in your applications the following requirements must be met:
@@ -331,7 +395,7 @@ To enable and use the Fancy Tree Styling in your applications the following requ
 * The Tree Styling extension must have been loaded. (cbtree/TreeStyling.js)
 * A set of icons or an icon sprite must be available.
 * A CSS definitions file must be available and loaded.
-* The FileStoreMode and optionally the tree must be configured for icon support.
+* The FileStoreModel and optionally the tree must be configured for icon support.
 
 At the end of this document you can find a complete example of an application using the *Fancy Tree Styling*.
 
@@ -638,7 +702,10 @@ Unset an items attribute/property. Unsetting an attribute will remove the attrib
 *deleteItem:* store.item
 > A valid file.store item.
 
-#### onLoaded() ####
+#### onLoad( count ) ####
+
+*count:* Number
+> The number of store items that have been successfully loaded.
 
 #### onNew( newItem, parentInfo) ####
 

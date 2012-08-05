@@ -79,7 +79,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
 > the *query* argument is a string, the value is used to match store items
-> identifier.
+> identifier. (See [The Query Paramater](#the-query-parameter) for more details).
 
 *onComplete:* Function (optional)
 > If an onComplete callback is specified, the callback function will be called
@@ -114,7 +114,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
 > the *query* argument is a string, the value is used to match store items
-> identifier.
+> identifier. (See [The Query Paramater](#the-query-parameter) for more details).
 
 *identAttr:* String (optional)
 > Attribute/property name. If specified AND parameter *query* is an object,
@@ -130,7 +130,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
 > the *query* argument is a string, the value is used to match store items
-> identifier.
+> identifier. (See [The Query Paramater](#the-query-parameter) for more details).
 
 *onComplete:* Function (optional)
 > If an onComplete callback is specified, the callback function will be called
@@ -250,7 +250,7 @@ You can test the availability of the Store Model API using the command `has("cbt
 *query:* Object | String
 > A JavaScript object as a set of JavaScript 'property name: value' pairs. If
 > the *query* argument is a string, the value is used to match store items
-> identifier.
+> identifier. (See [The Query Paramater](#the-query-parameter) for more details).
 
 *onComplete:* Function (optional)
 > If an onComplete callback is specified, the callback function will be called
@@ -269,6 +269,32 @@ You can test the availability of the Store Model API using the command `has("cbt
 > If the store model property *checkedStrict* is enabled this parameter will be automatically 
 > set to *true*.  
 > See *fetchItemsWithChecked()* for details.
+
+
+<h2 id="the-query-parameter">The Query Parameter</h2>
+
+The query parameter is a JavaScript 'name:value' pairs type object. The value can be any data
+type that is allowed in a JavaScript conditional test. In general, string values or interpreted
+as simple pattern strings which will be converted into regular expressions.
+
+For example, in the following query: {name:"ab\*"}, the pattern string "ab\*" translates into the
+regular expression: /^ab.\*$/  
+Other pattern string conversion samples are:
+
+<table border="0">
+  <thead>
+	  <th style="width:150px;">Pattern</th> <th style="width:200px;">Regular Expression</th>
+  </thead>
+  <tbody>
+	  <tr> <td>*ab*</td> <td>/^.*ab.*$/</td> </tr>
+	  <tr> <td>*a\*b*</td> <td>/^.*a\*b.*$/</td> </tr>
+	  <tr> <td>*a\*b?*</td> <td>/^.*a\*b..*$/</td> </tr>
+  </tbody>
+</table>
+
+The above applies to almost all dojo stores however, some stores also provide ways to pass
+literal regular expressions. For example, the [File Store](FileStore.md#querying-the-store)
+support such feature by enclosing the string value in brackets.
 
 <h2 id="sample-application">Sample Application</h2>
 ****************************************

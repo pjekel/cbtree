@@ -121,11 +121,22 @@ section:
 	    <th>Description</th>
 	  </tr>
 	</thead>
-    <tr>
+    <tr style="vertical-align:top">
       <td>cbtree-v09.0-0</td>
       <td>May-20 2012</td>
       <td>1.7</td>
       <td>Initial cbtree-AMD release</td>
+    </tr>
+    <tr style="vertical-align:top">
+      <td>cbtree-v09.1-0</td>
+      <td>Aug-06 2012</td>
+      <td>1.7</td>
+      <td>
+		A new File Store and File Store Model have been added.<br/>
+		New and updated demos.<br/>
+		Updated documentation.<br/>
+		Minor software updates.
+      <td>
     </tr>
   </tbody>
 </table>
