@@ -301,7 +301,7 @@ define([
 		},
 
 		newItem: function(/* dojo.dnd.Item */ args, /*Item*/ parent, /*int?*/ insertIndex, /*String?*/ childrenAttr){
-			throw new Error(this.moduleName+"newItem(): Operation not allowed on a File Store.");
+			throw new Error(this.moduleName+"::newItem(): Operation not allowed on a File Store.");
 		},
 
 		pasteItem: function (/*dojo.data.item*/ childItem, /*dojo.data.item*/ oldParentItem, /*dojo.data.item*/ newParentItem, 
