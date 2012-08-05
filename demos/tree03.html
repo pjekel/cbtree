@@ -1,6 +1,7 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<!DOCTYPE html>
+<html>
   <head> 
+		<meta charset="utf-8">
     <title>Dijit CheckBox Tree using the cbtree API</title>     
 
      <style type="text/css">
@@ -389,6 +390,7 @@
                   autoExpand: true
                   });
           tree.placeAt( "CheckboxTree" );
+          tree.startup();
           
           dom.byId("codeSegm").innerHTML = html[0];
           
@@ -414,7 +416,7 @@
         </div>
         <div style="margin:5px;">
           <p>Demonstrate the use of Store Model and Tree Styling API's.</p>
-          <button id="but" data-dojo-type="dijit.form.Button" type="button" value=0 onClick="buttonClicked(value);">Continue</button>
+          <button id="but" data-dojo-type="dijit.form.Button" type="button" value="0" onClick="buttonClicked()">Continue</button>
         </div>
       </div>
     </div>

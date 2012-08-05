@@ -1,6 +1,7 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<!DOCTYPE html>
+<html>
   <head> 
+		<meta charset="utf-8">
     <title>CheckBox Tree with third party widget </title>     
 <!--
   This demo uses a third party widget 'TriStateCheckbox' instead of the default
@@ -62,6 +63,7 @@
                   widget: { type: TriStateCheckBox, args: { states:['mixed', true, false] }}
                   });
           tree.placeAt( "CheckboxTree" );
+          tree.startup();
         });
       </script>
     </div>
