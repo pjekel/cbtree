@@ -9,7 +9,8 @@ to create the tree using markup please refer to the /tests directory.
 * tree04.html - Use third party widget instead of the cbtree Multi State CheckBox
 * tree05.html - Use ToggleButton widget instead of the cbtree Multi State CheckBox
 
-***NOTE:*** The following examples require PHP support on your server.
+***NOTE:*** The following three examples require PHP support on your server. In addition, tree12.html
+requires DOJOX to be installed.
 
 * tree10.html - A CheckBox Tree using the cbtree File Store.
 * tree11.html - CheckBox Tree using the cbtree File Store and Fancy Icons.

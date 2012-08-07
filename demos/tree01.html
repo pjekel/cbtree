@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head> 
-		<meta charset="utf-8">
+    <meta charset="utf-8">
     <title>Dijit Tree with Checkboxes </title>     
     <style type="text/css">
       @import "../../dijit/themes/claro/claro.css";
@@ -25,22 +25,18 @@
     </script>
 
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
-
-  </head>
-    
-  <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
-    <div id="CheckboxTree">  
-      <script type="text/javascript">
-
+    <script type="text/javascript">
       require([
         "dojo/_base/connect",
         "dojo/data/ItemFileWriteStore",
+        "dojo/ready",
         "cbtree/Tree",                    // Checkbox tree
         "cbtree/TreeStyling",              // Tree styling extensions
         "cbtree/models/ForestStoreModel"  // ForestStoreModel
-        ], function( connect, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel) {
+        ], function( connect, ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel) {
 
+          var store, model, tree;
+          
           function checkBoxClicked( item, nodeWidget, evt ) {
             var newState = nodeWidget.get("checked" );
             var label    = this.getLabel(item);
@@ -55,8 +51,8 @@
             alert( "The new state for " + label + " is: " + newState );
           }
 
-          var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
-          var model = new ForestStoreModel( {
+          store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
+          model = new ForestStoreModel( {
                   store: store,
                   query: {type: 'parent'},
                   rootLabel: 'The Family',
@@ -65,20 +61,26 @@
                   checkedState: true,
                   checkedStrict: true
                   }); 
-          var tree = new Tree( {
-                  model: model,
-                  id: "MenuTree",
-                  branchReadOnly: false,
-                  branchIcons: true,
-                  nodeIcons: true
-                  });
-          tree.placeAt( "CheckboxTree" );
-          tree.startup();
 
-          connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
-
+          ready(function() {
+            tree = new Tree( {
+                    model: model,
+                    id: "MenuTree",
+                    branchReadOnly: false,
+                    branchIcons: true,
+                    nodeIcons: true
+                    }, "CheckboxTree" );
+            tree.startup();
+            connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
+          });
         });
-      </script>
+    </script>
+
+  </head>
+    
+  <body class="claro">
+    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+    <div id="CheckboxTree">  
     </div>
     <h2>Click a checkbox</h2>
   </body> 

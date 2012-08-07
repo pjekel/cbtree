@@ -27,47 +27,46 @@
     </script>
 
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript">
+      require([
+        "dojo/_base/array",
+        "dojo/dom",
+        "dojo/data/ItemFileWriteStore",
+				"dojo/ready",
+        "cbtree/Tree",                    // Checkbox Tree
+        "cbtree/TreeStyling",             // Tree styling extensions
+        "cbtree/models/ForestStoreModel"  // Forest Store Model
+        ], function( array, dom, ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel ) {
 
+					var store = new ItemFileWriteStore( { url: "../datastore/Network-1.7.json" });
+					var model = new ForestStoreModel( {
+									store: store,
+									query: {type: 'computer'},
+									rootLabel: 'The Network',
+									checkedAll:  true,
+									checkedRoot: true,
+									checkedState: true,
+									checkedStrict: true
+									}); 
+
+					ready(function() {
+						var tree = new Tree( {
+										model: model,
+										id: "MenuTree",
+										checkboxMultiState: true,
+										icon: { iconClass: "networkIcon", indent: true },
+										branchIcons: true,
+										nodeIcons: true
+										}, "CheckboxTree" );
+						tree.startup();
+					});
+        });
+    </script>
   </head>
     
   <body class="claro">
     <h1>Dijit Tree with Checkboxes and Custom Icons</h1>
     <div id="CheckboxTree">  
-      <script type="text/javascript">
-
-      require([
-        "dojo/_base/array",
-        "dojo/dom",
-        "dojo/data/ItemFileWriteStore",
-        "cbtree/Tree",                    // Checkbox Tree
-        "cbtree/TreeStyling",             // Tree styling extensions
-        "cbtree/models/ForestStoreModel"  // Forest Store Model
-        ], function( array, dom, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel ) {
-
-          var store = new ItemFileWriteStore( { url: "../datastore/Network-1.7.json" });
-          var model = new ForestStoreModel( {
-                  store: store,
-                  query: {type: 'computer'},
-                  rootLabel: 'The Network',
-                  checkedAll:  true,
-                  checkedRoot: true,
-                  checkedState: true,
-                  checkedStrict: true
-                  }); 
-          var tree = new Tree( {
-                  model: model,
-                  id: "MenuTree",
-                  checkboxMultiState: true,
-                  icon: { iconClass: "networkIcon", indent: true },
-                  branchIcons: true,
-                  nodeIcons: true
-                  });
-          tree.placeAt( "CheckboxTree" );
-          tree.startup();
-
-        });
-        
-      </script>
     </div>
   </body> 
 </html>

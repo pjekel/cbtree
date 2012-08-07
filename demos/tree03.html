@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head> 
-		<meta charset="utf-8">
+    <meta charset="utf-8">
     <title>Dijit CheckBox Tree using the cbtree API</title>     
 
      <style type="text/css">
@@ -207,14 +207,17 @@
                 "dojo/_base/lang",
                 "dojo/dom",
                 "dojo/data/ItemFileWriteStore",
+                "dojo/ready",
                 "cbtree/Tree",                      // Checkbox Tree
                 "cbtree/TreeStyling",                // Tree Styling extensions
                 "cbtree/models/ForestStoreModel",    // Forest Store Model
                 "cbtree/models/StoreModel-API"      // Store Model API extensions
-              ], function( array, connect, lang, dom, ItemFileWriteStore, Tree, TreeStyling, ForestStoreModel ) {
+              ], function( array, connect, lang, dom, ItemFileWriteStore, ready, Tree, TreeStyling, 
+                            ForestStoreModel ) {
 
         // Declare an empty JSON data object (an empty store).
         var EmptyData = { identifier: 'name', label:'name', items:[] };
+        var store, model, tree;
         var parent, child;
 
         createChildren = function() {
@@ -382,20 +385,15 @@
                   checkedStrict: false
                   }); 
 
-          // Create the tree (which will be empty). Make sure 'autoExpand' is enabled otherwise
-          // you will miss alot of the action...
-          tree = new Tree( {
-                  model: model,
-                  id: "MenuTree",
-                  autoExpand: true
-                  });
-          tree.placeAt( "CheckboxTree" );
-          tree.startup();
-          
-          dom.byId("codeSegm").innerHTML = html[0];
-          
+          ready(function() {
+            // Create the tree (which will be empty). Make sure 'autoExpand' is enabled otherwise
+            // you will miss alot of the action...
+            tree = new Tree( { model: model, id: "MenuTree",  autoExpand: true }, "CheckboxTree" );
+            tree.startup();
+            
+            dom.byId("codeSegm").innerHTML = html[0];
+          });          
       });
-
     </script> 
   </head>
     
@@ -404,8 +402,10 @@
       <div class="edgePanel edgeTop" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'top'">
         Building a Dijit CheckBox Tree using the TreeStoreModel API extensions
       </div>
-      <div id="CheckboxTree" class="edgePanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'left', splitter: true" 
+      <div class="edgePanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'left', splitter: true" 
            style="width:25%;">
+        <div id="CheckboxTree">
+        </div>
       </div>
 
       <div class="centerPanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'center'">

@@ -25,20 +25,13 @@
     </script>
 
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
-
-  </head>
-    
-  <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
-    A basic CheckBox Tree using an in memory JSON object to create the store.
-    <div id="CheckboxTree">  
-      <script type="text/javascript">
-
+    <script type="text/javascript">
       require([
+        "dojo/ready",
         "dojo/data/ItemFileWriteStore",
         "cbtree/Tree",                    // Checkbox tree
         "cbtree/models/ForestStoreModel"  // ForestStoreModel
-        ], function( ItemFileWriteStore, Tree, ForestStoreModel) {
+        ], function( ready, ItemFileWriteStore, Tree, ForestStoreModel) {
             // Declare an JSON object
             var data = { "identifier": "name", 
                          "label": "name",  
@@ -91,11 +84,19 @@
                                                query: {type: "continent"}, 
                                                rootLabel: "The Earth" 
                                              }); 
-          var tree = new Tree( { model: model, id: "earthTree" });
-          tree.placeAt( "CheckboxTree" );
-          tree.startup();
+          ready(function(){
+            var tree = new Tree( { model: model, id: "earthTree" }, "CheckboxTree" );
+            tree.startup();
+          });
         });
       </script>
+
+  </head>
+    
+  <body class="claro">
+    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+    A basic CheckBox Tree using an in memory JSON object to create the store.
+    <div id="CheckboxTree">  
     </div>
   </body> 
 </html>
