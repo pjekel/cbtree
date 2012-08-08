@@ -23,14 +23,14 @@ define([
 	"dijit/registry",
 	"dijit/Tree",
 	"./CheckBox"
-], function (array, declare, event, lang, DeferredList, domConstruct, 
-							NodeTemplate, _Container, registry, Tree, CheckBox) {
+], function (array, declare, event, lang, DeferredList, domConstruct, NodeTemplate, 
+							_Container, registry, Tree, CheckBox) {
 
 	// module:
 	//		cbtree/Tree
-	// Note:
-	//		This implementation is compatible with dojo 1.7.x
-	
+	// note:
+	//		This implementation is compatible with dojo 1.8
+
 	var TreeNode = declare([Tree._TreeNode], {
 		// templateString: String
 		//		Specifies the HTML template to be used.
@@ -132,27 +132,6 @@ define([
 			}
 		},
 
-		_onClick: function (/*Event*/ evt){
-			// summary:
-			//		Handler for onclick event on a tree node
-			// description:
-			//		If the click event occured on a checkbox, get the new checkbox checked
-			//		state, update the model and generate the checkbox click related events
-			//		otherwise pass the event on to the tree as a regular click event.
-			// evt:
-			//		Event object.
-			// tags:
-			//		private extension
-
-			if (evt.target.nodeName == this._widget.target) {
-				var newState = this._checkBox.get("checked");
-				this.tree.model.setChecked(this.item, newState);
-				this.tree._onCheckBoxClick(this, newState, evt);
-			} else {
-				this.tree._onClick(this, evt);
-			}
-		},
-
 		_set_checked_Attr: function (newState) {
 			// summary:
 			//		Set a new state for the tree node checkbox. This method handles the
@@ -214,125 +193,6 @@ define([
 			this.inherited(arguments);
 		},
 
-		setChildItems: function(/* Object[] */ items){
-			// summary:
-			//		Sets the child items of this node, removing/adding nodes
-			//		from current children to match specified items[] array.
-			//		Also, if this.persist == true, expands any children that were previously
-			// 		opened.
-			// returns:
-			//		Deferred object that fires after all previously opened children
-			//		have been expanded again (or fires instantly if there are no such children).
-			//
-			//	NOTE: This implementation fixes two problems with the original dijit tree.
-			//				1)	Existing nodes must be checked if they aren't being destroyed
-			//						before re-using them. (FIX 1)
-			//				2)	If the number of items is zero the node must return to the
-			//						collapsed state. (FIX 2)
-
-			var tree = this.tree,
-				model = tree.model,
-				defs = [];	// list of deferreds that need to fire before I am complete
-
-
-			// Orphan all my existing children.
-			// If items contains some of the same items as before then we will reattach them.
-			// Don't call this.removeChild() because that will collapse the tree etc.
-			array.forEach(this.getChildren(), function(child){
-				_Container.prototype.removeChild.call(this, child);
-			}, this);
-
-			this.state = "LOADED";
-
-			if(items && items.length > 0){
-				this.isExpandable = true;
-
-				// Create _TreeNode widget for each specified tree node, unless one already
-				// exists and isn't being used (presumably it's from a DnD move and was recently
-				// released
-				array.forEach(items, function(item){
-					var id = model.getIdentity(item),
-						existingNodes = tree._itemNodesMap[id],
-						node;
-					if(existingNodes){
-						for(var i=0;i<existingNodes.length;i++){
-							// FIX 1 - Don't re-used destroyed nodes, instead clean them up.
-							if (!existingNodes[i] || existingNodes[i]._beingDestroyed) {
-								existingNodes.splice(i,1);
-								if (existingNodes.length == 0) {
-									delete tree._itemNodesMap[id];
-								}
-							} else {
-								if(!existingNodes[i].getParent()) {
-									node = existingNodes[i];
-									node.set('indent', this.indent+1);
-									break;
-								}
-							}
-						}
-					}
-					if(!node){
-						node = this.tree._createTreeNode({
-								item: item,
-								tree: tree,
-								isExpandable: model.mayHaveChildren(item),
-								label: tree.getLabel(item),
-								tooltip: tree.getTooltip(item),
-								dir: tree.dir,
-								lang: tree.lang,
-								textDir: tree.textDir,
-								indent: this.indent + 1
-							});
-						if(existingNodes){
-							existingNodes.push(node);
-						}else{
-							tree._itemNodesMap[id] = [node];
-						}
-					}
-					this.addChild(node);
-
-					// If node was previously opened then open it again now (this may trigger
-					// more data store accesses, recursively)
-					if(this.tree.autoExpand || this.tree._state(node)){
-						defs.push(tree._expandNode(node));
-					}
-				}, this);
-
-				// note that updateLayout() needs to be called on each child after
-				// _all_ the children exist
-				array.forEach(this.getChildren(), function(child){
-					child._updateLayout();
-				});
-			}else{
-				this.isExpandable=false;
-				// FIX 2 - If no children, restore collapsed state.
-				tree._collapseNode(this);
-			}
-
-			if(this._setExpando){
-				// change expando to/from dot or + icon, as appropriate
-				this._setExpando(false);
-			}
-
-			// Set leaf icon or folder icon, as appropriate
-			this._updateItemClasses(this.item);
-
-			// On initial tree show, make the selected TreeNode as either the root node of the tree,
-			// or the first child, if the root node is hidden
-			if(this == tree.rootNode){
-				var fc = this.tree.showRoot ? this : this.getChildren()[0];
-				if(fc){
-					fc.setFocusable(true);
-					tree.lastFocused = fc;
-				}else{
-					// fallback: no nodes in tree so focus on Tree <div> itself
-					tree.domNode.setAttribute("tabIndex", "0");
-				}
-			}
-
-			return new DeferredList(defs);	// dojo.Deferred
-		},
-
 		postCreate: function () {
 			// summary:
 			//		Handle the creation of the checkbox and node specific icons after
@@ -360,6 +220,142 @@ define([
 			// Just in case one is available, set the tooltip.
 			this.set("tooltip", this.title);
 			this.inherited(arguments);
+		},
+
+		setChildItems: function(/* Object[] */ items){
+			// summary:
+			//		Sets the child items of this node, removing/adding nodes
+			//		from current children to match specified items[] array.
+			//		Also, if this.persist == true, expands any children that were previously
+			//		opened.
+			// returns:
+			//		Deferred object that fires after all previously opened children
+			//		have been expanded again (or fires instantly if there are no such children).
+
+			var tree = this.tree,
+				model = tree.model,
+				defs = [];	// list of deferreds that need to fire before I am complete
+
+
+			// Orphan all my existing children.
+			// If items contains some of the same items as before then we will reattach them.
+			// Don't call this.removeChild() because that will collapse the tree etc.
+			var oldChildren = this.getChildren();
+			array.forEach(oldChildren, function(child){
+				_Container.prototype.removeChild.call(this, child);
+			}, this);
+
+			// All the old children of this TreeNode are subject for destruction if
+			//		1) they aren't listed in the new children array (items)
+			//		2) they aren't immediately adopted by another node (DnD)
+			this.defer(function(){
+				array.forEach(oldChildren, function(node){
+					if(!node._destroyed && !node.getParent()){
+						// If node is in selection then remove it.
+						tree.dndController.removeTreeNode(node);
+
+						// Deregister mapping from item id --> this node
+						var id = model.getIdentity(node.item),
+							ary = tree._itemNodesMap[id];
+						if(ary.length == 1){
+							delete tree._itemNodesMap[id];
+						}else{
+							var index = array.indexOf(ary, node);
+							if(index != -1){
+								ary.splice(index, 1);
+							}
+						}
+
+						// And finally we can destroy the node
+						node.destroyRecursive();
+					}
+				});
+			});
+
+			this.state = "LOADED";
+
+			if(items && items.length > 0){
+				this.isExpandable = true;
+
+				// Create _TreeNode widget for each specified tree node, unless one already
+				// exists and isn't being used (presumably it's from a DnD move and was recently
+				// released
+				array.forEach(items, function(item){	// MARKER: REUSE NODE
+					var id = model.getIdentity(item),
+						existingNodes = tree._itemNodesMap[id],
+						node;
+					if(existingNodes){
+						for(var i=0;i<existingNodes.length;i++){
+							if(existingNodes[i] && !existingNodes[i].getParent()){
+								node = existingNodes[i];
+								node.set('indent', this.indent+1);
+								break;
+							}
+						}
+					}
+					if(!node){
+						node = this.tree._createTreeNode({
+							item: item,
+							tree: tree,
+							isExpandable: model.mayHaveChildren(item),
+							label: tree.getLabel(item),
+							tooltip: tree.getTooltip(item),
+							ownerDocument: tree.ownerDocument,
+							dir: tree.dir,
+							lang: tree.lang,
+							textDir: tree.textDir,
+							indent: this.indent + 1
+						});
+						if(existingNodes){
+							existingNodes.push(node);
+						}else{
+							tree._itemNodesMap[id] = [node];
+						}
+					}
+					this.addChild(node);
+
+					// If node was previously opened then open it again now (this may trigger
+					// more data store accesses, recursively)
+					if(this.tree.autoExpand || this.tree._state(node)){
+						defs.push(tree._expandNode(node));
+					}
+				}, this);
+
+				// note that updateLayout() needs to be called on each child after
+				// _all_ the children exist
+				array.forEach(this.getChildren(), function(child){
+					child._updateLayout();
+				});
+			}else{
+				// FIX: If no children, delete _expandNodeDeferred if any...
+				tree._collapseNode(this);
+				this.isExpandable=false;
+			}
+
+			if(this._setExpando){
+				// change expando to/from dot or + icon, as appropriate
+				this._setExpando(false);
+			}
+
+			// Set leaf icon or folder icon, as appropriate
+			this._updateItemClasses(this.item);
+
+			// On initial tree show, make the selected TreeNode as either the root node of the tree,
+			// or the first child, if the root node is hidden
+			if(this == tree.rootNode){
+				var fc = this.tree.showRoot ? this : this.getChildren()[0];
+				if(fc){
+					fc.setFocusable(true);
+					tree.lastFocused = fc;
+				}else{
+					// fallback: no nodes in tree so focus on Tree <div> itself
+					tree.domNode.setAttribute("tabIndex", "0");
+				}
+			}
+
+			var def =  new DeferredList(defs);
+			this.tree._startPaint(def);		// to reset TreeNode widths after an item is added/removed from the Tree
+			return def;		// dojo/_base/Deferred
 		}
 
 	});	/* end declare() _TreeNode*/
@@ -459,6 +455,28 @@ define([
 			event.stop(evt);
 		},
 
+		_onClick: function(/*TreeNode*/ nodeWidget, /*Event*/ evt){
+			// summary:
+			//		Handler for onclick event on a tree node
+			// description:
+			//		If the click event occured on a checkbox, get the new checkbox checked
+			//		state, update the model and generate the checkbox click related events
+			//		otherwise pass the event on to the tree as a regular click event.
+			// evt:
+			//		Event object.
+			// tags:
+			//		private extension
+			var checkedWidget = nodeWidget._widget;
+
+			if (evt.target.nodeName == checkedWidget.target) {
+				var newState = nodeWidget._checkBox.get("checked");				
+				this.model.setChecked(nodeWidget.item, newState);
+				this._onCheckBoxClick(nodeWidget, newState, evt);
+			} else {
+				this.inherited(arguments);
+			}
+		},
+		
 		_onItemChange: function (/*data.Item*/ item, /*String*/ attr, /*AnyType*/ value){
 			// summary:
 			//		Processes notification of a change to an data item's scalar values and
