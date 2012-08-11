@@ -18,8 +18,9 @@ define([
 	"dojo/aspect",				// aspect.after
 	"dojo/has",						// has.add
 	"dojo/json",					// json.stringify
+	"dojo/Stateful",			// get() and set()
 	"./ItemWriteStoreEX"	// ItemFileWriteStore extensions.	
-], function(array, declare, lang, aspect, has, json, ItemWriteStoreEX){
+], function(array, declare, lang, aspect, has, json, Stateful, ItemWriteStoreEX){
 
 		// module:
 		//		cbtree/models/TreeStoreModel
@@ -27,7 +28,7 @@ define([
 		//		Implements cbtree.models.model connecting to a dojo.data store with a
 		//		single root item.
 
-	return declare([], {
+	return declare([Stateful], {
 
 		//==============================
 		// Parameters to constructor
@@ -76,11 +77,20 @@ define([
 		//		Setting this to true will cause the TreeStoreModel to defer calling loadItem
 		//		on nodes until they are expanded. This allows for lazying loading where only
 		//		one loadItem (and generally one network call, consequently) per expansion
-		//		 (rather than one for each child).
-		//		 This relies on partial loading of the children items; each children item of a
-		//		 fully loaded item should contain the label and info about having children.
+		//		(rather than one for each child).
+		//		This relies on partial loading of the children items; each children item of a
+		//		fully loaded item should contain the label and info about having children.
 		deferItemLoadingUntilExpand: false,
 
+		// enabledAttr: String (1.8)
+		//		The attribute name (property of the store item) that holds the 'enabled'
+		//		state of the checkbox or alternative widget. 
+		//		Note: Eventhough it is referred to as the 'enabled' state the tree will 
+		//		only use this property to enable/disable the 'ReadOnly' property of a
+		//		checkbox. This because disabling a widget may exclude it from HTTP POST
+		//		operations.
+		enabledAttr:"",
+		
 		// excludeChildrenAttrs: String[]
 		//		If multiple childrenAttrs have been specified excludeChildrenAttrs determines
 		//		which of those childrenAttrs are excluded from: a) getting a checked state.
@@ -212,6 +222,92 @@ define([
 			// TODO: should cancel any in-progress processing of getRoot(), getChildren()
 
 			this.store = null;
+		},
+
+		// =======================================================================
+		// Model getters and setters (See dojo/Stateful)
+
+		_checkedStrictSetter: function (value){
+			// summary:
+			//		Hook for the set("checkedStrict",value) calls. Note: A full store
+			//		re-evaluation is only kicked off when the current value is false 
+			//		and the new value is true.
+			// value:
+			//		New value applied to 'checkedStrict'. Any value is converted to a boolean.
+			// tag:
+			//		private
+
+			value = value ? true : false;
+			if (this.checkedStrict !== value) {
+				this.checkedStrict = value;
+				if (this.checkedStrict) {
+					this.getRoot( lang.hitch(this, function (rootItem) {
+							this.getChildren(rootItem, lang.hitch(this, function(children) {
+									this._validateChildren(rootItem, children);
+								}))
+						}))
+				}
+			}
+			return this.checkedStrict;
+		},
+
+		_enabledAttrSetter: function (/*String*/ value) {
+			// summary:
+			//		Set the enabledAttr property. This method is the hook for set("enabledAttr", ...)
+			//		The enabledAttr value can only be set once during the model instantiation.
+			// value:
+			//		New enabledAttr value.
+			// tags:
+			//		private
+
+			if (lang.isString(value)) {
+				if (this.enabledAttr !== value) {
+					throw new Error(this.moduleName+"::set(): enabledAttr property is read-only.");
+				}
+			} else {
+				throw new Error(this.moduleName+"::set(): enabledAttr value must be a string");
+			}
+			return this.enabledAttr;
+		},
+		
+		_labelAttrGetter: function() {
+			// summary:
+			//		Return the label attribute associated with the store, if available.
+			//		This method is the hook for get("labelAttr");
+			// tag:
+			//		private
+
+			return this.getLabelAttr();
+		},
+
+		_labelAttrSetter: function (/*String*/ value) {
+			// summary:
+			//		Set the labelAttr property. This method is the hook for set("labelAttr", ...)
+			// value:
+			//		New labelAttr value.
+			// tags:
+			//		private
+
+			return this.setLabelAttr(value);
+		},
+
+		_querySetter: function (value) {
+			// summary:
+			//		Hook for the set("query",value) calls.
+			// value:
+			//		New query object.
+			// tag:
+			//		private
+
+			if (lang.isObject(value)){
+				if (this.query !== value){
+					this.query = value;
+					this._requeryTop();
+				}
+				return this.query;
+			} else {
+				throw new Error(this.moduleName+"::set(): query argument must be of type object");
+			}
 		},
 
 		// =======================================================================
@@ -603,7 +699,7 @@ define([
 		},
 
 		// =======================================================================
-		// Checked state
+		// Checked and Enabled state
 
 		getChecked: function (/*dojo.data.item*/ storeItem) {
 			// summary:
@@ -657,6 +753,41 @@ define([
 			return checked;	// the current checked state (true/false or undefined)
 		},
 
+		getEnabled: function (/*item*/ item) {
+			// summary:
+			//		Returns the current 'enabled' state of an item as a boolean.
+			// item:
+			//		Store or root item
+			// tag:
+			//		Public
+			var enabled = true;
+			
+			if (this.enabledAttr) {
+				if (this.store.isItem(item)) {			
+					enabled = this.store.getValue(item, this.enabledAttr);
+				} else {
+					if (item === this.root) {
+						enabled = item[this.enabledAttr];
+					} else {
+						throw new TypeError(this.moduleName+"::getEnabled(): invalid item specified.");
+					}
+				}
+			}
+			return (enabled === undefined) || Boolean(enabled);
+		},
+
+		getItemState: function (/*item*/ item) {
+			// summary:
+			//		Returns the state of a item, the state is an object with two properies:
+			//		'checked' and 'enabled'.
+			// item:
+			//		The store or root item.
+			// tag:
+			//		Public
+			return { checked: this.getChecked(item), 
+								enabled: this.getEnabled(item) };
+		},
+
 		setChecked: function (/*dojo.data.item*/ storeItem, /*Boolean*/ newState) {
 			// summary:
 			//		Update the checked state for the store item and the associated parents
@@ -677,6 +808,26 @@ define([
 				this._setChecked(storeItem, newState);		// Just update the checked state
 			} else {
 				this._updateCheckedChild(storeItem, newState); // Update children and parent(s).
+			}
+		},
+
+		setEnabled: function (/*item*/ item, /*Boolean*/ value) {
+			// summary:
+			//		Sets the new 'enabled' state of an item.
+			// item:
+			//		Store or root item
+			// tag:
+			//		Public
+			if (this.enabledAttr) {
+				if (this.store.isItem(item)) {			
+					return this.store.setValue(item, this.enabledAttr, Boolean(value));
+				} else {
+					if (item === this.root) {
+						return this.root[this.enabledAttr] = Boolean(value);
+					} else {
+						throw new TypeError(this.moduleName+"::setEnabled(): invalid item specified.");
+					}
+				}				
 			}
 		},
 
@@ -908,7 +1059,10 @@ define([
 			// tags:
 			//		public
 			if (!this.labelAttr) {
-				this.setLabelAttr(this.store.getLabelAttributes()[0]);
+				var labels = this.store.getLabelAttributes();
+				if (labels) {
+					this.setLabelAttr(labels[0]);
+				}
 			}
 			return this.labelAttr;
 		},

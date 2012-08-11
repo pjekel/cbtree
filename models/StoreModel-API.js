@@ -61,7 +61,7 @@ define([
 			this.fetchItemsWithChecked(query, function (storeItems) {
 				array.forEach(storeItems, function (storeItem) {
 					if (this.store.getValue(storeItem, this.checkedAttr) != newState) {
-						this._setItemCheckedAttr(storeItem, newState);
+						this._ItemCheckedSetter(storeItem, newState);
 						updates += 1; 
 					}
 					matches += 1;
@@ -73,114 +73,124 @@ define([
 		},
 
 		// =======================================================================
-		// Model getters and setters
-
-		get: function (/*String*/ attribute){
-			// summary:
-			//		Provide the getter capabilities for the model.
-			// attribute:
-			//		Name of property to get
-			// tag:
-			//		public
-			
-			if (lang.isString(attribute)){
-				var func = this._getFuncNames("", attribute);
-				if (lang.isFunction(this[func.get])) {
-					return this[func.get]();
-				}
-				attribute = lang.trim(attribute);
-				if (typeof this[attribute] !== "undefined" && attribute.charAt(0) != '_') {
-					return this[attribute];
-				}
-				throw new Error(this.moduleName+"::get(): Invalid property: "+attribute);
-			}
-			throw new Error(this.moduleName+"::get(): Attribute must be of type string");
-		},
-
-		_getLabelAttrAttr: function() {
-			// summary:
-			//		Return the label attribute associated with the store, if available.
-			// tag:
-			//		private
-
-			return this.getLabelAttr();
-		},
-
-		set: function (/*String*/ attribute, /*anytype*/ value){
-			// summary:
-			//		Provide the setter capabilities for the model.
-			// attribute:
-			//		Name of property to set
-			// tag:
-			//		public
-			
-			if (lang.isString(attribute)){
-				var func = this._getFuncNames("", attribute);
-				if (lang.isFunction(this[func.set])) {
-					return this[func.set](value);
-				}
-			}
-			throw new Error(this.moduleName+"::set(): Invalid attribute or property is read-only");
-		},
-
-		_setLabelAttrAttr: function (/*String*/ value) {
-			// summary:
-			//		Set the labelAttr property. This method is the hook for set("labelAttr", ...)
-			// value:
-			//		New labelAttr value.
-			// tags:
-			//		private
-
-			return this.setLabelAttr(value);
-		},
-
-		_setQueryAttr: function (value) {
-			// summary:
-			//		Hook for the set("query",value) calls.
-			// value:
-			//		New query object.
-			// tag:
-			//		private
-
-			if (lang.isObject(value)){
-				if (this.query !== value){
-					this.query = value;
-					this._requeryTop();
-				}
-				return this.query;
-			} else {
-				throw new Error(this.moduleName+"::set(): query argument must of type object");
-			}
-		},
-
-		_setCheckedStrictAttr: function (value){
-			// summary:
-			//		Hook for the set("checkedStrict",value) calls. Note: A full store
-			//		re-evaluation is only kicked off when the current value is false 
-			//		and the new value is true.
-			// value:
-			//		New value applied to 'checkedStrict'. Any value is converted to a boolean.
-			// tag:
-			//		private
-
-			value = value ? true : false;
-			if (this.checkedStrict !== value) {
-				this.checkedStrict = value;
-				if (this.checkedStrict) {
-					this.getRoot( lang.hitch(this, function (rootItem) {
-							this.getChildren(rootItem, lang.hitch(this, function(children) {
-									this._validateChildren(rootItem, children);
-								}))
-						}))
-				}
-			}
-			return this.checkedStrict;
-		},
-
-		
-		// =======================================================================
 		// Data store item getters and setters
 		
+		_ItemCheckedGetter: function (/*dojo.data.Item*/ storeItem) {
+			// summary:
+			//		Get the current checked state from the data store for the specified item.
+			//		This is the hook for getItemAttr(item,"checked")
+			// description:
+			//		Get the current checked state from the dojo.data store. The checked state
+			//		in the store can be: 'mixed', true, false or undefined. Undefined in this
+			//		context means no checked identifier (checkedAttr) was found in the store
+			// storeItem:
+			//		The item in the dojo.data.store whose checked state is returned.
+			// tag:
+			//		private
+			// example:
+			//		var currState = model.get(item,"checked");
+
+			return this.getChecked(storeItem);
+		},
+
+	 _ItemCheckedSetter: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState) {
+			// summary:
+			//		Update the checked state for the store item and the associated parents
+			//		and children, if any. This is the hook for setItemAttr(item,"checked",value).
+			// description:
+			//		Update the checked state for a single store item and the associated
+			//		parent(s) and children, if any. This method is called from the tree if
+			//		the user checked/unchecked a checkbox. The parent and child tree nodes
+			//		are updated to maintain consistency if 'checkedStrict' is set to true.
+			//	storeItem:
+			//		The item in the dojo.data.store whose checked state needs updating.
+			//	newState:
+			//		The new checked state: 'mixed', true or false
+			// tags:
+			//		private
+			//	example:
+			//		model.set(item,"checked",newState);
+			
+			this.setChecked(storeItem, newState);
+		},
+
+		_ItemIdentityGetter: function (storeItem){
+			// summary:
+			//		Provide the hook for getItemAttr(storeItem,"identity") calls. The 
+			//		getItemAttr() interface is the preferred method over the legacy
+			//		getIdentity() method.
+			// storeItem:
+			//		The store or root item whose identity is returned.
+			// tag:
+			//		private
+
+			if (this.store.isItem(storeItem)) {			
+				return this.store.getIdentity(storeItem);	// Object
+			} else {
+				if (storeItem === this.root){
+					return this.root.id;
+				}
+			}
+			throw new TypeError(this.moduleName+"::getIdentity(): invalid item specified.");
+		},
+
+		_ItemIdentitySetter: function (storeItem, value){
+			// summary:
+			//		Hook for setItemAttr(storeItem,"identity",value) calls. However, changing 
+			//		the identity of a store item is NOT allowed.
+			// tags:
+			//		private
+			throw new Error(this.moduleName+"::setItemAttr(): Identity attribute cannot be changed");
+		},
+
+		_ItemLabelGetter: function (storeItem){
+			// summary:
+			//		Provide the hook for getItemAttr(storeItem,"label") calls. The getItemAttr()
+			//		interface is the preferred method over the legacy getLabel() method.
+			// storeItem:
+			//		The store item whose label is returned.
+			// tag:
+			//		private
+
+			if (storeItem !== this.root){
+				if (this.labelAttr){
+					return this.store.getValue(storeItem,this.labelAttr);	// String
+				}else{
+					return this.store.getLabel(storeItem);	// String
+				}
+			}
+			return this.root.label;
+		},
+
+		_ItemLabelSetter: function (storeItem, value){
+			// summary:
+			//		Hook for setItemAttr(storeItem,"label",value) calls. However, changing
+			//		the label value is only allowed if the label attribute isn't the same
+			//		as the store identity attribute.
+			// storeItem:
+			//		The store item whose label is being set.
+			// value:
+			//		New label value.
+			// tags:
+			//		private
+			
+			var labelAttr = this.get("labelAttr");
+
+			if (labelAttr){
+				if (labelAttr != this.store.getIdentifierAttr()){
+					return this.store.setValue(storeItem, labelAttr, value);
+				}
+				throw new Error(this.moduleName+"::setItemAttr(): Label attribute {"+labelAttr+"} cannot be changed");
+			}
+		},
+
+		_ItemParentsGetter: function (storeItem) {
+			// summary:
+			// storeItem:
+			//		The store item whose parent(s) are returned.
+			return this.getParents(storeItem);
+		},
+
 		getItemAttr: function (/*dojo.data.Item*/ storeItem , /*String*/ attribute){
 			// summary:
 			//		Provide the getter capabilities for store items thru the model. 
@@ -207,66 +217,6 @@ define([
 				}
 			}
 			throw new Error(this.moduleName+"::getItemAttr(): argument is not a valid store item.");
-		},
-
-		_getItemCheckedAttr: function (/*dojo.data.Item*/ storeItem) {
-			// summary:
-			//		Get the current checked state from the data store for the specified item.
-			//		This is the hook for getItemAttr(item,"checked")
-			// description:
-			//		Get the current checked state from the dojo.data store. The checked state
-			//		in the store can be: 'mixed', true, false or undefined. Undefined in this
-			//		context means no checked identifier (checkedAttr) was found in the store
-			// storeItem:
-			//		The item in the dojo.data.store whose checked state is returned.
-			// tag:
-			//		private
-			// example:
-			//		var currState = model.get(item,"checked");
-
-			return this.getChecked(storeItem);
-		},
-
-		_getItemIdentityAttr: function (storeItem){
-			// summary:
-			//		Provide the hook for getItemAttr(storeItem,"identity") calls. The 
-			//		getItemAttr() interface is the preferred method over the legacy
-			//		getIdentity() method.
-			// storeItem:
-			//		The store item whose identity is returned.
-			// tag:
-			//		private
-
-			if (storeItem !== this.root){
-				return this.store.getIdentity(storeItem);	// Object
-			}
-			return this.root.id;
-		},
-
-		_getItemLabelAttr: function (storeItem){
-			// summary:
-			//		Provide the hook for getItemAttr(storeItem,"label") calls. The getItemAttr()
-			//		interface is the preferred method over the legacy getLabel() method.
-			// storeItem:
-			//		The store item whose label is returned.
-			// tag:
-			//		private
-
-			if (storeItem !== this.root){
-				if (this.labelAttr){
-					return this.store.getValue(storeItem,this.labelAttr);	// String
-				}else{
-					return this.store.getLabel(storeItem);	// String
-				}
-			}
-			return this.root.label;
-		},
-
-		_getItemParentsAttr: function (storeItem) {
-			// summary:
-			// storeItem:
-			//		The store item whose parent(s) are returned.
-			return this.getParents(storeItem);
 		},
 
 		setItemAttr: function (/*dojo.data.item*/ storeItem, /*String*/ attribute, /*anytype*/ value) {
@@ -300,58 +250,6 @@ define([
 			}
 		},
 		 
-	 _setItemCheckedAttr: function (/*dojo.data.Item*/ storeItem, /*Boolean*/ newState) {
-			// summary:
-			//		Update the checked state for the store item and the associated parents
-			//		and children, if any. This is the hook for setItemAttr(item,"checked",value).
-			// description:
-			//		Update the checked state for a single store item and the associated
-			//		parent(s) and children, if any. This method is called from the tree if
-			//		the user checked/unchecked a checkbox. The parent and child tree nodes
-			//		are updated to maintain consistency if 'checkedStrict' is set to true.
-			//	storeItem:
-			//		The item in the dojo.data.store whose checked state needs updating.
-			//	newState:
-			//		The new checked state: 'mixed', true or false
-			// tags:
-			//		private
-			//	example:
-			//		model.set(item,"checked",newState);
-			
-			this.setChecked(storeItem, newState);
-		},
-
-		_setItemIdentityAttr: function (storeItem, value){
-			// summary:
-			//		Hook for setItemAttr(storeItem,"identity",value) calls. However, changing 
-			//		the identity of a store item is NOT allowed.
-			// tags:
-			//		private
-			throw new Error(this.moduleName+"::setItemAttr(): Identity attribute cannot be changed");
-		},
-
-		_setItemLabelAttr: function (storeItem, value){
-			// summary:
-			//		Hook for setItemAttr(storeItem,"label",value) calls. However, changing
-			//		the label value is only allowed if the label attribute isn't the same
-			//		as the store identity attribute.
-			// storeItem:
-			//		The store item whose label is being set.
-			// value:
-			//		New label value.
-			// tags:
-			//		private
-			
-			var labelAttr = this.get("labelAttr");
-
-			if (labelAttr){
-				if (labelAttr != this.store.getIdentifierAttr()){
-					return this.store.setValue(storeItem, labelAttr, value);
-				}
-				throw new Error(this.moduleName+"::setItemAttr(): Label attribute {"+labelAttr+"} cannot be changed");
-			}
-		},
-
 		// =======================================================================
 		// Inspecting nad validating items
 
@@ -651,7 +549,7 @@ define([
 
 			if (lang.isString(name)) {
 				var cc = name.replace(/^[a-z]|-[a-zA-Z]/g, function (c){ return c.charAt(c.length-1).toUpperCase(); });
-				var fncSet = { set: "_set"+prefix+cc+"Attr", get: "_get"+prefix+cc+"Attr" };
+				var fncSet = { set: "_"+prefix+cc+"Setter", get: "_"+prefix+cc+"Getter" };
 				return fncSet;
 			}
 			throw new Error(this.moduleName+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be of type string.");
