@@ -161,13 +161,6 @@ You can test the availability of the Store Model API using the command `has("cbt
 > The default value of *storeOnly* is *true*.
 
 ******************************************
-#### get( attribute ) ####
-> Accessor, provide the getter capabilities for the model properties.
-
-*attribute:* String
-> The name of a model attribute/property whose value is to be returned.
-
-******************************************
 #### getItemAttr( storeItem , attribute ) ####
 > Provide the getter capabilities for store items thru the model. The getItemAttr()
 > method strictly operates on store items not the model itself. Equivalent to *store.getValue()*
@@ -218,16 +211,6 @@ You can test the availability of the Store Model API using the command `has("cbt
 > Property name of the parentItem identifying the children's list from which the
 > reference is removed. If omitted, the first entry in the models *childrenAttrs*
 > property is used.
-
-******************************************
-#### set( attribute, value ) ####
-> Accessor, provide the setter capabilities for the model properties.
-
-*attribute:* String
-> The name of a model attribute/property whose value is to be updated.
-
-*value:* AnyType
-> New value to be assigned to the property *attribute*
 
 ******************************************
 #### setItemAttr( storeItem, attribute, value ) ####

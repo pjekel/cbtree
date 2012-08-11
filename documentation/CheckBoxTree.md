@@ -107,16 +107,16 @@ label style:
 
     // As a callback of a CheckBox click event
     function checkBoxClicked( item, nodeWidget, evt ) {
-	  if (nodeWidget.get("checked")) {
-		tree.set("labelStyle", {color:"red"}, item);
-	  }
+      if (nodeWidget.get("checked")) {
+        tree.set("labelStyle", {color:"red"}, item);
+      }
     }
 
     // As a regular function
     function updateStyle( item ) {
-	  if (model.getChecked( item )) {
-		tree.set("labelStyle", {color:"red"}, item);
-	  }
+      if (model.getChecked( item )) {
+        tree.set("labelStyle", {color:"red"}, item);
+      }
     }
 
 ### Store Model API ###
@@ -262,10 +262,16 @@ section:
 	  </tr>
 	</thead>
     <tr style="vertical-align:top">
-      <td>cbtree-v09.0-0</td>
-      <td>May-20 2012</td>
-      <td>1.7</td>
-      <td>Initial cbtree-AMD release</td>
+      <td>cbtree-v09.2-0</td>
+      <td>Sep-01 2012</td>
+      <td>1.8</td>
+      <td>
+		Updated The CheckBox Tree to work with dojo 1.8.<br/>
+		Official release File Store and File Store Model.<br/>
+		Per store item read-only checkboxes.<br/>
+		New declarative demos added.<br/>
+		Updated documentation.<br/>
+      <td>
     </tr>
     <tr style="vertical-align:top">
       <td>cbtree-v09.1-0</td>
@@ -278,9 +284,14 @@ section:
 		Minor software updates.
       <td>
     </tr>
+    <tr style="vertical-align:top">
+      <td>cbtree-v09.0-0</td>
+      <td>May-20 2012</td>
+      <td>1.7</td>
+      <td>Initial cbtree-AMD release</td>
+    </tr>
   </tbody>
 </table>
-
 
 <h2 id="checkbox-tree-properties">CheckBox Tree Properties</h2>
 
@@ -294,7 +305,9 @@ value is listed.
 
 #### branchReadOnly: ####
 > Boolean (false), determines if branch checkboxes are read only. If true, the
-> user must explicitly check/uncheck every child checkbox individually.
+> user must explicitly check/uncheck every child checkbox individually and thus
+> overwriting the per store item 'enabled' features for any store item associated
+> with a tree branch.
 
 #### checkBoxes: ####
 > Boolean (true), if true it enables the creation of checkboxes, If a tree node
@@ -306,7 +319,8 @@ value is listed.
 
 #### leafReadOnly: ####
 > Boolean (false), determines if leaf checkboxes are read only. If true, the
-> user can only check/uncheck branch checkboxes.
+> user can only check/uncheck branch checkboxes and thus overwriting the per
+> store item 'enabled' features for any store item associated with a tree leaf.
 
 #### nodeIcons: ####
 > Boolean (true), Determines if the Leaf icon, or its custom equivalent, is
@@ -348,8 +362,15 @@ loaded, see [Tree Styling Properties](TreeStyling.md#styling-properties) for det
 As of dojo 1.6 all dijit widgets come with the so called auto-magic accessors
 *get()* and *set()*. All CheckBox Tree API's, that is, the CheckBox Tree, Tree
 Styling and Store Model API, use these accessors as their primary interface.
-For example, to get the checkbox state of a tree node one could simply call: 
+For example, to get the checked state of a tree node one could simply call: 
 *get("checked")* or to change the checked state call: *set("checked",true)*.
+
+#### Note: ####
+The property names *"checked"* and *"enabled"* are automatically mapped to the 
+appropriate store item properties based on the store models *checkedAttr* and
+*enabledAttr* values. Therefore, at the application level you can simple  use
+the keywords *"checked"* and *"enabled"* regardless of the actual store item
+properties.
  
 *****************************
 #### get( propertyName ) ####
@@ -395,32 +416,33 @@ For example, to get the checkbox state of a tree node one could simply call:
     connect.connect( myTree, "onCheckBoxClick", model, checkBoxClicked );
 
 <h2 id="checkbox-tree-placement">CheckBox Tree Placement</h2>
+
 There are different ways to place the CheckBox Tree in the DOM. The easiest way would be to specify
 the parent DOM node when creating the CheckBox Tree. Lets assume we have a &lt;div> defined as follows:
 
-	<div id="CheckBoxTree" style="width:300px; height:100%; border-style:solid; border-width:medium;">
-	</div>
+    <div id="CheckBoxTree" style="width:300px; height:100%; border-style:solid; border-width:medium;">
+    </div>
 
 Notice the &lt;div> has a width, height and border properties specified. The first
 option is to create the CheckBox Tree and specify "CheckBoxTree" as the parent DOM
 node like:
 
-	var myTree = new cbtree( { ... }, "CheckBoxTree" };
-	myTree.startup();
-	
+    var myTree = new cbtree( { ... }, "CheckBoxTree" };
+    myTree.startup();
+  
 The above method however, replaces the existing DOM node with a new one resulting in 
 the loss of all the style properties we previously defined. Alternatively you can
 insert your tree as a child node of CheckBoxTree, preserving all of its properties,
 as follows:
 
-	var myTree = new cbtree( { ... } };
-	myTree.placeAt( "CheckBoxTree" );
-	myTree.startup();
+    var myTree = new cbtree( { ... } };
+    myTree.placeAt( "CheckBoxTree" );
+    myTree.startup();
 
 You can also specify the location of the child node as a second parameter to the 
 *placeAt()* method like:
 
-	myTree.placeAt( "CheckBoxTree", "last" );
+    myTree.placeAt( "CheckBoxTree", "last" );
 
 The location is relative to the other child nodes of the parent node. The placeAt()
 location parameter accepts: *"after"*, *"before"*, *"replace"*, *"only"*, *"first"*
@@ -475,11 +497,12 @@ property *label* resulting in a new label text each time a checkbox is clicked.
       require([
         "dojo/_base/connect",
         "dojo/data/ItemFileWriteStore",
-        "dojo/domReady",
+        "dojo/ready",
         "cbtree/Tree",
         "cbtree/models/ForestStoreModel"
-        ], function( connect, ItemFileWriteStore, domReady, Tree, ForestStoreModel ) {
-
+        ], function( connect, ItemFileWriteStore, ready, Tree, ForestStoreModel ) {
+              var store, model, tree;
+              
               function makeLabel(item, attr, value ) {
                 // summary:
                 //    Action routine called when the tree recieved an update event from the model
@@ -500,19 +523,18 @@ property *label* resulting in a new label text each time a checkbox is clicked.
                                 {name:'Homer', age:'45'},
                                 {name:'Marge', age:'40'}
                               ]};
-              var store = new ItemFileWriteStore({data: dataSet});
-              var model = new ForestStoreModel( {store: store, rootLabel:'The Family'});
-              var tree  = new Tree( {model: model, id:'MyTree'});
+              store = new ItemFileWriteStore({data: dataSet});
+              model = new ForestStoreModel( {store: store, rootLabel:'The Family'});
 
-              connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
+              ready( function() {
+                tree  = new Tree( {model: model, id:'MyTree'}, "CheckboxTree" );
+                connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
 
-              // Map an 'age' update event to the tree node 'label' propery and call the
-              // action routine makeLabel() to get the label text.
+                // Map an 'age' update event to the tree node 'label' propery and call the
+                // action routine makeLabel() to get the label text.
 
-              tree.mapEventToAttr( null,'age','label', makeLabel );
-
-              domReady( function() {
-                tree.placeAt('CheckboxTree');
+                tree.mapEventToAttr( null,'age','label', makeLabel );
+                tree.startup();
               });
            }
       );
@@ -520,16 +542,16 @@ property *label* resulting in a new label text each time a checkbox is clicked.
 
 In the above example the following sequence of events take place:
 
-1. 	Each time a checkbox is clicked the function *checkBoxClicked()* is called
-	and the *age* property of *item* is fetched and incremented followed by a
-	store update.
-2.	As a result of the store update in step 1 the model will generate an *age*
-	property update event.
-3.	When the CheckBox Tree receives the update event it maps the *age* property
-	to the tree node property *label* and calls the function *makeLabel()* to get
-	the new label text.
-4.	Finally, the CheckBox Tree calls *set("label", newLabelText)* for each tree
-	node associated with the data item.
+1.   Each time a checkbox is clicked the function *checkBoxClicked()* is called
+  and the *age* property of *item* is fetched and incremented followed by a
+  store update.
+2.  As a result of the store update in step 1 the model will generate an *age*
+  property update event.
+3.  When the CheckBox Tree recieves the update event it maps the *age* property
+  to the tree node property *label* and calls the function *makeLabel()* to get
+  the new label text.
+4.  Finally, the CheckBox Tree calls *set("label", newLabelText)* for each tree
+  node associated with the data item.
 
 Note: The above example does not have the Store Model API loaded otherwise the *checkBoxClicked()*
 function could be written as:
@@ -552,13 +574,15 @@ The optional CheckBox Tree property *widget* is an object with the following
 properties:
 
 #### type: ####
-> Widget. The widget must support the accessors *get()* and *set()* and must
-> have the *checked* property. In addition, the widgets should not stop any 
+> Widget  | String. The widget must support the accessors *get()* and *set()*
+> and must have the *checked* property. In addition, the widgets should not stop any 
 > 'onClick' events calling *event.stop()* nor should it change any related
 > widget instances without generating an onClick event for those widgets.
+> If *type* is a string, the string value must be a module ID. For example 
+> "dojox/form/TriStateCheckbox"
 
 #### args: ####
-> Object, Optional list of arguments as a set JavaScript 'property name: value'
+> Object, Optional list of arguments as a set of JavaScript 'property name: value'
 > pairs to be passed to the constructor of the widget.
 
 #### target: ####
@@ -583,13 +607,13 @@ being loaded to hide the tree node labels and icons.
 
     <script type="text/javascript">
       require([
-        "dojo/domReady",
+        "dojo/ready",
         "dojo/data/ItemFileWriteStore",
         "dijit/form/ToggleButton",
         "cbtree/Tree",                      // CheckBox Tree              
         "cbtree/TreeStyling",               // Tree Styling API
         "cbtree/models/ForestStoreModel"    // Tree Forest Store Model
-        ], function( domReady, ItemFileWriteStore, ToggleButton, Tree, TreeStyling, ForestStoreModel ) {
+        ], function( ready, ItemFileWriteStore, ToggleButton, Tree, TreeStyling, ForestStoreModel ) {
 
           var store = new ItemFileWriteStore( { url: "../datastore/Simpsons.json" });
           var model = new ForestStoreModel( {
@@ -598,21 +622,21 @@ being loaded to hide the tree node labels and icons.
                                   rootLabel: 'The Simpsons',
                                   checkedRoot: true
                                   }); 
-          var tree = new Tree( { model: model,
-                                 id: "MyTree",
-                                 widget: { type: ToggleButton, 
-                                           args:{iconClass:'dijitCheckBoxIcon'}, 
-                                           mixin: function(args) {
-                                                    args['label'] = this.label;
-                                                  }
-                                         }
-                               });
-          // Hide Labels and Icons for the entire tree.
-          tree.set("labelStyle", {display:'none'});
-          tree.set("iconStyle", {display:'none'});
+          ready( function() {
+            var tree = new Tree( { model: model,
+                                   id: "MyTree",
+                                   widget: { type: ToggleButton, 
+                                             args:{iconClass:'dijitCheckBoxIcon'}, 
+                                             mixin: function(args) {
+                                                args['label'] = this.label;
+                                             }
+                                           }
+                                   }, "CheckBoxTree" );
+            // Hide Labels and Icons for the entire tree.
+            tree.set("labelStyle", {display:'none'});
+            tree.set("iconStyle", {display:'none'});
 
-          domReady( function() {
-            tree.placeAt( "CheckboxTree" );
+            tree.startup();
           });
         }
       );
@@ -626,9 +650,10 @@ with the tree and display the tree itself. In addition, the sample application
 connects the *onCheckBoxClick* event of the tree and as a result every time
 a checkbox is clicked the function *checkBoxClicked()* is called.
 
-    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+    <!DOCTYPE html>
+    <html>
       <head> 
+        <meta charset="utf-8">
         <title>Dijit Tree with Checkboxes</title>     
         <style type="text/css">
           @import "../../dijit/themes/claro/claro.css";
@@ -639,7 +664,7 @@ a checkbox is clicked the function *checkBoxClicked()* is called.
           var dojoConfig = {
                 async: true,
                 parseOnLoad: true,
-                isDebug: true,
+                isDebug: false,
                 baseUrl: "../../",
                 packages: [
                   { name: "dojo",  location: "dojo" },
@@ -650,49 +675,115 @@ a checkbox is clicked the function *checkBoxClicked()* is called.
         </script>
 
         <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+        <script type="text/javascript">
+          require([
+            "dojo/_base/connect",
+            "dojo/data/ItemFileWriteStore",
+            "dojo/ready",
+            "cbtree/Tree",                    // Checkbox tree
+            "cbtree/models/ForestStoreModel"  // ForestStoreModel
+            ], function( connect, ItemFileWriteStore, ready, Tree, ForestStoreModel) {
 
+              var store, model, tree;
+              
+              function checkBoxClicked( item, nodeWidget, evt ) {
+                alert( "The new state for " + this.getLabel(item) + " is: " + nodeWidget.get("checked") );
+              }
+
+              store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
+              model = new ForestStoreModel( {
+                      store: store,
+                      query: {type: 'parent'},
+                      rootLabel: 'The Family',
+                      checkedRoot: true,
+                      checkedState: true
+                      }); 
+
+              ready(function() {
+                tree = new Tree( {
+                        model: model,
+                        id: "MenuTree",
+                        branchReadOnly: false,
+                        branchIcons: true,
+                        nodeIcons: true
+                        }, "CheckboxTree" );
+                tree.startup();
+                connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
+              });
+            });
+        </script>
       </head>
         
       <body class="claro">
         <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
         <div id="CheckboxTree">  
-          <script type="text/javascript">
-            require([
-              "dojo/_base/connect",
-              "dojo/data/ItemFileWriteStore",
-              "dojo/domReady",
-              "cbtree/Tree",                    // Checkbox tree
-              "cbtree/models/ForestStoreModel"  // ForestStoreModel
-              ], function( connect, ItemFileWriteStore, domReady, Tree, ForestStoreModel) {
-
-                function checkBoxClicked( item, nodeWidget, evt ) {
-                  alert( "The new state for " + this.getLabel(item) + " is: " + nodeWidget.get("checked") );
-                }
-
-                var store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
-                var model = new ForestStoreModel( {
-                                    store: store,
-                                    query: {type: 'parent'},
-                                    rootLabel: 'The Family'
-                                 }); 
-                var tree = new Tree( {
-                                  model: model,
-                                  id: "MenuTree",
-                                  branchIcons: true,
-                                  branchReadOnly: false,
-                                  checkBoxes: true,
-                                  nodeIcons: true
-                                });
-                connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
-
-                domReady( function() {
-                  tree.placeAt('CheckboxTree');
-                });
-            });
-          </script>
         </div>
         <h2>Click a checkbox</h2>
       </body> 
     </html>
+
+Following is the same program but this time we instanciate all elements declarative
+using the HTML5 custom  *data-dojo*-xxx attributes. Notice that because we take the
+declarative route we must explicitly include *dojo/parser* to parse our document.
+The dojo parser will process all *data-dojo*-xxx attributes, without the parser loaded
+you will see nothing on your screen.
+
+    <!DOCTYPE html>
+    <html>
+      <head> 
+        <meta charset="utf-8">
+        <title>Dijit Tree with Checkboxes</title>     
+        <style type="text/css">
+          @import "../../dijit/themes/claro/claro.css";
+          @import "../themes/claro/claro.css";
+        </style>
+
+        <script type="text/javascript">
+          var dojoConfig = {
+            async: true,
+            parseOnLoad: true,
+            isDebug: false,
+            baseUrl: "../../",
+            packages: [
+              { name: "dojo",  location: "dojo" },
+              { name: "dijit", location: "dijit" },
+              { name: "cbtree",location: "cbtree" }
+            ]
+          };
+        </script>
+
+        <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+        <script type="text/javascript">
+          require([
+            "dojo/data/ItemFileWriteStore",
+            "dojo/parser",                    // dojo parser
+            "cbtree/Tree",                    // Checkbox tree
+            "cbtree/models/ForestStoreModel"  // ForestStoreModel
+          ]);
+
+          function checkBoxClicked( item, nodeWidget, evt ) {
+            alert( "The new state for " + this.getLabel(item) + " is: " + nodeWidget.get("checked") );
+          }
+        </script>
+      </head>
+      
+      <body class="claro">
+        <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+        <div id="content">
+          <div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" 
+            data-dojo-props='url:"../datastore/Family-1.7.json"'>
+          </div>
+          <div data-dojo-id="model" data-dojo-type="cbtree/models/ForestStoreModel" 
+            data-dojo-props='store:store, query:{type:"parent"}, rootLabel:"The Family", checkedRoot:true,
+            checkedState:true'>
+          </div>
+          <div data-dojo-id="tree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model, 
+            onCheckBoxClick: checkBoxClicked, id:"tree"'>
+          </div>
+        </div>
+        <h2>Click a checkbox</h2>
+      </body> 
+    </html>
+
 
 The other documents in the CheckBox Tree documentation set have additional sample applications.

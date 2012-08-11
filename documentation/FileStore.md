@@ -18,7 +18,7 @@ of loading back-end information ondemand, or in other words: only load what and 
 Depending on the store model used with the File Store the user can influence this behavior.
 For example, if the File Store is used with the cbtree FileStoreModel, the 
 [model properties](StoreModels.md#store-model-properties) *deferItemLoadingUntilExpand*
-and *checkedStrict* actually determine how data is retreived from the back-end server.
+and *checkedStrict* actually determine how data is retrieved from the back-end server.
 
 If you elect to use a store model that requires a full store load (no lazy loading), such
 as the FileStoreModel with the model property *checkedStrict* set, please check the '*Which
@@ -41,13 +41,13 @@ requirements. The PHP implementation has been fully tested with PHP 5.3.1
 #### File Store Restrictions ####
 
 File Store (client side) use the JavaScript XHR API to communicate with the back-end
-server therefore cross-domain access is, by default, denied. If you need to retreive file
+server therefore cross-domain access is, by default, denied. If you need to retrieve file
 system information from any server other than the one hosting the active HTML
 page you must configure a so-called HTTP proxy server. (**HTTP server configuration is beyond the
 scope of this document**).
 
 The content of the in-memory File Store in treated as read-only, as a result, you can not change
-file properties such as the name or path using *setValue()*. To rename a file use rename() instead. 
+file properties such as the name or path using *setValue()*. To rename a file use *rename()* instead. 
 You can however use the setValue() or setValues() methods to add custom attribute/properties to
 items in the store which will be writeable.
 For example, the CheckBox Tree FileStoreModel adds a property called 'checked' to each item 
@@ -82,7 +82,7 @@ than the last question will determine the final outcome. If you operate on a lar
 Most scripting languages such as PHP are implemented as an interpreter and therefore slower than
 any native compiled code like the ANSI-C CGI application. As an example, loading the entire store
 running both the browser application and the PHP server side aplication on the same 4 core 2.4 Mhz AMD
-processor with a file system of 21,000 files takes about 7-8 seconds. Running the exact same browser
+processor with a file system of 21,000 files takes about 6-7 seconds. Running the exact same browser
 application on the same platform but with the CGI application takes 3-4 seconds.
 
 If your application does ***NOT*** require a full store load (lazy loading is sufficient) and none
@@ -120,42 +120,42 @@ Below you'll find the ABNF notation for the server request and response.
 
 ##### Request: #####
 
-	HTTP-GET 	  ::= uri ('?' query-string)?
-	query-string  ::= (qs-param ('&' qs-param)*)?
-	qs-param	  ::= basePath | path | query | queryOptions | options | 
-					  start | count | sort
-	authToken	  ::= 'authToken' '=' json-object
-	basePath	  ::= 'basePath' '=' path-rfc3986
-	path		  ::= 'path' '=' path-rfc3986
-	query		  ::= 'query' '=' json-object
-	query-options ::= 'queryOptions' '=' json-object
-	options		  ::= 'options' '=' json-array
-	start		  ::= 'start' '=' number
-	count		  ::= 'count' '=' number
-	sort 		  ::= 'sort' '=' json-array
+    HTTP-GET       ::= uri ('?' query-string)?
+    query-string  ::= (qs-param ('&' qs-param)*)?
+    qs-param      ::= basePath | path | query | queryOptions | options | 
+                      start | count | sort
+    authToken      ::= 'authToken' '=' json-object
+    basePath      ::= 'basePath' '=' path-rfc3986
+    path          ::= 'path' '=' path-rfc3986
+    query          ::= 'query' '=' json-object
+    query-options ::= 'queryOptions' '=' json-object
+    options          ::= 'options' '=' json-array
+    start          ::= 'start' '=' number
+    count          ::= 'count' '=' number
+    sort           ::= 'sort' '=' json-array
 
 ##### Response: #####
 
-	response	  ::= '{' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list '}'
-	totals 		  ::= '"total"' ':' number
-	status		  ::= '"status"' ':' status-code
-	status-code	  ::=	'200' | '204' | '401'
-	identifier	  ::= '"identifier"' ':' quoted-string
-	label		  ::= '"label"' ':' quoted-string
-	file-list	  ::= '"items"' ':' '[' file-info* ']'
-	file-info	  ::= '{' name ',' path ',' size ',' modified (',' icon)? ',' directory 
-					    (',' children ',' expanded)? '}'
-	name		  ::= '"name"' ':' json-string
-	path		  ::= '"path"' ':' json-string
-	size		  ::= '"size"' ':' number
-	modified	  ::= '"modified"' ':' number
-	icon		  ::= '"icon"' ':' classname-string
-	directory	  ::= '"directory"' ':' ('true' | 'false')
-	children	  ::= '[' file-info* ']'
-	expanded	  ::= '"_EX"' ':' ('true' | 'false')
-	quoted-string ::= '"' CHAR* '"'
-	number		  ::= DIGIT+
-	DIGIT		  ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+    response      ::= '{' (totals ',')? (status ',')? (identifier ',')? (label ',')? file-list '}'
+    totals           ::= '"total"' ':' number
+    status          ::= '"status"' ':' status-code
+    status-code      ::=    '200' | '204' | '401'
+    identifier      ::= '"identifier"' ':' quoted-string
+    label          ::= '"label"' ':' quoted-string
+    file-list      ::= '"items"' ':' '[' file-info* ']'
+    file-info      ::= '{' name ',' path ',' size ',' modified (',' icon)? ',' directory 
+                        (',' children ',' expanded)? '}'
+    name          ::= '"name"' ':' json-string
+    path          ::= '"path"' ':' json-string
+    size          ::= '"size"' ':' number
+    modified      ::= '"modified"' ':' number
+    icon          ::= '"icon"' ':' classname-string
+    directory      ::= '"directory"' ':' ('true' | 'false')
+    children      ::= '[' file-info* ']'
+    expanded      ::= '"_EX"' ':' ('true' | 'false')
+    quoted-string ::= '"' CHAR* '"'
+    number          ::= DIGIT+
+    DIGIT          ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
 Please refer to [http://json.org/](http://json.org/) for the proper JSON encoding rules.
 
@@ -171,20 +171,20 @@ CBTREE_BASEPATH
 > compose the root directory.  If this variable is set it overwrites the basePath parameter
 > in any HTTP query string and therefore becomes the server wide basepath.
 
-	CBTREE_BASEPATH /system/wide/path
+    CBTREE_BASEPATH /system/wide/path
 
-> Given the above basepath and if the document root of your server is /MyServer/htdoc the root
-> directory for the Server Side Application becomes: */MyServer/htdoc/system/wide/path*
+> Given the above basepath and if the document root of your server is /MyServer/htdocs the root
+> directory for the Server Side Application becomes: */MyServer/htdocs/system/wide/path*
 
 CBTREE_METHODS
 
 > A comma separated list of HTTP methods to be supported by the Server Side Application. 
 > By default only HTTP GET is supported. Possible options are uppercase GET, DELETE and POST. Example:
 
-	CBTREE_METHODS GET,DELETE,POST
+    CBTREE_METHODS GET,DELETE,POST
 
 > If only HTTP GET support is required there is no need to define CBTREE_METHODS, if however, 
-> HTTP DELETE or POST support is required you ***MUST*** define the CBTREE_METHODS variable.
+> HTTP DELETE and/or POST support is required you ***MUST*** define the CBTREE_METHODS variable.
 > HTTP POST is required to rename files.
 
 #### IMPORTANT ####
@@ -194,11 +194,11 @@ script or CGI application.  For example, the Apache HTTP server requires you to 
 the *SetEnv* or *PassEnv* directive. To make environment variable CBTREE_METHODS
 available add the following to your httpd.conf file:
 
-	SetEnv CBTREE_METHODS GET,DELETE
+    SetEnv CBTREE_METHODS GET,DELETE
 
-				or
+                or
 
-	PassEnv CBTREE_METHODS
+    PassEnv CBTREE_METHODS
 
 Please refer to the Apache [mod_env](http://httpd.apache.org/docs/2.2/mod/mod_env.html) section
 for additional details.
@@ -309,12 +309,12 @@ Other pattern string conversion samples are:
 
 <table border="1">
   <thead>
-	  <th style="width:150px;">Pattern</th> <th style="width:200px;">Regular Expression</th>
+      <th style="width:150px;">Pattern</th> <th style="width:200px;">Regular Expression</th>
   </thead>
   <tbody>
-	  <tr> <td>*ab*</td> <td>/^.*ab.*$/</td> </tr>
-	  <tr> <td>*a\*b*</td> <td>/^.*a\*b.*$/</td> </tr>
-	  <tr> <td>*a\*b?*</td> <td>/^.*a\*b..*$/</td> </tr>
+      <tr> <td>*ab*</td> <td>/^.*ab.*$/</td> </tr>
+      <tr> <td>*a\*b*</td> <td>/^.*a\*b.*$/</td> </tr>
+      <tr> <td>*a\*b?*</td> <td>/^.*a\*b..*$/</td> </tr>
   </tbody>
 </table>
 
@@ -327,45 +327,44 @@ The options influence both the behavour of the Server Side Application and the F
 
 <table border="1">
   <thead>
-	  <th style="width:15%;">Option</th> <th style="width:auto;">Description</th>
+      <th style="width:15%;">Option</th> <th style="width:auto;">Description</th>
   </thead>
   <tbody>
-	<tr> 
-	  <td style="vertical-align:top">deep</td> 
-	  <td>
-		If <strong>true</strong>, forces the File Store to perform a deep search including all 
-		available items in the search. If query option <i>storeOnly</i> is false all items
-		relative to the path property in <i>keywordArgs</i> will be fetched from the back-end server.
-		if query option <i>deep</i> is <strong>false</strong> only the immediate children of the 
-		base path are included in the search. (the content of the root directory)
-	  </td>
-	</tr>
-	<tr> 
-	  <td style="vertical-align:top">ignoreCase</td> 
-	  <td>
-		If <strong>true</strong>, any regular expression will match strings case insensitive.
-	  </td> 
-	</tr>
-	<tr>
-	  <td style="vertical-align:top">storeOnly</td>
-	  <td>
-		If <strong>true</strong>, limits the search to items currently loaded in the in memory store 
-		otherwise, depending on the other <i>keywordArgs</i> parameters, data may be fetched from the back-end
-		server before the actual search is executed.
-	  </td>
-	</tr>
+    <tr> 
+      <td style="vertical-align:top">deep</td> 
+      <td>
+        If <strong>true</strong>, forces the File Store to perform a deep search including all 
+        available items in the search. If query option <i>storeOnly</i> is false all items
+        relative to the path property in <i>keywordArgs</i> will be fetched from the back-end server.
+        if query option <i>deep</i> is <strong>false</strong> only the immediate children of the 
+        base path are included in the search. (the content of the root directory)
+      </td>
+    </tr>
+    <tr> 
+      <td style="vertical-align:top">ignoreCase</td> 
+      <td>
+        If <strong>true</strong>, any regular expression will match strings case insensitive.
+      </td> 
+    </tr>
+    <tr>
+      <td style="vertical-align:top">storeOnly</td>
+      <td>
+        If <strong>true</strong>, limits the search to items currently loaded in the in memory store 
+        otherwise, depending on the other <i>keywordArgs</i> parameters, data may be fetched from the back-end
+        server before the actual search is executed.
+      </td>
+    </tr>
   </tbody>
 </table>
-
-
 
 <h2 id="fancy-tree-styling">Fancy Tree Styling</h2>
 
 The File Store supports the option *iconClass* which will force it to include a CSS icon
-classname for each store item (file). The classname is based on the file extension. If the *iconClass* option is
-set two css classnames are included in the server response and are formatted as follows:
+classname for each store item (file). The classname is based on the file extension. 
+If the *iconClass* option is set, the file store will generate a css classname which is
+formatted as follows:
 
-	classname ::= 'fileIcon' fileExtension WSP 'fileIcon'
+    iconClassname ::= 'fileIcon' fileExtension WSP 'fileIcon'
 
 As a result each store item will have an addition attribute/property called *icon* 
 whose value is a pair of camelCase classnames. The first character of fileExtension
@@ -392,7 +391,7 @@ generating the classname and does not look at the files content type.
 ### Prerequisites ###
 To enable and use the Fancy Tree Styling in your applications the following requirements must be met:
 
-* The Tree Styling extension must have been loaded. (cbtree/TreeStyling.js)
+* The Tree Styling extension must have been loaded. (cbtree/TreeStyling)
 * A set of icons or an icon sprite must be available.
 * A CSS definitions file must be available and loaded.
 * The FileStoreModel and optionally the tree must be configured for icon support.
@@ -645,7 +644,7 @@ At the end of this document you can find a complete example of an application us
 > parameter *status* is undefined.
 
 *scope:* Object (Optional)
-> If a scope object is provided, all of the callback functions (onItem,	onError, etc)
+> If a scope object is provided, all of the callback functions (onItem,    onError, etc)
 > will be invoked in the context of the scope object. In the body of the callback
 > function, the value of the "this" keyword will be the scope object otherwise
 > window.global is used.
@@ -718,125 +717,308 @@ The following sample application shows the document root directory of the back-e
 as a simple tree with checkboxes. Notice that because the model property *checkedStrict* 
 is disabled the FileStoreModel will automatically apply lazy loading.
 
-	<!DOCTYPE html>
-	<html>
-	  <head> 
-		<title>Dijit CheckBox Tree and File Store</title>     
-		<style type="text/css">
-		  @import "../../dijit/themes/claro/claro.css";
-		  @import "../themes/claro/claro.css";
-		</style>
+    <!DOCTYPE html>
+    <html>
+      <head> 
+        <meta charset="utf-8">
+        <title>Dijit CheckBox Tree and File Store</title>     
+        <style type="text/css">
+          @import "../../dijit/themes/claro/claro.css";
+          @import "../themes/claro/claro.css";
+        </style>
 
-		<script type="text/javascript">
-		  var dojoConfig = {
-				async: true,
-				parseOnLoad: true,
-				isDebug: true,
-				baseUrl: "../../",
-				packages: [
-				  { name: "dojo",  location: "dojo" },
-				  { name: "dijit", location: "dijit" },
-				  { name: "cbtree",location: "cbtree" }
-				]
-		  };
-		</script>
-		<script type="text/javascript" src="../../dojo/dojo.js"></script> 
-	  </head>
-		
-	  <body class="claro">
-		<div id="CheckboxTree">  
-		  <script type="text/javascript">
-			require([
-			  "cbtree/Tree",                  // Checkbox tree
-			  "cbtree/models/FileStoreModel", // FileStoreModel
-			  "cbtree/stores/FileStore"
-			  ], function( Tree, FileStoreModel, FileStore) {
-				  var store = new FileStore( { url: "../stores/server/php/cbtreeFileStore.php", basePath:"./"} ); 
-				  var model = new FileStoreModel( {
-						  store: store,
-						  rootLabel: 'My HTTP Document Root',
-						  checkedRoot: true,
-						  checkedStrict: false,
-						  sort: [{attribute:"directory", descending:true},{attribute:"name"}]
-					   }); 
-				  var tree = new Tree( { model: model, id: "MenuTree" });
-				  tree.placeAt( "CheckboxTree" );
-			});
-		  </script>
-		</div>
-	  </body> 
-	</html>
+        <script type="text/javascript">
+          var dojoConfig = {
+                async: true,
+                parseOnLoad: true,
+                isDebug: false,
+                baseUrl: "../../",
+                packages: [
+                  { name: "dojo",  location: "dojo" },
+                  { name: "dijit", location: "dijit" },
+                  { name: "cbtree",location: "cbtree" }
+                ]
+          };
+        </script>
 
+        <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+        <script type="text/javascript">
+          require([
+            "dojo/ready",
+            "cbtree/Tree",                  // Checkbox tree
+            "cbtree/models/FileStoreModel", // FileStoreModel
+            "cbtree/stores/FileStore"
+            ], function( ready, Tree, FileStoreModel, FileStore) {
+
+              // Because of the generic nature of this demo it has no knowledge of the file system layout
+              // under the DOCUMENT_ROOT, therefore the 'basePath' is set to the document root itself.
+
+              var store = new FileStore( { url: "../stores/server/php/cbtreeFileStore.php", basePath:"."} ); 
+              var model = new FileStoreModel( {
+                      store: store,
+                      rootLabel: 'My HTTP Document Root',
+                      checkedRoot: true,
+                      checkedStrict: false,
+                      queryOptions: {ignoreCase:true},
+                      sort: [{attribute:"directory", descending:true},{attribute:"name"}]
+                   }); 
+
+              ready(function() {
+                var tree = new Tree( { model: model, id: "MenuTree" }, "CheckboxTree" );
+                tree.startup();
+              });
+            });
+        </script>
+      </head>
+        
+      <body class="claro">
+        <h1 class="DemoTitle">Dijit CheckBox Tree with a File Store</h1>
+        <div id="CheckboxTree">  
+        </div>
+      </body> 
+    </html>
 
 ### Fancy Tree Styling ###
 
 The following sample applies *Fancy Icons* to the tree 
 
-	<!DOCTYPE html>
-	<html>
-	  <head> 
-		<title>Dijit CheckBox Tree and File Store</title>     
-		<!-- 	
-			Load the CSS files including the Apache style icons, alternatively load fileIconsMS.css 
-			instead to get Microsoft Windows style icons (but not both).
-		-->
-		<style type="text/css">
-		  @import "../../dijit/themes/claro/claro.css";
-		  @import "../themes/claro/claro.css";
-		  @import "../icons/fileIconsApache.css";
-		</style>
+    <!DOCTYPE html>
+    <html>
+      <head> 
+        <meta charset="utf-8">
+        <title>Dijit CheckBox Tree and File Store</title>     
+        <!--   
+          Load the CSS files including the Apache style icons, alternatively load fileIconsMS.css 
+          instead to get Microsoft Windows style icons (but not both).
+        -->
+        <style type="text/css">
+          @import "../../dijit/themes/claro/claro.css";
+          @import "../themes/claro/claro.css";
+          @import "../icons/fileIconsApache.css";
+        </style>
 
-		<script type="text/javascript">
-		  var dojoConfig = {
-				async: true,
-				parseOnLoad: true,
-				isDebug: true,
-				baseUrl: "../../",
-				packages: [
-				  { name: "dojo",  location: "dojo" },
-				  { name: "dijit", location: "dijit" },
-				  { name: "cbtree",location: "cbtree" }
-				]
-		  };
-		</script>
-		<script type="text/javascript" src="../../dojo/dojo.js"></script> 
-	  </head>
-		
-	  <body class="claro">
-		<div id="CheckboxTree">  
-		  <script type="text/javascript">
+        <script type="text/javascript">
+          var dojoConfig = {
+                async: true,
+                parseOnLoad: true,
+                isDebug: false,
+                baseUrl: "../../",
+                packages: [
+                  { name: "dojo",  location: "dojo" },
+                  { name: "dijit", location: "dijit" },
+                  { name: "cbtree",location: "cbtree" }
+                ]
+          };
+        </script>
 
-		  require([
-			"cbtree/Tree",                  // Checkbox tree
-			"cbtree/TreeStyling",           // Checkbox tree Styling
-			"cbtree/models/FileStoreModel", // FileStoreModel
-			"cbtree/stores/FileStore"
-			], function( Tree, TreeStyling, FileStoreModel, FileStore) {
+        <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+        <script type="text/javascript">
+          require([
+            "dojo/ready",
+            "cbtree/Tree",                  // Checkbox tree
+            "cbtree/TreeStyling",           // Checkbox tree Styling
+            "cbtree/models/FileStoreModel", // FileStoreModel
+            "cbtree/stores/FileStore"
+            ], function( ready, Tree, TreeStyling, FileStoreModel, FileStore) {
 
-			  // The option 'iconClass' forces the server side application to include the icon classname
-			  // in the response.
-			  var store = new FileStore( { url: "../stores/server/php/cbtreeFileStore.php", 
-										   basePath:"./",
-										   options:["iconClass"] } ); 
+              // Because of the generic nature of this demo it has no knowledge of the file system layout
+              // under the DOCUMENT_ROOT, therefore the 'basePath' is set to the document root itself.
 
-			  // Tell the model to look for the store item property 'icon' and process it as an icon.
-			  var model = new FileStoreModel( {
-					  store: store,
-					  rootLabel: 'My HTTP Document Root',
-					  checkedRoot: true,
-					  checkedStrict: false,
-					  iconAttr: "icon",
-					  sort: [{attribute:"directory", descending:true},{attribute:"name"}]
-				   }); 
+              var store = new FileStore( { url: "../stores/server/php/cbtreeFileStore.php", 
+                                           basePath:".",
+                                           options:["iconClass"] } ); 
 
-			  // Create the tree and set the icon property so the tree root uses the same set of icons
-			  // all tree nodes will use (not required but for consistancy only).
-			  var tree = new Tree( { model: model, id: "MenuTree",
-									 icon: {iconClass:"fileIcon"}
-								   });
-			  tree.placeAt( "CheckboxTree" );
-			});
-		  </script>
-		</div>
-	  </body> 
-	</html>
+              // Tell the model to look for the store item property 'icon' and process it as an icon.
+              var model = new FileStoreModel( {
+                      store: store,
+                      rootLabel: 'My HTTP Document Root',
+                      checkedRoot: true,
+                      checkedStrict: false,
+                      iconAttr: "icon",
+                      queryOptions: {ignoreCase:true},
+                      sort: [{attribute:"directory", descending:true},{attribute:"name"}]
+                   }); 
+
+              ready(function() {
+                // Create the tree and set the icon property so the tree root uses the same set of icons
+                // all tree nodes will use (not required but for consistancy only).
+
+                var tree = new Tree( { model: model, id: "MenuTree", icon: {iconClass:"fileIcon"} }, "CheckboxTree" );
+                tree.startup();
+              });
+
+            });
+        </script>
+      </head>
+        
+      <body class="claro">
+        <h1 class="DemoTitle">Dijit CheckBox Tree with a File Store and Fancy Icons</h1>
+        <div id="CheckboxTree">  
+        </div>
+      </body> 
+    </html>
+    
+Finally, the next sample is a simple Windows style explorer taking the declarative approach:
+
+    <!DOCTYPE html>
+    <html>
+      <head> 
+        <meta charset="utf-8">
+        <title>Dijit CheckBox Tree using the cbtree File Store</title>     
+         <style type="text/css">
+          @import "../../dijit/themes/claro/claro.css";
+          @import "../../dojox/grid/resources/claroGrid.css";
+          @import "../../cbtree/icons/fileIconsMS.css";
+          @import "../themes/claro/claro.css";
+
+          html,body { height: 100%; margin: 0; overflow: hidden; padding: 0; }
+          #appLayout { height: 100%; }
+        </style>
+
+        <script type="text/javascript">
+          var dojoConfig = {
+                async: true,
+                parseOnLoad: false,
+                isDebug: true,
+                baseUrl: "../../",
+                packages: [
+                  { name: "dojo",  location: "dojo" },
+                  { name: "dojox", location: "dojox" },
+                  { name: "dijit", location: "dijit" },
+                  { name: "cbtree",location: "cbtree" }
+                ]
+          };
+        </script>
+
+        <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+        <script>
+          require([ "dojo/_base/lang",
+                    "dojox/grid/DataGrid",
+                    "dojo/parser",
+                    "dojo/domReady!"
+                  ], function (lang, DataGrid, parser) {
+
+            // Overwrite the store event handlers of the DataGrid
+            lang.extend( DataGrid, {
+              _onDelete: function() {},
+              _onNew: function() {},
+              _onSet: function() {}
+            });
+            parser.parse();
+          });
+        </script> 
+
+        <script>
+          require([ "dojo/_base/connect",
+                    "dijit/layout/BorderContainer",
+                    "dijit/layout/TabContainer",
+                    "dijit/layout/ContentPane",
+                    "cbtree/Tree",                   // Checkbox Tree
+                    "cbtree/TreeStyling",           // Tree Styling extensions
+                    "cbtree/models/FileStoreModel", // Forest Store Model
+                    "cbtree/stores/FileStore",      // File Store
+                    "cbtree/stores/BreadCrumb"      // Breadcrumb trail
+                  ]);
+        </script>
+
+        <script type="text/javascript">  
+          var sortFields = [{attribute:"directory", descending:true},{attribute:"name", ignoreCase:true}];
+          var queryOptions = { deep: true, storeOnly: true };
+          var layoutFiles = [
+            [
+              { field: "name", name: "Filename", width: 20 },
+              { field: "size", name: "File Size (bytes)", width: 10 },
+              { field: "directory", name: "Is Directory", width: 10 },
+              { field: "path", name: "Path", width: 'auto' }
+            ]
+          ];
+
+          function pathToRegex( path ) {
+            // summary:
+            //    Convert a path string into a regular expression (not a pattern)...
+            var segm  = path.split("/");
+            var regex = "(^\\.";
+            var i;
+            
+            for( i=0; i<segm.length; i++) {
+              if (segm[i] !== ".") {
+                regex = regex + "\\/" + segm[i];
+              }
+            }
+            regex = regex + "\\/[^\\/]*$)"
+            return regex;
+          }
+          
+          function setQuery( path ) {
+            // summary:
+            //    Set and execute the new query string for the grid and update
+            //    the breadcrumb trail.
+            grid.setQuery( {path: pathToRegex(path)}, queryOptions );
+            grid.selection.deselectAll();
+            trail.setTrail( path );
+          }
+
+          function updateGrid( item ) {
+            // summary:
+            //    Update the grid with the new item data. If the item is currently
+            //    not loaded in the store go load it first.
+            if (!store.isItemLoaded(item)) {
+              store.loadItem( { item: item,  onItem: updateGrid });
+            } else {
+              setQuery( store.getValue(item,"path") );
+            }
+          }
+
+          function treeClicked( item, nodeWidget, evt ) {
+            if (nodeWidget !== tree.rootNode) {
+              updateGrid( item );
+            } else {
+              setQuery( "." );
+            }
+          }
+
+          function gridClicked(rowIndex) {
+            var item = grid.getItem(rowIndex);
+            if (item.directory) {
+              updateGrid(item);
+            }
+          }
+        </script>
+      </head>
+        
+      <body class="claro">
+        <div data-dojo-id="store" data-dojo-type="cbtree/stores/FileStore" 
+          data-dojo-props='url:"../../cbtree/stores/server/php/cbtreeFileStore.php",
+          cache:false, options:["iconClass"]'>
+        </div>
+     
+        <div data-dojo-id="model" data-dojo-type="cbtree/models/FileStoreModel" data-dojo-props='store:store,
+          query:{directory:true}, queryOptions:{ignoreCase:true}, rootLabel:"My Files", labelAttr:"name", 
+          iconAttr:"icon", checkedStrict:false'>
+        </div>
+
+      
+        <div id="appLayout" class="demoLayout" data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design:'headline'">      
+          <div class="edgePanel edgeTop" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'top'">
+            <div data-dojo-id="trail" data-dojo-type="cbtree/stores/BreadCrumb" data-dojo-props='store:store,
+             cssBaseClass:"fileIcon"' onClick=updateGrid style="width: 100%; height:32px;"></div>
+          </div>
+          <div class="edgePanel" data-dojo-type="dijit.layout.ContentPane" 
+               data-dojo-props="region: 'left', splitter: true" style="width:25%;">
+            <div data-dojo-id="tree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model,
+              checkBoxes:false, icon:"fileIcon", onClick: treeClicked, persist:false'>
+            </div>
+          </div>
+
+          <div id="mainLevel" class="centerPanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'center'">
+            <div data-dojo-id="grid" data-dojo-type="dojox/grid/DataGrid" data-dojo-props='store:store, 
+              structure:layoutFiles, query:{path:pathToRegex(".")}, queryOptions: queryOptions, 
+              sortFields: sortFields, selectionMode:"single", onSelected:gridClicked' 
+              style="width: 99%; height:500px;">
+            </div>            
+          </div>
+        </div>
+      </body>
+    </html>
+
+Please note that the above sample application requires DOJOX to be installed on your system.

@@ -34,7 +34,7 @@ like the default dijit Tree but still offering some of the additional benifits
 like the ability to hide branch and/or leaf icons.
 
 ### Parent-Child Relationship ###
-The CheckBox Tree comes with two store models, one of the Store Model features is
+The CheckBox Tree comes with three store models, one of the Store Model features is
 the ability to maintain a parent-child relationship.
 The parent checked state, represented as a tree branch checkbox, is the composite
 state of all its child checkboxes. For example, if the child checkboxes are either
@@ -76,7 +76,6 @@ items using a store query or manage any store item attributes using the *setItem
 and *getItemAttr()* methods. Some of the Store Model API functions are:
 
 * check(), uncheck()
-* getChecked(), setChecked()
 * getItemAttr(), setItemAttr()
 * fetchItem(), fetchItemsWithChecked()
 * addReference(), removeReference()
@@ -122,10 +121,16 @@ section:
 	  </tr>
 	</thead>
     <tr style="vertical-align:top">
-      <td>cbtree-v09.0-0</td>
-      <td>May-20 2012</td>
-      <td>1.7</td>
-      <td>Initial cbtree-AMD release</td>
+      <td>cbtree-v09.2-0</td>
+      <td>Sep-01 2012</td>
+      <td>1.8</td>
+      <td>
+		Updated The CheckBox Tree to work with dojo 1.8.<br/>
+		Official release File Store and File Store Model.<br/>
+		Per store item read-only checkboxes.<br/>
+		New declarative demos added.<br/>
+		Updated documentation.<br/>
+      <td>
     </tr>
     <tr style="vertical-align:top">
       <td>cbtree-v09.1-0</td>
@@ -137,6 +142,12 @@ section:
 		Updated documentation.<br/>
 		Minor software updates.
       <td>
+    </tr>
+    <tr style="vertical-align:top">
+      <td>cbtree-v09.0-0</td>
+      <td>May-20 2012</td>
+      <td>1.7</td>
+      <td>Initial cbtree-AMD release</td>
     </tr>
   </tbody>
 </table>

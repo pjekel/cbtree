@@ -55,8 +55,8 @@ property:
 > see [icon properties](#icon-properties) for more details.
 
 *****************************
-Styling can be applied to icons, labels and rows at the tree level or on a per item
-basis. Each of those tree node elements have two basic properties:
+Styling can be applied to icons, labels and rows at the tree level or on a per store
+item basis. Each of those tree node elements have two basic properties:
 
 1. Class
 2. Style
@@ -127,8 +127,7 @@ The Tree Styling API provides different methods to add custom icons to your Chec
    data items.
 3. As a property of a data item
 
-In order to add custom icons to the Dijit Tree with Checkboxes the following
-items are required:
+In order to add custom icons to the CheckBox or Dijit Tree the following items are required:
 
 1. An image sprite containing at least three icon types:
   
@@ -277,14 +276,14 @@ You could create your model as follows:
 				...
 			}); 
 
-In the above example the store is told that the data item property *icon* needs
+In the above example the store model is told that the data item property *icon* needs
 to be handled as the icon class for a given store item. Also, any store updates
 to the specified property of the data item will be treated by the tree as an
 update to the items icon.
 
 ### Multi Level Icons ###
     
-In addition to the basic configuration described above the CheckBox Tree
+In addition to the basic configuration described above, the CheckBox Tree
 also allows for the use of different icons depending on the tree node indent
 level. Whenever the icon property 'indent' is true the CheckBox Tree adds an
 additional css class for each icon which is the iconClass suffixed with the
@@ -329,10 +328,11 @@ use of multi level icons.
 ************************
 The following sample application demonstrates some of the Tree Styling API features.
 
-    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+    <!DOCTYPE html>
+    <html>
       <head> 
-        <title>Dijit Tree with Checkboxes </title>     
+        <meta charset="utf-8">
+        <title>Dijit Tree with Checkboxes</title>     
         <style type="text/css">
           @import "../../dijit/themes/claro/claro.css";
           @import "../themes/claro/claro.css";
@@ -342,7 +342,7 @@ The following sample application demonstrates some of the Tree Styling API featu
           var dojoConfig = {
                 async: true,
                 parseOnLoad: true,
-                isDebug: true,
+                isDebug: false,
                 baseUrl: "../../",
                 packages: [
                   { name: "dojo",  location: "dojo" },
@@ -351,53 +351,134 @@ The following sample application demonstrates some of the Tree Styling API featu
                 ]
           };
         </script>
+
         <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+        <script type="text/javascript">
+          require([
+            "dojo/_base/connect",
+            "dojo/data/ItemFileWriteStore",
+            "dojo/ready",
+            "cbtree/Tree",                    // Checkbox tree
+            "cbtree/TreeStyling",             // Tree styling extensions
+            "cbtree/models/ForestStoreModel"  // ForestStoreModel
+            ], function( connect, ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel) {
+
+              var store, model, tree;
+              
+              function checkBoxClicked( item, nodeWidget, evt ) {
+                var newState = nodeWidget.get("checked" );
+                var label    = this.getLabel(item);
+                
+                if( newState ) {
+                  tree.set("iconStyle", {border:"solid"}, item );
+                  tree.set("labelStyle",{color:"red"}, item );
+                } else {
+                  tree.set("iconStyle", {border:"none"}, item );
+                  tree.set("labelStyle",{color:"black"}, item );
+                }
+                alert( "The new state for " + label + " is: " + newState );
+              }
+
+              store = new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" });
+              model = new ForestStoreModel( {
+                        store: store,
+                        query: {type: 'parent'},
+                        rootLabel: 'The Family',
+                        checkedRoot: true,
+                        checkedState: true
+                      }); 
+
+              ready(function() {
+                tree = new Tree( {
+                          model: model,
+                          id: "MenuTree",
+                          branchReadOnly: false,
+                          branchIcons: true,
+                          nodeIcons: true
+                        }, "CheckboxTree" );
+                connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
+                tree.startup();
+              });
+            });
+        </script>
+
       </head>
         
       <body class="claro">
+        <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
         <div id="CheckboxTree">  
-          <script type="text/javascript">
-            require([
-              "dojo/_base/connect",
-              "dojo/data/ItemFileWriteStore",
-              "dojo/domReady",
-              "dojo/has",
-              "cbtree/Tree",                    // Checkbox tree
-              "cbtree/TreeStyling",             // Tree styling extensions
-              "cbtree/models/ForestStoreModel"  // ForestStoreModel
-              ], function( connect, ItemFileWriteStore, domReady, has, Tree, TreeStyling, ForestStoreModel) {
-
-                function checkBoxClicked( item, nodeWidget, evt ) {
-                  var newState = nodeWidget.get("checked" );
-                  var label    = this.getLabel(item);
-                  
-                  if (newState) {
-                    tree.set("iconStyle", {border:"solid"}, item );
-                    tree.set("labelStyle",{color:"red"}, item );
-                  } else {
-                    tree.set("iconStyle", {border:"none"}, item );
-                    tree.set("labelStyle",{color:"black"}, item );
-                  }
-                  alert( "The new state for " + label + " is: " + newState );
-                }
-
-                var model = new ForestStoreModel( {
-                        store: new ItemFileWriteStore( { url: "../datastore/Family-1.7.json" }),
-                        query: {type: 'parent'},
-                        rootLabel: 'The Family'
-                        }); 
-                var tree = new Tree( { model: model, id: "MyTree" });
-                connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
-
-                // Test if TreeStyling API is loaded....
-                if (!has("cbtree-treeStyling-API")) {
-                  throw new Error( "CheckBox Tree Styling API is not loaded.");
-                }
-                domReady( function() {
-                  tree.placeAt( "CheckboxTree" );
-                });
-            });
-          </script>
         </div>
+        <h2>Click a checkbox</h2>
+      </body> 
+    </html>
+    
+The following is the same sample application but this time we instantiate the
+store, model and tree declarative:
+
+    <!DOCTYPE html>
+    <html>
+      <head> 
+        <meta charset="utf-8">
+        <title>Dijit Tree with Checkboxes</title>     
+        <style type="text/css">
+          @import "../../dijit/themes/claro/claro.css";
+          @import "../themes/claro/claro.css";
+        </style>
+
+        <script type="text/javascript">
+          var dojoConfig = {
+                async: true,
+                parseOnLoad: true,
+                isDebug: false,
+                baseUrl: "../../",
+                packages: [
+                  { name: "dojo",  location: "dojo" },
+                  { name: "dijit", location: "dijit" },
+                  { name: "cbtree",location: "cbtree" }
+                ]
+          };
+        </script>
+
+        <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+        <script type="text/javascript">
+          require([
+            "dojo/data/ItemFileWriteStore",
+            "dojo/parser",                    // dojo parser
+            "cbtree/Tree",                    // Checkbox tree
+            "cbtree/TreeStyling",             // Tree styling extensions
+            "cbtree/models/ForestStoreModel"  // ForestStoreModel
+          ]);
+
+          function checkBoxClicked( item, nodeWidget, evt ) {
+            var newState = nodeWidget.get("checked" );
+            var label    = this.getLabel(item);
+            
+            if( newState ) {
+              this.set("iconStyle", {border:"solid"}, item );
+              this.set("labelStyle",{color:"red"}, item );
+            } else {
+              this.set("iconStyle", {border:"none"}, item );
+              this.set("labelStyle",{color:"black"}, item );
+            }
+            alert( "The new state for " + label + " is: " + newState );
+          }
+        </script>
+
+      </head>
+        
+      <body class="claro">
+        <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+        <div id="content">
+          <div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" 
+            data-dojo-props='url:"../datastore/Family-1.7.json"'>
+          </div>
+          <div data-dojo-id="model" data-dojo-type="cbtree/models/ForestStoreModel"
+            data-dojo-props='store:store, query:{type:"parent"}, rootLabel:"The Family"'>
+          </div>
+          <div data-dojo-id="tree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model, 
+            onCheckBoxClick: checkBoxClicked, id:"tree"'>
+          </div>
+        </div>
+        <h2>Click a checkbox</h2>
       </body> 
     </html>

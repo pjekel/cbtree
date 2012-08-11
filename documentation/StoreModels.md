@@ -131,8 +131,8 @@ Please refer to the [File Store](FileStore.md) documentation for details.
 The File Store Model implements a subset of the Forest Store Model and [Store Model API](StoreModelAPI.md) functionality.
 Because the content of a File Store is treated as read-only, that is, you can't add new
 items to the store, any attempt to do so will throw an error. You can however add custom
-properties to store items which will be writeable or rename store items. The File Store
-Model also supports drag and drop operations using the File Store rename capabilities.
+properties to store items which will be writeable or rename or delete store items. The File
+Store Model also supports drag and drop operations using the File Store rename capabilities.
 
 In addition to the common Store Model Properties, the File Store Model has an
 additional set of properties to help query the File Store. Also, because of the
@@ -181,6 +181,13 @@ ignored by the File Store Model.
 > on nodes until they are expanded. This allows for lazy loading where only one
 > loadItem (and generally one network call) per expansion (rather than one for each child).
 > Note: Only valid if *checkedStrict* equals false.
+
+#### enabledAttr: ####
+> The name of a store item attribute that holds the 'enabled' state
+> of the checkbox or alternative widget. Note: Eventhough it is referred to as the
+> 'enabled' state the tree will only use this property to enable/disable the 
+> 'ReadOnly' property of a checkbox or alternative widget. This because disabling
+> a widget (DOM element) may exclude it from HTTP POST operations.
 
 #### excludeChildrenAttrs: ####
 > String[] (null), If multiple childrenAttrs have been specified excludeChildrenAttrs
@@ -322,6 +329,14 @@ for details).
 > property are used in which case all children are returned.
 
 *********************************************
+#### getEnabled( item ) ####
+> Returns the current 'enabled' state of an item as a boolean. See the *enabledAttr*
+> property description for more details.
+
+*item:* data.item
+> A valid dojo.data.store item.
+
+*********************************************
 #### getIcon( item ) ####
 > If the *iconAttr* property of the model is set, get the icon for *item* from
 > the store otherwise *undefined* is returned.
@@ -407,14 +422,22 @@ for details).
 
 *********************************************
 #### setChecked ( item, newState ) ####
-> Update the checked state of a store item. If the property *checkedStrict* for
-> the model is true, the items parent(s) and children, if any, are updated accordingly.
+> Update the checked state of a store item. If the model property *checkedStrict*
+> is true, the items parent(s) and children, if any, are updated accordingly.
 
 *item:* data.item
 > A valid dojo.data.store item.
 
 *newState:* Boolean | String
 > The new checked state. The state can be either a boolean (true | false) or a string ('mixed')
+
+*********************************************
+#### setEnabled( item, value ) ####
+> Set the new 'enabled' state of an item. See the *enabledAttr* property description for more
+> details.
+
+*item:* data.item
+> A valid dojo.data.store item.
 
 <h2 id="store-model-callbacks">Store Model Callbacks</h2>
 
