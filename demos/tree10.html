@@ -32,8 +32,9 @@
         "cbtree/models/FileStoreModel", // FileStoreModel
         "cbtree/stores/FileStore"
         ], function( ready, Tree, FileStoreModel, FileStore) {
-
-          var store = new FileStore( { url: "../stores/server/php/cbtreeFileStore.php", basePath:"./"} ); 
+           // Because of the generic nature of this demo it has no knowledge of the file system layout
+           // under the DOCUMENT_ROOT, therefore the 'basePath' is set to the document root itself.
+          var store = new FileStore( { url: "../stores/server/php/cbtreeFileStore.php", basePath:"."} ); 
           var model = new FileStoreModel( {
                   store: store,
                   rootLabel: 'My HTTP Document Root',
@@ -44,8 +45,6 @@
                }); 
 
           ready(function() {
-            // Because of the generic nature of this demo it has no knowledge of the file system layout
-            // under the DOCUMENT_ROOT, therefore the 'basePath' is set to the document root itself.
             var tree = new Tree( { model: model, id: "MenuTree" }, "CheckboxTree" );
             tree.startup();
           });

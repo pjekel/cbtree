@@ -29,14 +29,12 @@
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
     <script type="text/javascript">
       require([
-        "dojo/_base/array",
-        "dojo/dom",
         "dojo/data/ItemFileWriteStore",
 				"dojo/ready",
         "cbtree/Tree",                    // Checkbox Tree
         "cbtree/TreeStyling",             // Tree styling extensions
         "cbtree/models/ForestStoreModel"  // Forest Store Model
-        ], function( array, dom, ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel ) {
+        ], function( ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel ) {
 
 					var store = new ItemFileWriteStore( { url: "../datastore/Network-1.7.json" });
 					var model = new ForestStoreModel( {

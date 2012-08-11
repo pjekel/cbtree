@@ -20,7 +20,7 @@
       var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: false,
+            isDebug: true,
             baseUrl: "../../",
             packages: [
               { name: "dojo",  location: "dojo" },
@@ -33,15 +33,12 @@
     <script type="text/javascript" src="../../dojo/dojo.js"></script> 
     <script type="text/javascript">
       require([
-        "dojo/_base/array",
-        "dojo/_base/connect",
-        "dojo/dom",
         "dojo/data/ItemFileWriteStore",
         "dojo/ready",
         "dojox/form/TriStateCheckbox",
         "cbtree/Tree",                      // CheckBox Tree              
         "cbtree/models/ForestStoreModel"    // Tree Forest Store Model
-        ], function( array, connect, dom, ItemFileWriteStore, ready, TriStateCheckBox, Tree, ForestStoreModel ) {
+        ], function( ItemFileWriteStore, ready, TriStateCheckBox, Tree, ForestStoreModel ) {
 
           var store = new ItemFileWriteStore( { url: "../datastore/Simpsons.json" });
           var model = new ForestStoreModel( {

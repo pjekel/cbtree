@@ -151,7 +151,7 @@
             connect.connect( trail, "onClick", null, updateGrid );
 
             // Create the tree
-            tree = new Tree( { model: model, checkBoxes: false, persist: false }, "CheckboxTree");
+            tree = new Tree( { model: model, checkBoxes: false, persist: false, icon:"fileIcon" }, "CheckboxTree");
             connect.connect( tree, "onClick", null, treeClicked );
 
             // Create the data grid...
