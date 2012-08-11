@@ -187,9 +187,7 @@ define([
 		// _itemStyleMap:	[private] Object
 		//		Styling mapping table. The object hold one entry for each data item in the
 		//		tree. Each entry contains information about the icon, label and row styling.
-		//
-		//		NOTE: The trees postMixinProperties() will create the object.
-		_itemStyleMap: null,
+		_itemStyleMap: {},
 
 		// _itemAttr:	[private] Array of Strings
 		//		List of tree node DOM elements currently supported. If additional attributes
@@ -900,10 +898,10 @@ define([
 			// tags:
 			//		extension
 
-			var names = this._getAttrNames(name),
+			var names = this._getAttrNames(name),		//_WidgetBase
 					getter = this[names.g];
 
-			if (lang.isFunction (getter)) {
+			if (typeof getter === "function") {
 				// use the explicit getter
 				var result = getter.apply(this, Array.prototype.slice.call(arguments, 1));
 				return result;
@@ -924,13 +922,14 @@ define([
 			//		private
 			var model = this.model;
 
-			this._connected = true;
+			this._itemStyleMap = {};
+			this._connected    = true;
 			if (model) {
 				// If the model specified an icon attribute it must also provide support
 				// for the getIcon() method.
 				if (model.iconAttr) {
 					if (!model.getIcon || !lang.isFunction(model.getIcon)) {
-						console.warn(this.moduleName+"::_connectModel(): model has 'iconAttr' set but does not provide support for getIcon().");
+						console.warn("cbtree/TreeStyling::_connectModel(): model has 'iconAttr' set but does not provide support for getIcon().");
 						this._iconAttr = null;
 					} else {
 						this._iconAttr = this.model.iconAttr;
