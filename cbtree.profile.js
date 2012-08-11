@@ -1,3 +1,4 @@
+var testResourceRe = /^cbtree\/tests\//;
 var copyOnly = function(filename, mid) {
 	var list = {
 		"cbtree/cbtree.profile":1,
@@ -16,7 +17,7 @@ var profile = {
 	optimize: "closure",
 	layerOptimize: "closure",
 	selectorEngine: "acme",
-	mini: true,
+	mini: false,
 
 	layers: {
 		"dojo/dojo": {
@@ -34,18 +35,35 @@ var profile = {
 		},
 		"cbtree/main": {
 				include: [
-					"cbtree/main"
+					"cbtree/models/FileStoreModel",
+					"cbtree/models/ForestStoreModel",
+					"cbtree/models/TreeStoreModel",
+					"cbtree/models/StoreModel-API",
+					"cbtree/stores/FileStore",
+					"cbtree/CheckBox",
+					"cbtree/TreeStyling",
+					"cbtree/Tree"
 				]
 		}
 	},
 	 
 	resourceTags: {
+		test: function(filename, mid){
+			var result = testResourceRe.test(mid);
+			return testResourceRe.test(mid) || mid=="cbtree/tests" || mid=="cbtree/demos";
+		},
+
 		amd: function(filename, mid) {
-			return !copyOnly(filename, mid) && /\.js$/.test(filename);				 
+			return !testResourceRe.test(mid) && !copyOnly(filename, mid) && /\.js$/.test(filename);				 
 		},
 		
 		copyOnly: function(filename, mid) {
 			return copyOnly(filename, mid);
-		}
+		},
+
+		miniExclude: function(filename, mid){
+			var result = /^cbtree\/tests\//.test(mid) || /^cbtree\/demos\//.test(mid);
+			return result;
+		}		
 	}
 };
