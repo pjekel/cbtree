@@ -22,9 +22,10 @@ define([
 	"dijit/_Container",
 	"dijit/registry",
 	"dijit/Tree",
-	"./CheckBox"
+	"./CheckBox",
+	"require"
 ], function (array, declare, event, lang, DeferredList, domConstruct, NodeTemplate, 
-							_Container, registry, Tree, CheckBox) {
+							_Container, registry, Tree, CheckBox, require) {
 
 	// module:
 	//		cbtree/Tree
