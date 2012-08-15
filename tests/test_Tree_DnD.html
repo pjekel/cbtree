@@ -29,9 +29,9 @@
     dojo.require("cbtree.Tree");
     dojo.require("cbtree.models.TreeStoreModel");
     
-    var testController = dojo._getVar("testController", "")=="selector"?"dijit.tree._dndSelector":"dijit.tree.dndSource";
+    var testController = dojo._getVar("testController", "")=="selector"?"cbtree.models._dndSelector":"dijit.tree.dndSource";
 
-    dijit.Tree.prototype.dndController = testController;
+    cbtree.Tree.prototype.dndController = testController;
     
     dojo.require(testController);
     dojo.require("dijit.Menu");
@@ -193,12 +193,12 @@
         of buffer before drag operations start.
       </p>
       <div data-dojo-id="itemModel" data-dojo-type="cbtree.models.TreeStoreModel" data-dojo-props='store:myStore, query:{id: "0"}, childrenAttrs:["items", "children"], excludeChildrenAttrs:["items"]'></div>
-      <div id="itemTree" data-dojo-type="cbtree.Tree" data-dojo-props='"class":"container", model:itemModel,
+      <div id="itemTree" data-dojo-type="cbtree/Tree" data-dojo-props='"class":"container", model:itemModel,
         checkAcceptance:dndAccept, checkItemAcceptance:itemTreeCheckItemAcceptance,
         dragThreshold:8,
         betweenThreshold:5,
         getIconClass:getIcon,
-        persist:false'>
+        persist:false, id:"itemTree"'>
       </div>
     </td>
   </tr>
