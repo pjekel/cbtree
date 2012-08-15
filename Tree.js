@@ -23,9 +23,10 @@ define([
 	"dijit/registry",
 	"dijit/Tree",
 	"./CheckBox",
+	"./models/_dndSelector",  // Fixed dijit tree issue...
 	"require"
 ], function (array, declare, event, lang, DeferredList, domConstruct, NodeTemplate, 
-							_Container, registry, Tree, CheckBox, require) {
+							_Container, registry, Tree, CheckBox, _dndSelector, require) {
 
 	// module:
 	//		cbtree/Tree
@@ -271,7 +272,6 @@ define([
 				model = tree.model,
 				defs = [];	// list of deferreds that need to fire before I am complete
 
-
 			// Orphan all my existing children.
 			// If items contains some of the same items as before then we will reattach them.
 			// Don't call this.removeChild() because that will collapse the tree etc.
@@ -300,7 +300,6 @@ define([
 								ary.splice(index, 1);
 							}
 						}
-
 						// And finally we can destroy the node
 						node.destroyRecursive();
 					}
@@ -311,7 +310,6 @@ define([
 
 			if(items && items.length > 0){
 				this.isExpandable = true;
-
 				// Create _TreeNode widget for each specified tree node, unless one already
 				// exists and isn't being used (presumably it's from a DnD move and was recently
 				// released
@@ -321,10 +319,18 @@ define([
 						node;
 					if(existingNodes){
 						for(var i=0;i<existingNodes.length;i++){
-							if(existingNodes[i] && !existingNodes[i].getParent()){
-								node = existingNodes[i];
-								node.set('indent', this.indent+1);
-								break;
+							// FIX 1 - Don't re-used destroyed nodes, instead clean them up.
+							if (!existingNodes[i] || existingNodes[i]._beingDestroyed) {
+								existingNodes.splice(i,1);
+								if (existingNodes.length == 0) {
+									delete tree._itemNodesMap[id];
+								}
+							} else {
+								if(!existingNodes[i].getParent()) {
+									node = existingNodes[i];
+									node.set('indent', this.indent+1);
+									break;
+								}
 							}
 						}
 					}
@@ -362,7 +368,7 @@ define([
 					child._updateLayout();
 				});
 			}else{
-				// FIX: If no children, delete _expandNodeDeferred if any...
+				// FIX 2 - If no children, delete _expandNodeDeferred if any...
 				tree._collapseNode(this);
 				this.isExpandable=false;
 			}
@@ -425,6 +431,9 @@ define([
 		// nodeIcons: Boolean
 		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
 		nodeIcons: true,
+
+		// FIX: 3 - Force tree to use the modified _dndSelector (see ./models/_dndSelector)
+		dndController: _dndSelector,
 
 		// End Parameters to constructor
 		//==============================
