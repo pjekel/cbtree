@@ -122,7 +122,7 @@ section:
 	</thead>
     <tr style="vertical-align:top">
       <td>cbtree-v09.2-0</td>
-      <td>Sep-01 2012</td>
+      <td>Aug-15 2012</td>
       <td>1.8</td>
       <td>
 		Updated The CheckBox Tree to work with dojo 1.8.<br/>
