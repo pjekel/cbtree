@@ -39,6 +39,9 @@ var profile = {
 					"cbtree/models/ForestStoreModel",
 					"cbtree/models/TreeStoreModel",
 					"cbtree/models/StoreModel-API",
+					"cbtree/models/ObjectStoreModel",
+					"cbtree/models/ObjectStoreModel-API",
+					"cbtree/models/_Parents",
 					"cbtree/stores/FileStore",
 					"cbtree/CheckBox",
 					"cbtree/TreeStyling",
@@ -46,7 +49,7 @@ var profile = {
 				]
 		}
 	},
-	 
+
 	resourceTags: {
 		test: function(filename, mid){
 			var result = testResourceRe.test(mid);
@@ -54,9 +57,9 @@ var profile = {
 		},
 
 		amd: function(filename, mid) {
-			return !testResourceRe.test(mid) && !copyOnly(filename, mid) && /\.js$/.test(filename);				 
+			return !testResourceRe.test(mid) && !copyOnly(filename, mid) && /\.js$/.test(filename);
 		},
-		
+
 		copyOnly: function(filename, mid) {
 			return copyOnly(filename, mid);
 		},
@@ -64,6 +67,6 @@ var profile = {
 		miniExclude: function(filename, mid){
 			var result = /^cbtree\/tests\//.test(mid) || /^cbtree\/demos\//.test(mid);
 			return result;
-		}		
+		}
 	}
 };
