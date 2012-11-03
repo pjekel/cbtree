@@ -30,7 +30,7 @@ define([
 	//		tree and tree node and can be loaded seperately from either the cbtree
 	//		or default dijit tree.
 
-	// Add cbTree TreeStyling API to the available features list 
+	// Add cbTree TreeStyling API to the available features list
 	has.add("cbtree-treeStyling-API", true);
 
 	function isEmpty(o) {
@@ -43,7 +43,7 @@ define([
 		}
 		return true;
 	}
-	
+
 	lang.extend(Tree._TreeNode, {
 
 		_applyClassAndStyle: function (/*data.item*/ item, /*String*/ attribute) {
@@ -56,7 +56,7 @@ define([
 			// tags:
 			//		private
 			var currClass, newClass, newStyle, className, styleName, nodeName;
-			
+
 			className = attribute + "Class";
 			styleName = attribute + "Style";
 			nodeName	= attribute + "Node";
@@ -87,8 +87,8 @@ define([
 			//		A icon object. (See _icon2Object() for more details on the layout).
 			// tag:
 			//		private
-			if (icon.iconClass) { 
-				this._set_iconClass_Attr(icon.iconClass); 
+			if (icon.iconClass) {
+				this._set_iconClass_Attr(icon.iconClass);
 				this.icon = icon;
 			}
 		},
@@ -119,7 +119,7 @@ define([
 
 			this._updateItemClasses(this.item);
 		},
-		
+
 		_setIconStyleAttr: function(/*Object*/ style) {
 			// summary:
 			//		Set the icon style for the _TreeNode
@@ -157,22 +157,22 @@ define([
 		}
 
 	});
-	
+
 	lang.extend(Tree, {
 
 		//==============================
 		// Parameters to constructor
 
 		// icon: String|Object
-		//		See _icon for details. Either pass to the constructor or set using 
+		//		See _icon for details. Either pass to the constructor or set using
 		//		set("icon", ... )
 		//icon: null,
-		
+
 		// End Parameters to constructor
 		//==============================
 
 		_hasStyling: true,
-		
+
 		// _icon: [private] String|Object
 		//		If _icon is specified the default dijit icons 'Open' 'Closed' and 'Leaf'
 		//		will be replaced with a custom icon sprite with three distinct css classes:
@@ -200,7 +200,7 @@ define([
 		_typeAttr: [ "Class", "Style" ],
 
 		_dijitIconClasses: ['dijitFolderOpened', 'dijitFolderClosed', 'dijitLeaf'],
-		
+
 		iconClass: "",	/* Overwrite the default dijitNoIcon */
 
 		_getBaseClass: function( nodeWidget ) {
@@ -214,11 +214,11 @@ define([
 			//		A string, A list of class names, each separated by a space.
 			// tag:
 			//		private
-			
+
 			var classNames = nodeWidget ? domProp.get(nodeWidget["iconNode"], "className") : "";
 			var classes, index, i;
 			var baseClass = "";
-			
+
 			classes = lang.trim(classNames).split(/\s+/);
 			if (classes[0]) {
 				for (i=0; i< this._dijitIconClasses.length; i++) {
@@ -229,9 +229,9 @@ define([
 				}
 				baseClass = classes.toString();
 			}
-			return baseClass.replace(/,/g," "); 
+			return baseClass.replace(/,/g," ");
 		},
-		
+
 		_getClassOrStyle: function (/*data.item*/ item, /*String*/ attr, /*String*/ type) {
 			// summary:
 			//		Returns a styling property for a single DOM element, that is, icon,
@@ -252,7 +252,7 @@ define([
 			// tag:
 			//		private
 			var name = attr+type;
-			if ((array.indexOf(this._itemAttr, attr) != -1) && 
+			if ((array.indexOf(this._itemAttr, attr) != -1) &&
 					(array.indexOf(this._typeAttr, type) != -1)) {
 				var styling = this._getItemStyling(item);
 				return styling[attr][attr+type];
@@ -263,7 +263,7 @@ define([
 		_getHasTreeSytlingAttr: function() {
 			return this._hasStyling;
 		},
-		
+
 		_getItemStyling: function (item) {
 			// summary:
 			//		Get the styling object for an item. The styling object is a container
@@ -285,7 +285,7 @@ define([
 
 			if (!this._connected) { this._connectModel(); };
 
-			if (this.model.isItem(item)) {
+			if (Object.prototype.toString.call(item) === "[object Object]") {
 				var identity = this.model.getIdentity(item);
 				var styling	= this._itemStyleMap[identity];
 				if (!styling) {
@@ -297,7 +297,7 @@ define([
 					}
 					this._itemStyleMap[identity] = styling;
 				}
-				return styling;			
+				return styling;
 			}
 			throw new TypeError(this.declaredClass+"::getItemStyling(): invalid data item specified.");
 		},
@@ -309,7 +309,7 @@ define([
 			// returns:
 			//		Tree styling defaults as an object container.
 			var styling = {};
-			
+
 			if (this.rootNode) {
 				var identity	= this.model.getIdentity(this.rootNode.item);
 				var treeStyle = this._itemStyleMap[identity];
@@ -320,7 +320,7 @@ define([
 				// If no tree root node is available dynamically create a new object.
 				// This should only happen once during tree instantiation.
 				var attr;
-			
+
 				array.forEach(this._itemAttr, function(attr) {
 						styling[attr] = this._initStyleElement(attr);
 					}, this);
@@ -339,30 +339,30 @@ define([
 			//		A styling object.
 			var element = {},
 					type;
-					
+
 			array.forEach(this._typeAttr, function (type) {
 					element[attr+type] = null;
 				}, this);
 			return element;
 		},
 
-		_setAllItems: function (/*Array|Object*/ args, /*Function*/ onItem, /*Function*/ onComplete, 
+		_setAllItems: function (/*Array|Object*/ args, /*Function*/ onItem, /*Function*/ onComplete,
 														 /*Context*/ scope) {
 			// summary:
 			//		Call the function onItem for each entry in the _tableStyleMap table and
 			//		the function onComplete exactly once on completion.
-			// args:	
+			// args:
 			//		Array or object of arguments to be passed t0 the onItem and onComplete
 			//		callback functions. Args is passed as a list of argument not as a single
 			//		argument.
 			// onItem:
-			//		Function to be called for every entry in the _itemStyleMap table. The 
+			//		Function to be called for every entry in the _itemStyleMap table. The
 			//		function is called as: onItem(styling, ...) were '...' is the list of
 			//		arguments contained in args. For example, if args has two arguments,
 			//		attr and style, onItem is called as: onItem(styling, attr, style).
 			// onComplete:
 			//		Function to be called on completion, the function onComplete is called
-			//		as: onComplete(...) were '...' is the list of arguments contained in 
+			//		as: onComplete(...) were '...' is the list of arguments contained in
 			//		args.
 			// scope:
 			//		The context in which both onItem and onComplete are executed. If none
@@ -372,7 +372,7 @@ define([
 
 			var onItemArgs = (args ? (lang.isArray(args) ? args : this._object2Array(args)) : [])
 			var identity;
-	
+
 			onItemArgs.unshift(null);		// Create a placeholder for the styling argument
 
 			for(identity in this._itemStyleMap) {
@@ -384,7 +384,7 @@ define([
 			}
 		},
 
-		_setAttrClass: function (/*data.item?*/ item, /*String*/ attr, /*String*/ cssClass, 
+		_setAttrClass: function (/*data.item?*/ item, /*String*/ attr, /*String*/ cssClass,
 															/*Function*/ onComplete) {
 			// summary:
 			//		Set the css classname of an icon, label or row for a given item.	If
@@ -426,15 +426,15 @@ define([
 								onComplete.call(this, item, attr, cssClass, classes[0]);
 							}
 							return styling[attr];
-						} 
+						}
 						else // Apply setting to all data items
 						{
-							this._setAllItems([ attr, cssClass, classes[0] ], 
+							this._setAllItems([ attr, cssClass, classes[0] ],
 									function (styling, attr, cssClass, baseClass) {
 										styling[attr][attr+'Class'] = cssClass;
 										styling[attr]['baseClass'] = baseClass;
 										delete styling.root;
-									}, 
+									},
 									onComplete,
 									this);
 						}
@@ -461,12 +461,12 @@ define([
 			//		private
 
 			if (item) {
-				this._setAttrClass(item,attr, cssClass, 
+				this._setAttrClass(item,attr, cssClass,
 					function (item, attr, cssClass, baseClass) {
-						this._setStyling(item, '_styling_', cssClass) 
+						this._setStyling(item, '_styling_', cssClass)
 					});
 			} else {
-				this._setAttrClass(null, attr, cssClass, 
+				this._setAttrClass(null, attr, cssClass,
 					function (attr, cssClass, baseClass) {
 						// Apply changes to all tree nodes.
 						this._setTreeNodes(this.rootNode, { _styling_: cssClass });
@@ -491,7 +491,7 @@ define([
 			//		Function to be called on completion, the function onComplete is called
 			//		as: onComplete(item, attr, style) if an item is specified otherwise it
 			//		is called as onComplete(attr, style).
-			//		args.			
+			//		args.
 			// returns:
 			//		The updated styling object if an item was specified otherwise null.
 			// tag:
@@ -506,13 +506,13 @@ define([
 							onComplete.call(this, item, attr, style);
 						}
 						return styling[attr];
-					} 
+					}
 					else // Apply setting to all data items
 					{
-						this._setAllItems([attr, style], 
+						this._setAllItems([attr, style],
 								function (styling, attr, style) {
 									styling[attr][attr+'Style'] = style;
-								}, 
+								},
 								onComplete,
 								this);
 					}
@@ -539,14 +539,14 @@ define([
 			//		private
 
 			var request = {};
-			
+
 			if (item) {
-				this._setAttrStyle(item, attr, style, 
-					function (item, attr, style) { 
-						this._setStyling(item, attr+'Style', style) 
+				this._setAttrStyle(item, attr, style,
+					function (item, attr, style) {
+						this._setStyling(item, attr+'Style', style)
 					})
 			} else {
-				this._setAttrStyle(null, attr, style, 
+				this._setAttrStyle(null, attr, style,
 					function (attr, style) {
 						request[attr+'Style'] = style;
 						this._setTreeNodes(this.rootNode, request);
@@ -591,7 +591,7 @@ define([
 			// tag:
 			//		private
 			var styling = this._getItemStyling(item);
-					
+
 			// If the styling is derived from the root node ask the model if there is
 			// a custom icon available for this item.
 			if (styling.root && this._iconAttr) {
@@ -603,7 +603,7 @@ define([
 			} else {
 				return styling.icon;
 			}
-		}, 
+		},
 
 		_getIconClassAttr: function (/*data.item*/ item, /*Boolean*/ opened, /*_TreeNode?*/ nodeWidget) {
 			// summary:
@@ -658,25 +658,25 @@ define([
 			//		The converted icon styling object.
 			// tags:
 			//		private
-			
+
 			var newIcon = this._icon2Object(icon);
-			if (newIcon) { 
+			if (newIcon) {
 				if (item) {
 					var styling = this._getItemStyling(item);
 					styling.icon = newIcon;
 					delete styling.root;
 					this._setStyling(item, '_icon_', newIcon);
-				} 
+				}
 				else // Apply icon to all data items
 				{
-					this._setAllItems([newIcon], 
+					this._setAllItems([newIcon],
 						function (styling, newIcon) {
 							styling.icon = newIcon;
 							delete styling.root;
-						}, 
+						},
 						function (newIcon) {
 							this._setTreeNodes(this.rootNode, { _icon_: newIcon });
-						}, 
+						},
 						this);
 					// Save it as the common tree icon.
 					this._icon = newIcon;
@@ -716,7 +716,7 @@ define([
 			//		private
 			return this._setAttrStyleSet(item,'icon', style);
 		},
-		
+
 		_setLabelClassAttr: function (/*String*/ cssClass, /*Item?*/ item) {
 			// summary:
 			//		Set the label classname. This is the hook for set("labelClass",...).
@@ -748,7 +748,7 @@ define([
 			//		private
 			return this._setAttrStyleSet(item,'label', style);
 		},
-		
+
 		_setRowClassAttr: function (/*String*/ cssClass, /*Item?*/ item) {
 			// summary:
 			//		Set the row classname. This is the hook for set("rowClass",...).
@@ -778,7 +778,7 @@ define([
 			//		The updated property value.
 			// tags:
 			//		private
-			return this._setAttrStyleSet(item,'row', style);			
+			return this._setAttrStyleSet(item,'row', style);
 		},
 
 		_modelIconUpdate: function (/*data.item*/ item, /*String*/ attr, /*String|Object*/ icon) {
@@ -786,14 +786,14 @@ define([
 			//		Record a new icon for the given item. Whenever the model signals an
 			//		updated icon, it must be recorded with the item first before it is
 			//		applied to any _TreeNode, this because the tree node will fetch any
-			//		icon info from the per item tree styling container. 
+			//		icon info from the per item tree styling container.
 			//
 			//		NOTE:	This method is called by _onItemChange() by means of the event
 			//					mapping table. (see also _connectModel()).
 			var styling = this._getItemStyling(item);
 			var newIcon = this._icon2Object(icon);
 
-			if (newIcon) { 
+			if (newIcon) {
 				styling.icon = newIcon;
 				delete styling.root;
 			}
@@ -802,7 +802,7 @@ define([
 
 		//====================================================================
 		// Public methods replacing the default dijit tree methods.
-		
+
 		getIconClass: function (/*data.item*/ item, /*Boolean*/ opened, /*_TreeNode?*/ nodeWidget) {
 			// summary:
 			//		Compose the 'dynamic' classname for a tree node.
@@ -817,20 +817,20 @@ define([
 			//		Classname(s) as a string
 			// tag:
 			//		private
-			
-			var isExpandable, itemIcon, nodeItem = item;		
+
+			var isExpandable, itemIcon, nodeItem = item;
 			var iconClass, baseClass, newClass, indent;
-			
+
 			if (!nodeItem) {
 				if (this.rootNode) {
 					nodeItem	 = this.rootNode.item;
 					nodeWidget = this.rootNode;
 					opened		 = this.rootNode.isExpanded;
-				}			
-			} 
+				}
+			}
 			isExpandable = nodeItem ? this.model.mayHaveChildren(nodeItem) : false;
 			itemIcon = this._getItemStyling(nodeItem)["icon"];
-					
+
 			if (!itemIcon || !itemIcon.iconClass) {
 				newClass	= (!nodeItem || isExpandable) ? (opened ? "dijitFolderOpened" : "dijitFolderClosed") : "dijitLeaf";
 				baseClass = this._getBaseClass( nodeWidget );
@@ -881,7 +881,7 @@ define([
 
 		//====================================================================
 		// Widget extensions
-		
+
 		get: function (/*String*/ name /*===== optional argument list =====*/) {
 			// summary:
 			//		Get a property from a widget. In contrast to the default get() method

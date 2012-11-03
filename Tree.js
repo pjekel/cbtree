@@ -223,7 +223,7 @@ define([
 			//		Destroy the checkbox of the tree node widget.
 			//
 			if (this._checkbox) {
-				this._checkbox.destroy();
+				this._checkbox.destroyRecursive();
 				delete this._checkbox;
 			}
 			this.inherited(arguments);
