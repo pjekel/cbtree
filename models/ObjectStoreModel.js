@@ -16,12 +16,13 @@ define(["dojo/_base/declare", 	// declare
 				"dojo/aspect",					// aspect.before()
 				"dojo/Deferred",
 				"dojo/has",							// has.add
+				"dojo/on",
 				"dojo/promise/all",
 				"dojo/promise/Promise",	// instanceof
 				"dojo/Stateful",				// get() and set()
 				"dojo/when",						// when()
 				"./_Parents"
-			 ], function (declare, lang, aspect, Deferred, has, all, Promise, Stateful, when, Parents){
+			 ], function (declare, lang, aspect, Deferred, has, on, all, Promise, Stateful, when, Parents){
 	"use strict";
 		// module:
 		//		cbtree/models/ObjectStoreModel
@@ -206,6 +207,7 @@ define(["dojo/_base/declare", 	// declare
 				// dojo/store/Memory store does.
 				aspect.before( store, "add", prelogue );
 				aspect.before( store, "put", prelogue );
+
 			} else {
 				throw new Error(this.moduleName+"::constructor(): Store parameter is required");
 			}
@@ -295,10 +297,12 @@ define(["dojo/_base/declare", 	// declare
 				return;
 			}
 			var res  = this.childrenCache[id] = this.store.getChildren(parentItem);
+			var res  = this.store.getChildren(parentItem);
 			var self = this;
 
 			// Setup listener in case children list changes, or the item(s) in the
 			// children list are updated in some way.
+
 			if(res.observe){
 				var handle = res.observe( function(obj, removedFrom, insertedInto) {
 					if (insertedInto == -1) {
@@ -321,6 +325,7 @@ define(["dojo/_base/declare", 	// declare
 				}, true);	// true means to notify on item changes
 				res.handle = handle;
 			}
+
 			// Call User callback AFTER registering any listeners.
 			when(res, onComplete, onError);
 		},
@@ -410,14 +415,12 @@ define(["dojo/_base/declare", 	// declare
 
 			var itemId = this.store.getIdentity(item);
 			var result = this.childrenCache[itemId];
-/*
 			if (result) {
 				if (result instanceof Promise) {
 					return !result.isFulfilled();
 				}
 				return !!Array.prototype.slice.call(result).length;
 			}
-*/
 			return true;		// We just don't know at this point.
 		},
 
@@ -878,10 +881,13 @@ define(["dojo/_base/declare", 	// declare
 				// on when the TreeNodes in question originally appeared, and not based on the drag-from
 				// TreeNode vs. the drop-onto TreeNode.
 
-				var oldParentChildren = [].concat(this.childrenCache[this.getIdentity(oldParentItem)]), // concat to make copy
-					index = oldParentChildren.indexOf(childItem);
-				oldParentChildren.splice(index, 1);
-				this.onChildrenChange(oldParentItem, oldParentChildren);
+				var oldParentChildren = this.childrenCache[this.getIdentity(oldParentItem)];
+				when( oldParentChildren, function(children) {
+					var newChildren = children.slice(0);
+					var index = newChildren.indexOf(childItem);
+					newChildren.splice(index,1);
+					this.onChildrenChange(oldParentItem, newChildren);
+				});
 			}
 
 			return this.store.put(childItem, {
@@ -1014,7 +1020,7 @@ define(["dojo/_base/declare", 	// declare
 			var self = this;
 
 			if (this.childrenCache[id]) {
-				this.childrenCache[id].close && this.childrenCache[id].close();
+				this.childrenCache[id].handle && this.childrenCache[id].handle.remove();
 				delete this.childrenCache[id];
 			}
 			delete this.objects[id];
@@ -1123,6 +1129,14 @@ define(["dojo/_base/declare", 	// declare
 				children.splice(index,1);
 			}
 			return children;
+		},
+
+		_indexById: function (id, children) {
+			children.forEach( function(child, idx) {
+				if (this.store.getIdentity(child) == id) {
+					return idx;
+				}
+			}, this);
 		}
 
 	});
