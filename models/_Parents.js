@@ -11,22 +11,23 @@
 //
 //	In case of doubt, the BSD 2-Clause license takes precedence.
 //
-define([], function () {
+define(["../shim/Array"], function () {
 
-	// Requires JavaScript 1.8.5
-	var defineProperty = Object.defineProperty;
-
-	function Parents (/*String|String[]*/ parentIds) {
+	function Parents (/*Object*/ childItem, /*String?*/ attribute) {
 		// summary:
-		//		Helper class to hide the fact if we are dealing with a single or multi
-		//		parent dojo/store.   The default dojo/store only provide support for
-		//		single parented objects whereas the cbtree ObjectStoreModel and API
-		//		supports both single and multi parented object.
+		//		Helper  class to hide the  fact if we  are dealing  with a single or multi
+		//		parent dojo/store.  The default dojo/store only provide support for single
+		//		parented objects whereas the cbtree ObjectStoreModel and API supports both
+		//		single and multi parented object.
 		//		The Parents object is an Array-like object.
-		// parentIds:
 		//
+		// childItem:
+		//		A JavaScript key:value pairs object.
+		// attribute:
+		//		Property name of the Javascript object identifying the parent(s) of the
+		//		object.
 		// example:
-		//	|	var parents = new Parents( storeItem[this.parentAttr] );
+		//	|	var parents = new Parents( storeItem, this.parentAttr );
 		//	|	if (!parents.contains("Homer")) {
 		//	|		parents.add("Homer");
 		//	| }
@@ -34,32 +35,35 @@ define([], function () {
 		// tag:
 		//		Private
 
-		var multiple = true;
-		var length   = 0;
-		var input    = parentIds;
+		var attribute = attribute || "parent";
 
-		defineProperty( this, "multiple",	{	get: 	function() {	return multiple; }, enumerable: false });
-		defineProperty( this, "length"	,	{	get: 	function() {	return length; }, enumerable: false });
-		defineProperty( this, "input"		,	{	get: 	function() {	return input; }, enumerable: false });
+		this.multiple = true;
+		this.length   = 0;
+		this.input    = null;
 
 		function assign(ids) {
-			Array.prototype.splice.call(this, 0,length);
+			Array.prototype.splice.call(this, 0,this.length);
 			if (ids instanceof Array) {
 				ids.forEach( function(id,idx) {
 					this[idx] = id;
-					length++;
+					this.length++;
 				},this);
 			} else {
 				assign.call(this, [ids]);
-				multiple = false;
-				length   = 1;
+				this.multiple = false;
+				this.length   = 1;
 			}
 		}
 
-		this.add = function (id) {
+		this.add = function (id, multiple) {
 			// Don't accept duplicates
 			if (!this.contains(id)) {
-				multiple ? this[length++] = id : this[0] = id;
+				if (multiple || this.multiple) {
+					this[this.length++] = id;
+					this.multiple = (this.length > 1);
+				} else {
+					this.set(id);
+				}
 				return true;
 			}
 		};
@@ -75,31 +79,45 @@ define([], function () {
 		}
 
 		this.remove = function (id) {
-			Array.prototype.some.call(this, function(member,idx) {
+			return Array.prototype.some.call(this, function(member,idx) {
 				if (member === id) {
 					Array.prototype.splice.call(this, idx, 1);
-					length--;
 					return true;
 				}
 			}, this );
 		};
 
 		this.set = function (id) {
-			Array.prototype.splice.call(this, 0,length);
+			Array.prototype.splice.call(this, 0,this.length);
 			this[0] = id;
-			length = 1;
+			this.length = 1;
 			return true;
 		};
 
 		this.toValue = function() {
-			return (multiple ? Array.prototype.slice.call(this) : (this[0] || undefined));
+			return (this.multiple ? Array.prototype.slice.call(this) : (this[0] || undefined));
 		};
 
-		if (parentIds) {
-			assign.call(this, parentIds);
-		} else {
-			multiple = false;
+		if (childItem) {
+			if (childItem instanceof Array) {
+				this.input = childItem;
+			} else if (typeof childItem === "object") {
+				this.input = childItem[attribute];
+			} else if (typeof childItem === "string") {
+				this.input = childItem.split(/\s*,\s*/);
+				if (this.input.length == 1) {
+					this.input = childItem;
+				}
+			} else {
+				this.input = childItem;
+			}
+			if (this.input) {
+				assign.call(this, this.input);
+			} else {
+				this.multiple = false;
+			}
 		}
+
 	} /*end Parents() */
 
 	return Parents;

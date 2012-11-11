@@ -15,14 +15,12 @@ define(["dojo/_base/lang",
 				"dojo/has",
 				"dojo/when",
 				"./ObjectStoreModel",
-				"./_Parents"
+				"./_Parents",
+				"../shim/Array"
        ], function (lang, has, when, ObjectStoreModel, Parents) {
 
 	// Add cbTree model API to the available features list
 	has.add("cbtree-objectStoreModel-API", true);
-
-	// Requires JavaScript 1.8.5
-	var defineProperty = Object.defineProperty;
 
 	function objType(obj) {
 		var objClass = Object.prototype.toString.call(obj);
@@ -38,7 +36,7 @@ define(["dojo/_base/lang",
 		//		Any type.
 		// tag:
 		//		Private
-		return (objType(something) ===  "Object");
+		return (something && (objType(something) ===  "Object"));
 	}
 
 	lang.extend(ObjectStoreModel, {
@@ -78,7 +76,7 @@ define(["dojo/_base/lang",
 					updates = 0;
 
 			this.fetchItemsWithChecked(query, function (storeItems) {
-				storeItems.forEach( function (storeItem) {
+				storeItems.forEach(function (storeItem) {
 					if (storeItem[this.checkedAttr] != newState) {
 						this.setChecked(storeItem, newState);
 						updates += 1;
@@ -133,32 +131,6 @@ define(["dojo/_base/lang",
 			this.setChecked(storeItem, newState);
 		},
 
-		_ItemIdentityGetter: function (/*Object*/ storeItem){
-			// summary:
-			//		Provide the hook for getItemAttr(storeItem,"identity") calls. The
-			//		getItemAttr() interface is the preferred method over the legacy
-			//		getIdentity() method.
-			// storeItem:
-			//		The store or root item whose identity is returned.
-			//	example:
-			//	|	model.getItemAttr(item,"identity");
-			// tag:
-			//		private
-
-			if (isObject(storeItem)) {
-				return this.store.getIdentity(storeItem);	// Object
-			}
-		},
-
-		_ItemIdentitySetter: function (storeItem, value){
-			// summary:
-			//		Hook for setItemAttr(storeItem,"identity",value) calls. However, changing
-			//		the identity of a store item is NOT allowed.
-			// tags:
-			//		private
-			throw new Error(this.moduleName+"::setItemAttr(): Identity attribute cannot be changed");
-		},
-
 		_ItemLabelGetter: function (storeItem){
 			// summary:
 			//		Provide the hook for getItemAttr(storeItem,"label") calls. The getItemAttr()
@@ -188,13 +160,6 @@ define(["dojo/_base/lang",
 					this._setValue( storeItem, this.labelAttr, value);
 				}
 			}
-		},
-
-		_ItemParentsGetter: function (storeItem) {
-			// summary:
-			// storeItem:
-			//		The store item whose parent(s) are returned.
-			return this.getParents(storeItem);
 		},
 
 		getItemAttr: function (/*dojo.store.Item*/ storeItem , /*String*/ attribute){
@@ -328,7 +293,7 @@ define(["dojo/_base/lang",
 
 			if (isObject(storeQuery)) {
 				when( this.store.query(storeQuery, {storeOnly: storeOnly}), function(items) {
-					items.forEach( function(item) {
+					items.forEach(function(item) {
 						if (item[self.checkedAttr]) {
 							storeItems.push(item);
 						} else {
@@ -358,10 +323,10 @@ define(["dojo/_base/lang",
 			// tag:
 			//		public
 
-			if (something !== this.root){
+			if (isObject(something) && (something !== this.root)) {
 				var id = this.store.getIdentity(this.root);
 				if (id) {
-					var parents = new Parents(something[this.parentAttr]);
+					var parents = new Parents(something, this.parentAttr);
 					return parents.contains(id);
 				}
 			}
@@ -370,70 +335,6 @@ define(["dojo/_base/lang",
 
 		// =======================================================================
 		// Write interface
-
-		addReference: function (/*dojo.store.Item*/ childItem, /*dojo.store.Item*/ parentItem){
-			// summary:
-			//		Add an existing item to the parentItem by reference.
-			// childItem:
-			//		Child item whose parent property is extended. If the store is a single
-			//		parent store, the childs parent is replaced with the new parent and
-			// 		thus moving a child from one parent to another. Otherwise the parent
-			//		is added to the list of parents.
-			// parentItem:
-			//		Parent item.
-			// tag:
-			//		public
-
-			if (childItem && isObject(childItem)) {
-				if (parentItem && isObject(parentItem)) {
-					var parentId = this.store.getIdentity(parentItem);
-					var parents  = new Parents( childItem[this.parentAttr] );
-
-					if (parents.add(parentId)) {
-						this._setValue(childItem, this.parentAttr, parents.toValue());
-
-						if (this._notObservable) {
-							if (parents.multiple || !parents.input) {
-								// Multi parented store or no previous parent, just add the child to the new parent.
-								var newChildren = this._addChildToCache( childItem, parentItem );
-								this.onChildrenChange( parentItem, newChildren );
-							} else {
-								// It's a single parented store so we've got to move the child from
-								// the original parent to the new parent instead of just adding it.
-								var oldParentItem = this.store.get(parents.input);
-								var self = this;
-
-								when( oldParentItem, function(oldParentItem) {
-									var oldChildren = self._removeChildFromCache( childItem, oldParentItem );
-									var newChildren = self._addChildToCache( childItem, parentItem );
-									self.onChildrenChange( oldParentItem, oldChildren );
-									self.onChildrenChange( parentItem, newChildren );
-								});
-							}
-						}
-						return true;
-					}
-					return false;
-				}
-			}
-			throw new Error(this.moduleName+"::addReference(): Invalid parent or child item");
-		},
-
-		attachToRoot: function (/*dojo.store.Item*/ storeItem){
-			// summary:
-			//		Attach store item to the root by adding the root as a parent of the
-			//		store item.
-			// storeItem:
-			//		A valid dojo/store item.
-			// tag:
-			//		public
-
-			if (storeItem !== this.root){
-				if (this.addReference(storeItem, this.root)) {
-					this.onRootChange(storeItem, "attach");
-				}
-			}
-		},
 
 		check: function (/*Object|String*/ query, /*Callback*/ onComplete, /*thisArg*/ scope, /*Boolean?*/ storeOnly) {
 			// summary:
@@ -454,69 +355,6 @@ define(["dojo/_base/lang",
 			this._checkOrUncheck(query, true, onComplete, scope, storeOnly);
 		},
 
-		detachFromRoot: function (/*dojo.store.Item*/ storeItem) {
-			// summary:
-			//		Detach item from the root by removing the root as a parent.
-			// storeItem:
-			//		A valid dojo/store item.
-			// tag:
-			//		public
-
-			if (storeItem !== this.root) {
-				if( this.removeReference(storeItem, this.root)) {
-					this.onRootChange(storeItem, "detach");
-				}
-			}
-		},
-
-		newReferenceItem: function (/*dojo.dnd.Item*/ args, /*dojo.store.Item*/ parent, /*int?*/ insertIndex){
-			// summary:
-			//		For a dojo/store this is effectively the same as adding a new item.
-			// args:
-			//		A javascript object defining the initial content of the item as a set
-			//		of JavaScript 'property name: value' pairs.
-			// parent:
-			//		Optional, a valid store item that will serve as the parent of the new
-			//		item. (see also newItem())
-			// insertIndex:
-			//		If specified the location in the parents list of child items.
-			// tag:
-			//		public
-
-			return this.newItem( args, parent, insertIndex );
-		},
-
-		removeReference: function (/*dojo.store.Item*/ childItem, /*dojo.store.Item*/ parentItem){
-			// summary:
-			//		Remove a child reference from its parent. Only the references are
-			//		removed, the childItem is not delete.
-			// childItem:
-			//		Child item to be removed from parents children list.
-			// parentItem:
-			//		Parent item.
-			// tag:
-			//		public
-
-			if (childItem && isObject(childItem)) {
-				if (parentItem && isObject(parentItem)) {
-					var parentId = this.store.getIdentity(parentItem);
-					var parents  = new Parents( childItem[this.parentAttr] );
-
-					if (parents.length && parents.remove(parentId)) {
-						this._setValue(childItem, this.parentAttr, parents.toValue());
-
-						if (this._notObservable) {
-							var newChildren = this._removeChildFromCache( childItem, parentItem );
-							this.onChildrenChange( parentItem, newChildren );
-						}
-						return true;
-					}
-					return false;
-				}
-			}
-			throw new Error(this.moduleName+"::removeReference(): Invalid parent or child item");
-		},
-
 		uncheck: function (/*Object|String*/ query, /*Callback*/ onComplete, /*thisArg*/ scope, /*Boolean?*/ storeOnly) {
 			// summary:
 			//		Uncheck all store items that match the query and have a checked state.
@@ -534,6 +372,46 @@ define(["dojo/_base/lang",
 				storeOnly = true;
 			}
 			this._checkOrUncheck(query, false, onComplete, scope, storeOnly);
+		},
+
+		_changeParents: function (/*Object*/ storeItem, /*Object|String*/ parent, /*String*/ operation) {
+			// summary:
+			//		Add or remove a parent to/from a store item.
+			var result, self = this;
+
+			if (isObject(storeItem) && parent) {
+				var parentId = isObject(parent) ? this.getIdentity(parent) : parent;
+				var itemId   = this.getIdentity(storeItem);
+				if (itemId && parentId) {
+					when( this.store.get(itemId), function (item){
+						if (item) {
+							var parentIds = new Parents(item, self.parentAttr);
+							if (parentIds[operation](parentId)){
+								when( self.store.get(parentId), function (parent) {
+									if (parent) {
+										self._setValue( item, self.parentAttr, parentIds.toValue());
+										if (!self._monitored) {
+											self._childrenChanged(parent);
+										}
+									} else {
+										throw new Error(this.moduleName+"::addParent(): Parent ["+parentId+"] is not a valid store item");
+									}
+								});
+							}
+						} else {
+							throw new Error(this.moduleName+"::addParent(): Item ["+itemId+"] is not a valid store item");
+						}
+					});
+				}
+			}
+		},
+
+		addParent: function (/*Object*/ storeItem, /*Object|String*/ parent) {
+			this._changeParents( storeItem, parent, "add" );
+		},
+
+		removeParent: function (storeItem, parent) {
+			this._changeParents( storeItem, parent, "remove" );
 		},
 
 		// =======================================================================

@@ -12,27 +12,78 @@
 //	In case of doubt, the BSD 2-Clause license takes precedence.
 //
 define(["dojo/_base/declare", 	// declare
-				"dojo/_base/lang",			// lang.hitch
+				"dojo/_base/lang",			// lang.hitch()
 				"dojo/aspect",					// aspect.before()
 				"dojo/Deferred",
-				"dojo/has",							// has.add
-				"dojo/on",
+				"dojo/has",							// has.add()
+				"dojo/on",              // on()
 				"dojo/promise/all",
 				"dojo/promise/Promise",	// instanceof
 				"dojo/Stateful",				// get() and set()
 				"dojo/when",						// when()
-				"./_Parents"
+				"./_Parents",
+				"../shim/Array"					// ECMA-262 Array shim
 			 ], function (declare, lang, aspect, Deferred, has, on, all, Promise, Stateful, when, Parents){
 	"use strict";
 		// module:
 		//		cbtree/models/ObjectStoreModel
 		// summary:
-		//		Implements cbtree.models.model connecting to a dojo/store. This model
-		//		is primarily intended for the use with an observable dojo/store, this
-		//		because the native dojo/store does not generate any meaningful events.
+		//		Implements cbtree/models/model API connecting to a dojo/store.  This model
+		//		can be used with observable, non-observable, evented and basic dojo/store
+		//		stores. Both synchronous and asynchronous store implementations are supported.
+		//
+		//		Store Types:
+		//
+		//		-	An observable store monitors the results of previously executed queries.
+		//			Any changes to the store that effect the outcome of those queries result
+		//			in an automatic update of the query results and a call to the observers
+		//			callback function.
+		//
+		//		- An evented store will dispatch an event whenever a store item is added,
+		//			deleted or updated. The events are NOT associated with any query.
+		//
+		//		Which store to use:
+		//
+		//			myStore = Observable( new Memory( ...) );
+		//
+		//		Although an observable store may seem the most obvious choice there is a
+		//		significant overhead associated with this type of store simply because it
+		//		keeps track of all previous executed store queries.  Fetching children of
+		//		any tree nodes results in the creation of such query. Therefore, on large
+		//		datasets (large trees) you can end up with hundreds of queries and as a
+		//		result each change to the store will result in running all those queries
+		//		against the newly added, deleted or changed store item.
+		//
+		//			myStore = Evented( new Memory( ... ) );
+		//
+		//		An evented store dispatches an event each time the store changes, that is,
+		//		an item is added, deleted or changed. It merely notifies the model of the
+		//		type of store operation performed and does NOT run potentially hundreds or
+		//		even thousands of queries each time the store changes.
+		//
+		//			myStore = new Memory( ... )
+		//
+		//		The basic dojo/store, please note that Memory is just one implementation of
+		//		the dojo/store API. Any store that complies with the dojo/store API can be
+		//		used with this model. In case of direct use of a store, that is, not evented
+		//		or observable the model will automatically generate the required events for
+		//		the tree. However, any changes to the store outside the scope of the model
+		//		will NOT be captured. For example, if you application modifies the store in
+		//		any way of fashion by performing direct operations on it like store.put() or
+		//		store.remove() than those changes will NOT be reflected in the tree and the
+		//		internal cache will be out of sync. If however, you have static store content
+		//		and nothing else is ooperating on the store then the basic store offers the
+		//		best performance and least amount of overhead.
 
-	// Requires JavaScript 1.8.5
-	var defineProperty = Object.defineProperty;
+	function copyObject( obj ) {
+		// summary:
+		//		Lean & mean shallow copy machine
+		var key, newObject = {};
+		for (key in obj) {
+			newObject[key] = obj[key];
+		}
+		return newObject;
+	}
 
 	return declare([Stateful], {
 
@@ -102,7 +153,7 @@ define(["dojo/_base/declare", 	// declare
 		normalize: true,
 
 		// parentAttr: String
-		//		The property name of a store item identifying its parent ID. The default
+		//		The property name of a store item identifying its parent ID(s). The default
 		//		dojo/store requires the property name to be 'parent'.
 		parentAttr: "parent",
 
@@ -112,9 +163,15 @@ define(["dojo/_base/declare", 	// declare
 		//		{type:'continent'}
 		query: null,
 
+		// rootLabel: String
+		//		Alternative label of the root item
+		rootLabel: null,
+
 		// store: dojo.store
 		//		Underlying store
 		store: null,
+
+		storeLoader: null,
 
 		// End Parameters to constructor
 		//==============================
@@ -139,7 +196,8 @@ define(["dojo/_base/declare", 	// declare
 			//		private
 
 			this.childrenCache = {};	// map from id to array of children
-			this.objects = {};
+			this._objectCache  = {};
+			this._storeLoaded  = new Deferred();
 
 			declare.safeMixin(this, kwArgs);
 
@@ -153,6 +211,18 @@ define(["dojo/_base/declare", 	// declare
 				} else {
 					console.warn(this.moduleName+"::constructor(): store is not write enabled.");
 					this._writeEnabled = false;
+				}
+
+				// If the store doesn't have a loadStore() method, like the native dojo/store
+				// Memory store, we assume the data is already loaded and available otherwise
+				// the model will call the store loader. ( See validateData() )
+
+				if (!this.storeLoader || typeof this.storeLoader != "function") {
+					if (store.loadStore && typeof store.loadStore === "function") {
+						this.storeLoader = store.loadStore;
+					} else {
+						this.storeLoader = function () {};
+					}
 				}
 
 				//	Extend the store to provide support for getChildren() and Drag-n-Drop.
@@ -169,45 +239,63 @@ define(["dojo/_base/declare", 	// declare
 					var funcBody = "return this.query({"+this.parentAttr+": this.getIdentity(object)});"
 					store.getChildren = new Function("object", funcBody);
 				}
-				// If the store is not observable we will have to fire some of the events
-				// ourselves.
-				if (!store.notify || !(typeof store.notify === "function")) {
-					console.warn("Specified store is not observable.");
-					this._notObservable = true;
+
+				// Stick a magic marker on the store if it doesn't have one...
+				if (!store.magic) {
+					store.__magic = (Math.random() * 10000000) >>> 0;		// make it a UINT32
 				}
 
-				// Provide support for single and multi parented objects. (Note, the store
-				// method getIdentity() is used to establish the parent id instead of simply
-				// relying on the presence of an 'id' property, this because more complex
-				// stores may actually use a key path. (see indexedStore).
-				//
-				// Note:	The prelogue method only takes effect after the store has been
-				//				created, any existing data in the store is not auto converted.
-
-				var prelogue = function _prelogue (/*Object*/ obj, /*Object*/ options) {
-					if(options && options.parent){
-						if (options.parent instanceof Array) {
-							var id, parents = [];
-							options.parent.forEach( function(parent) {
-								if (id = this.getIdentity(parent)) {
-									parents.push(id);
-								}
-							}, this);
-							obj.parent = parents;
-						} else {
-							obj.parent = this.getIdentity(options.parent);
-						}
-					} else {
-						obj.parent = obj.parent || undefined;
+				// Test if this store is 'evented', 'observable' or standard. If it is
+				// evented register the event listeners.
+				this._monitored = true;
+				if (store.isEvented) {
+					on( store, "onChange, onDelete, onNew", lang.hitch(this, "_onStoreEvent"));
+				} else {
+					// If this is a default dojo/store (not observable and not evented) we
+					// will have to fire some of the events ourselves.
+					if (!store.notify || !(typeof store.notify === "function")) {
+						this._monitored = false;
 					}
-					defineProperty( obj, "__store", {value: this, enumerable: false, writable: false});
-				};
+				}
+				if (this._writeEnabled) {
+					// Provide support for single and multi parented objects. (Note, the store
+					// method getIdentity() is used to establish the parent id instead of simply
+					// relying on the presence of an 'id' property, this because more complex
+					// stores may actually use a key path. (see indexedStore).
+					//
+					// Note:	The prologue method only takes effect after the store has been
+					//				created, any existing data in the store is not auto converted.
 
-				// Don't make the assumption that store.add() calls store.put() like the
-				// dojo/store/Memory store does.
-				aspect.before( store, "add", prelogue );
-				aspect.before( store, "put", prelogue );
-
+					var prologue = function _prologue (/*Object*/ obj, /*Object*/ options) {
+						if(options && options.parent){
+							if (options.parent instanceof Array) {
+								var i, id, parents = [];
+								options.parent.forEach(function(parent) {
+									if (id = this.getIdentity(parent)) {
+										for(i = parents.length-1; i >= 0; i--) {
+											if (parents[i] == id) {
+												break;
+											}
+										}
+										if (i < 0) {
+											parents.push(id);
+										}
+									}
+								}, this);
+								obj.parent = parents;
+							} else {
+								obj.parent = this.getIdentity(options.parent);
+							}
+						} else {
+							obj.parent = obj.parent || undefined;
+						}
+						obj.__magic = this.__magic;		// (Note: the 'this' object is the store)
+					};
+					// Don't make the assumption that store.add() calls store.put() like the
+					// dojo/store/Memory store does.
+					aspect.before( store, "add", prologue );
+					aspect.before( store, "put", prologue );
+				}
 			} else {
 				throw new Error(this.moduleName+"::constructor(): Store parameter is required");
 			}
@@ -218,13 +306,11 @@ define(["dojo/_base/declare", 	// declare
 			//		Distroy this model.
 			var handle, id;
 			for(id in this.childrenCache){
-				if(handle = this.childrenCache[id].handle) {
-					handle.remove();
-				}
+				this._deleteCacheEntry(id);
 			}
 			// Release memory.
 			this.childrenCache = {};
-			this.objects = {};
+			this._objectCache = {};
 			this.store   = undefined;
 		},
 
@@ -274,6 +360,24 @@ define(["dojo/_base/declare", 	// declare
 			return this.enabledAttr;
 		},
 
+		_LabelAttrSetter: function (/*String*/ newValue) {
+			// summary:
+			//		Set the labelAttr property.
+			// newValue:
+			//		New labelAttr newValue.
+			// tags:
+			//		public
+			if (newValue && typeof newValue === "string") {
+				if (this.labelAttr !== newValue) {
+					var oldValue	 = this.labelAttr;
+					this.labelAttr = newValue;
+					// Signal the event.
+					this.onLabelChange(oldValue, newValue);
+				}
+				return this.labelAttr;
+			}
+		},
+
 		// =======================================================================
 		// Methods for traversing hierarchy
 
@@ -291,32 +395,41 @@ define(["dojo/_base/declare", 	// declare
 			// tags:
 			//		public
 
-			var id = this.store.getIdentity(parentItem);
+			var id = this.getIdentity(parentItem);
 			if(this.childrenCache[id]){
 				when(this.childrenCache[id], onComplete, onError);
 				return;
 			}
-			var res  = this.childrenCache[id] = this.store.getChildren(parentItem);
 			var res  = this.store.getChildren(parentItem);
 			var self = this;
 
+			// Normalize the children cache. If a store returns a Promise instead of a
+			// store.QueryResults, wait for it to resolve so the children cache entries
+			// are always of type store.QueryResults.
+			when( res, function (queryResult) {
+				queryResult.forEach( function(item) {
+					self._objectCache[self.getIdentity(item)] = copyObject(item);
+				});
+				self.childrenCache[id] = queryResult;
+			});
+
 			// Setup listener in case children list changes, or the item(s) in the
-			// children list are updated in some way.
+			// children list are updated in some way. (Only applies to observable
+			// stores).
 
 			if(res.observe){
 				var handle = res.observe( function(obj, removedFrom, insertedInto) {
 					if (insertedInto == -1) {
-						when( res, lang.hitch(self, "onDeleteItem", obj, parentItem ));
+						when( res, lang.hitch(self, "_onDeleteItem", obj ));
 					} else if (removedFrom == -1) {
-						when( res, lang.hitch(self, "onNewItem", obj, parentItem ));
+						when( res, lang.hitch(self, "_onNewItem", obj ));
 					} else if (removedFrom == insertedInto) {
-						var orgObj = self.objects[self.store.getIdentity(obj)];
-						// Mimic the dojo/data/store onSet event type
-						when( res, lang.hitch(self, "onSetItem", orgObj, obj, parentItem));
+						when( res, lang.hitch(self, "_onChange", obj, null));
 					} else {
 						// insertedInto != removedFrom, this conddition indicates the item
-						// moved within the tree. Typically, this should have been capture
-						// by pasteItem() unless the user is doing some funcky stuff....
+						// moved within the tree.  Typically, this should only happen with
+						// DnD operations  and been captured by pasteItem() unless the user
+						// is doing some funcky stuff....
 						when(res, function(children) {
 							children = Array.prototype.slice.call(children);
 							self.onChildrenChange(parentItem, children);
@@ -325,18 +438,18 @@ define(["dojo/_base/declare", 	// declare
 				}, true);	// true means to notify on item changes
 				res.handle = handle;
 			}
-
 			// Call User callback AFTER registering any listeners.
 			when(res, onComplete, onError);
 		},
 
 		getParents: function (/*Object*/ storeItem) {
 			// summary:
-			//		Get the parent(s) of a store item.
+			//		Get the parent(s) of a store item. This model supports both single
+			//		and multi parented store objects.  For example: parent:"Homer" or
+			//		parent: ["Homer","Marge"]. Multi parented stores must have a query
+			//		engine capable of querying array properties.
 			// storeItem:
 			//		The store object whose parent(s) will be returned.
-			// returns:
-			//		Array of objects or an empty array.
 			// returns:
 			//		A dojo/promise/Promise
 			// tags:
@@ -344,12 +457,12 @@ define(["dojo/_base/declare", 	// declare
 			var deferred = new Deferred();
 			var parents  = [];
 
-			if (storeItem && storeItem[this.parentAttr]) {
-				var parentIds = new Parents( storeItem[this.parentAttr] );
+			if (storeItem) {
+				var parentIds = new Parents( storeItem, this.parentAttr );
 				var promises  = [];
 				var parent;
 
-				parentIds.forEach( function (id) {
+				parentIds.forEach(function (id) {
 					parent = this.store.get(id);
 					when( parent, function(parent) {
 						if (parent) {
@@ -358,10 +471,12 @@ define(["dojo/_base/declare", 	// declare
 					});
 					promises.push(parent);
 				}, this);
-
+				/// Wait till we have all parents.
 				all(promises).always( function() {
 					deferred.resolve(parents);
 				});
+			} else {
+				deferred.resolve(parents);
 			}
 			return deferred.promise;
 		},
@@ -377,29 +492,31 @@ define(["dojo/_base/declare", 	// declare
 			if(this.root){
 				onItem(this.root);
 			}else{
-				var res  = this.store.query(this.query);
-				var self = this;
-				when(res, function(items) {
-					if(items.length != 1){
-						throw new Error(this.moduleName + ": query " + self.query + " returned " + items.length +
-															" items, but must return exactly one item");
-					}
-					self.root = items[0];
-					// Setup listener to detect if root item changes
-					if(res.observe) {
-						res.observe( function(obj, removedFrom, insertedInto) {
-							if (removedFrom == insertedInto) {
-								var id = self.store.getIdentity(obj);
-								self.onSetItem( self.objects[id], obj );
-							}
-							self.onChange(obj);
-						}, true);	// true to listen for updates to obj
-					}
-					// Call onItem AFTER registering any listener.
-					onItem(self.root);
 
-				},
-				onError);
+				var self   = this;
+
+				when( this._storeLoaded, function () {
+					var result = self.store.query(self.query);
+
+					when(result, function(items) {
+						if(items.length != 1){
+							throw new Error(self.moduleName + ": Root query returned " + items.length +
+																" items, but must return exactly one item");
+						}
+						self.root = items[0];
+						// Setup listener to detect if root item changes
+						if(result.observe) {
+							result.observe( function(obj, removedFrom, insertedInto) {
+								if (removedFrom == insertedInto) {
+									self._onChange( obj, null );
+								}
+							}, true);	// true to listen for updates to obj
+						}
+						// Call onItem AFTER registering any listener.
+						onItem(self.root);
+					}, onError);
+				});
+
 			}
 		},
 
@@ -413,13 +530,13 @@ define(["dojo/_base/declare", 	// declare
 			// tags:
 			//		public
 
-			var itemId = this.store.getIdentity(item);
+			var itemId = this.getIdentity(item);
 			var result = this.childrenCache[itemId];
 			if (result) {
 				if (result instanceof Promise) {
 					return !result.isFulfilled();
 				}
-				return !!Array.prototype.slice.call(result).length;
+				return !!result.length;
 			}
 			return true;		// We just don't know at this point.
 		},
@@ -435,6 +552,8 @@ define(["dojo/_base/declare", 	// declare
 			//		has a checked state the composite state will be undefined.
 			// children:
 			//		Array of dojo/store items
+			// returns:
+			//		Boolean or string: true, false, "mixed" or undefined
 			// tags:
 			//		private
 
@@ -444,7 +563,7 @@ define(["dojo/_base/declare", 	// declare
 					newState,
 					state;
 
-			children.some( function (child) {
+			children.some(function (child) {
 				state = this.getChecked(child);
 				isMixed |= (state == "mixed");
 				switch(state) {	// ignore 'undefined' state
@@ -508,6 +627,8 @@ define(["dojo/_base/declare", 	// declare
 			//		The item in the dojo.store whose checked state is updated.
 			//	newState:
 			//		The new checked state: 'mixed', true or false.
+			//	returns:
+			//		Boolean, true or false;
 			//	tag:
 			//		private
 
@@ -519,13 +640,7 @@ define(["dojo/_base/declare", 	// declare
 
 			var currState = storeItem[this.checkedAttr];
 			if ((currState !== undefined || this.checkedAll) && (currState != normState || forceUpdate)) {
-				// Keep a shallow copy of the store item for comparison later.
-				this.objects[ this.store.getIdentity(storeItem)] = lang.mixin( {}, storeItem);
 				this._setValue(storeItem, this.checkedAttr, normState);
-				if (this._notObservable) {
-					this.onChange(storeItem, this.checkedAttr, normState);
-					this._updateCheckedParent(storeItem, false);
-				}
 				return true;
 			}
 			return false;
@@ -553,11 +668,13 @@ define(["dojo/_base/declare", 	// declare
 
 			this._setChecked(storeItem, newState);
 			this.getChildren(storeItem, function (children) {
-					children.forEach( function (child) {
-							self._updateCheckedChild(child, newState);
+					children.forEach(function (child) {
+						self._updateCheckedChild(child, newState);
 					});
 				},
-				this.onError );
+				function (err) {
+					console.error(err);
+				} );
 		},
 
 		_updateCheckedParent: function (/*Object*/ storeItem, /*Boolean*/ forceUpdate) {
@@ -577,11 +694,11 @@ define(["dojo/_base/declare", 	// declare
 			}
 			var parents		 = this.getParents(storeItem),
 					childState = this.getChecked(storeItem),
-					self = this,
+					self       = this,
 					newState;
 
 			when(parents, function (parents) {
-				parents.forEach( function (parentItem) {
+				parents.forEach(function (parentItem) {
 					// Only process a parent update if the current child state differs from
 					// its parent otherwise the parent is already up-to-date.
 					if ((childState !== self.getChecked(parentItem)) || forceUpdate) {
@@ -616,11 +733,13 @@ define(["dojo/_base/declare", 	// declare
 			this._validating += 1;
 
 			children = children instanceof Array ? children : [children];
-			children.forEach(	function (child) {
+			children.forEach(function (child) {
 				this.getChildren( child, lang.hitch(this, function(children) {
 						this._validateChildren(child, children);
 					}),
-					this.onError);
+					function (err) {
+						console.error(err);
+					});
 			}, this	);
 			newState	= this._getCompositeState(children);
 			currState = this.getChecked(parent);
@@ -630,9 +749,8 @@ define(["dojo/_base/declare", 	// declare
 			}
 
 			// If the validation count drops to zero we're done.
-			this._validating -= 1;
+			this._validating--;
 			if (!this._validating) {
-				this.store.validated = true;
 				this.onDataValidated();
 			}
 		},
@@ -659,6 +777,8 @@ define(["dojo/_base/declare", 	// declare
 			//
 			// storeItem:
 			//		The item in the dojo.store whose checked state is returned.
+			// returns:
+			//		Boolean or string: true, false, "mixed" or undefined
 			// tag:
 			//		private
 
@@ -673,7 +793,7 @@ define(["dojo/_base/declare", 	// declare
 					return this.checkedState;
 				}
 			}
-			return checked;	// the current checked state (true/false or undefined)
+			return checked;	// the current checked state (true/false/'mixed' or undefined)
 		},
 
 		getEnabled: function (/*item*/ item) {
@@ -681,6 +801,8 @@ define(["dojo/_base/declare", 	// declare
 			//		Returns the current 'enabled' state of an item as a boolean.
 			// item:
 			//		Store or root item
+			// returns:
+			//		Boolean, true or false
 			// tag:
 			//		Public
 			var enabled = true;
@@ -697,6 +819,8 @@ define(["dojo/_base/declare", 	// declare
 			//		'checked' and 'enabled'.
 			// item:
 			//		The store or root item.
+			// returns:
+			//		A JavaScript object with two properties: 'checked' and 'enabled'
 			// tag:
 			//		Public
 			return { checked: this.getChecked(item),
@@ -742,35 +866,41 @@ define(["dojo/_base/declare", 	// declare
 			// summary:
 			//		Validate/normalize the parent-child checked state relationship. If the
 			//		attribute 'checkedStrict' is true this method is called as part of the
-			//		post creation of the Tree instance.	First we try a forced synchronous
-			//		load of the Json dataObject dramatically improving the startup time.
+			//		post creation of the Tree instance.
 			//	tag:
 			//		private
 			var self = this;
 
-			if (this.checkedStrict && this._validateStore) {
-				if (!this.store.isValidated) {
-					this.getRoot( function (rootItem) {
-						self.getChildren(rootItem, function (children) {
-							self._validateChildren(rootItem, children);
-						}, self.onError);
-					}, self.onError);
+			when( this.storeLoader.call(this.store),
+				function () {
+					self._storeLoaded.resolve();
+					if (self.checkedStrict && self._validateStore) {
+						if (!self.store.isValidated) {
+							self.getRoot( function (rootItem) {
+								self.getChildren(rootItem, function (children) {
+									self._validateChildren(rootItem, children);
+								}, self.onError);
+							}, self.onError);
+						} else {
+							self.onDataValidated();		// Trigger event.
+						}
+					} else {
+						self.store.isValidated = true;
+					}
 				}
-				this.onDataValidated();		// Trigger event.
-			} else {
-				this.store.isValidated = true;
-			}
+			);
+
 		},
 
 		// =======================================================================
 		// Inspecting items
 
-		fetchItemByIdentity: function(/* object */ keywordArgs){
+		fetchItemByIdentity: function(/* object */ kwArgs){
 			// summary:
 			//		Fetch a store item by identity
-			this.store.get(keywordArgs.identity).then(
-				lang.hitch(keywordArgs.scope, keywordArgs.onItem),
-				lang.hitch(keywordArgs.scope, keywordArgs.onError)
+			when( this.store.get(kwArgs.identity),
+				lang.hitch(kwArgs.scope, kwArgs.onItem),
+				lang.hitch(kwArgs.scope, kwArgs.onError)
 			);
 		},
 
@@ -787,12 +917,17 @@ define(["dojo/_base/declare", 	// declare
 		},
 
 		getIdentity: function(/*item*/ item){
+			// summary:
+			//		Get the identity of an item.
 			return this.store.getIdentity(item);	// Object
 		},
 
 		getLabel: function(/*Object*/ item){
 			// summary:
 			//		Get the label for an item
+			if (item === this.root && this.rootLabel) {
+				return this.rootLabel;
+			}
 			return item[this.labelAttr];	// String
 		},
 
@@ -806,7 +941,7 @@ define(["dojo/_base/declare", 	// declare
 			// tag:
 			//		Public
 			if (Object.prototype.toString.call(something) == "[object Object]") {
-				if (something.__store == this.store) {
+				if (something.__magic == this.store.__magic) {
 					return true;
 				}
 			}
@@ -816,6 +951,38 @@ define(["dojo/_base/declare", 	// declare
 		// =======================================================================
 		// Write interface
 
+		_setValue: function (/*Object*/ item, /*String*/ property, /*any*/ value) {
+			// summary:
+			//		Set the new value of a store item property and fire the 'onChange'
+			//		event if the store is not observable.
+			//item:
+			//		Store object
+			// property:
+			//		Object property name
+			// value:
+			//		New value to be assigned.
+			// returns:
+			//		Promise, number or string.
+			// tag:
+			//		Private
+			if (item[property] !== value) {
+				var orgItem = copyObject(item);
+				var result;
+
+				// Keep a shallow copy of the item for property comparison later.
+				this._objectCache[this.getIdentity(item)] = orgItem;
+
+				item[property] = value;
+				result = this.store.put( item, {overwrite: true});
+
+				if (!this._monitored) {
+					when( result, lang.hitch( this, "_onChange",  item, orgItem));
+				}
+				return result;
+			}
+			return this.getIdentity(item);
+		},
+
 		deleteItem: function (/*Object*/ storeItem){
 			// summary:
 			//		Delete a store item.
@@ -824,117 +991,138 @@ define(["dojo/_base/declare", 	// declare
 			// tag:
 			//		public
 
-			var method = this.store.remove || this.store.delete;
-			var self   = this;
-
+			var method = this.store.remove;
 			if (method && typeof method === "function") {
-				var itemId = this.store.getIdentity(storeItem);
+				var itemId = this.getIdentity(storeItem);
 				method.call(this.store, itemId);
 
 				// If this store is not observable we need to trigger all the appropriate
 				// events for the tree.
-				if (this._notObservable) {
-					when( this.getParents(storeItem), function(parents) {
-						parents.forEach( function(parent) {
-							self.getChildren(parent, function(children) {
-								self.onDeleteItem(storeItem, parent, children);
-								self._updateCheckedParent(children[0]);
-							});
-						});
-					});
+				if (!this._monitored) {
+					this._onDeleteItem(storeItem);
 				}
 				return true;
 			}
 		},
 
-		newItem: function(/* dijit/tree/dndSource.__Item */ args, /*Item*/ parent, /*int?*/ insertIndex, /*Item*/ before){
+		newItem: function(/*dijit/tree/dndSource.__Item*/ args, /*Item*/ parent, /*int?*/ insertIndex, /*Item*/ before){
 			// summary:
 			//		Creates a new item.   See `dojo/data/api/Write` for details on args.
-			//		Used in drag & drop when item from external source dropped onto tree.
+			//		Used in drag & drop when item from external source dropped onto tree
+			//		or can be called programmatically. Whenever this method is called by
+			//		Drag-n-Drop it is a clear indication that DnD determined the item to
+			//		be  external to the model and tree however, that doesn't  mean there
+			//		isn't a similar item in our store. If the item exists the store type
+			//		will determine the appropriate operation. (insert or move)
+			// args:
+			//		A javascript object defining the initial content of the item as a set
+			//		of JavaScript key:value pairs object.
+			// parent:
+			//		A valid store item that will serve as the parent of the new item.
+			// insertIndex:
+			//		Not used.
+			// before:
+			// returns:
+			//		A dojo/promise/Promise
+			// tag:
+			//		Public
 
-			var result = this.store.put(args, { parent: parent, before: before });
-			var self   = this;
+			var newParents = parent instanceof Array ? parent : [parent];
+			var mpStore    = newParents[0][this.parentAttr] instanceof Array;
+			var itemId     = this.getIdentity(args);
+			var self       = this;
+			var result;
 
-			if (this._notObservable && parent) {
-				when(result, function(itemId) {
-					when( self.store.get(itemId), function(item) {
-						var children = self._addChildToCache(item, parent);
-						self.onNewItem(item, parent, children);
-					});
+			parent = mpStore ? newParents : newParents[0];
+
+			if (itemId) {
+				result = when( this.store.get(itemId), function(item) {
+					if (item) {
+						// An item in the store with the same identification already exists.
+						var parentIds  = new Parents(item);
+
+						// If the store is multi-parented add the new parent otherwise just
+						// move the item to its new parent.
+						if (mpStore) {
+							newParents.forEach( function (aParent) {
+								parentIds.add( self.getIdentity(aParent), true );
+							});
+							self._setValue( item, self.parentAttr, parentIds.toValue());
+						} else {
+							// Single parented store, move the item.
+							when (self.getParents(item), function (oldParents) {
+								if (oldParents.length) {
+									self.pasteItem( item, oldParents[0], newParents[0], false, insertIndex, before );
+								} else {
+									// TODO:	Parent no longer exist. Should we update the parent
+									//				property accordingly or just leave it as it?
+								}
+							});
+						}
+						return item;
+					} else {
+						// It's a new item to the store so just add it.
+						result = self.store.put(args, { parent: parent, before: before });
+						return when( result, function(itemId) {
+							when (self.store.get(itemId), function(item) {
+								if (!this._monitored) {
+									when( result, lang.hitch( self, "_onNewItem",  item));
+								}
+								return item;
+							});
+						});
+					}
 				});
+				return result;
 			}
-			return this.store.get(result);
+			// It's a new item without a predefined identification, just add it and the store
+			// should generate a unique id.
+			result = this.store.put(args, { parent: parent, before: before });
+			return when( result, function(itemId) {
+				when (self.store.get(itemId), function(item) {
+					if (!this._monitored) {
+						when( result, lang.hitch( self, "_onNewItem",  item));
+					}
+					return item;
+				});
+			});
 		},
 
 		pasteItem: function(/*Item*/ childItem, /*Item*/ oldParentItem, /*Item*/ newParentItem,
-					/*Boolean*/ bCopy, /*int?*/ insertIndex, /*Item*/ before){
+												 /*Boolean*/ bCopy, /*int?*/ insertIndex, /*Item*/ before){
 			// summary:
 			//		Move or copy an item from one parent item to another.
 			//		Used in drag & drop
 
-			if(!bCopy){
-				// In order for DnD moves to work correctly, childItem needs to be orphaned from oldParentItem
-				// before being adopted by newParentItem.   That way, the TreeNode is moved rather than
-				// an additional TreeNode being created, and the old TreeNode subsequently being deleted.
-				// The latter loses information such as selection and opened/closed children TreeNodes.
-				// Unfortunately simply calling this.store.put() will send notifications in a random order, based
-				// on when the TreeNodes in question originally appeared, and not based on the drag-from
-				// TreeNode vs. the drop-onto TreeNode.
+			var parentIds   = new Parents( childItem, this.parentAttr );
+			var newParentId = this.getIdentity(newParentItem);
 
-				var oldParentChildren = this.childrenCache[this.getIdentity(oldParentItem)];
+			if(!bCopy){
+				//	In order for DnD moves to work correctly, childItem needs to be orphaned
+				//	from oldParentItem before being adopted by newParentItem.  That way, the
+				//	TreeNode is moved rather than an additional TreeNode being created, and
+				//	the old TreeNode subsequently being deleted.
+				//	The latter loses information such as selection and opened/closed children
+				//	TreeNodes.
+				//	Unfortunately simply calling this.store.put() will send notifications in a
+				//	random order, based on when the TreeNodes in question originally appeared,
+				//	and not based on the drag-from TreeNode vs. the drop-onto TreeNode.
+
+				var oldParentId = this.getIdentity(oldParentItem);
+				var oldParentChildren = this.childrenCache[oldParentId];
+				var self = this;
+
+				parentIds.remove(oldParentId);
 				when( oldParentChildren, function(children) {
-					var newChildren = children.slice(0);
-					var index = newChildren.indexOf(childItem);
-					newChildren.splice(index,1);
-					this.onChildrenChange(oldParentItem, newChildren);
+					var index = children.indexOf(childItem);
+					children.splice(index,1);
+					children.total = children.length;
+					self.onChildrenChange(oldParentItem, children);
 				});
 			}
 
-			return this.store.put(childItem, {
-				overwrite: true,
-				parent: newParentItem,
-				before: before
-			});
-		},
-
-		_setValue: function (/*Object*/ item, /*String*/ attr, /*any*/ value) {
-			// summary:
-			//item:
-			// attr:
-			// value:
-			if (item[attr] !== value) {
-				item[attr] = value;
-				this.store.put( item, {overwrite: true});
-			}
-		},
-
-		// =======================================================================
-		// Label Attribute
-
-		getLabelAttr: function () {
-			// summary:
-			//		Returns the labelAttr property.
-			// tags:
-			//		public
-			return this.labelAttr;
-		},
-
-		setLabelAttr: function (/*String*/ newValue) {
-			// summary:
-			//		Set the labelAttr property.
-			// newValue:
-			//		New labelAttr newValue.
-			// tags:
-			//		public
-			if (typeof newValue === "string" && newValue.length) {
-				if (this.labelAttr !== newValue) {
-					var oldValue	 = this.labelAttr;
-					this.labelAttr = newValue;
-					// Signal the event.
-					this.onLabelChange(oldValue, newValue);
-				}
-				return this.labelAttr;
-			}
+			parentIds.add(newParentId);
+			this._setValue( childItem, this.parentAttr, parentIds.toValue() );
 		},
 
 		// =======================================================================
@@ -943,9 +1131,7 @@ define(["dojo/_base/declare", 	// declare
 		onChange: function(/*===== item, attribute, newValue =====*/){
 			// summary:
 			//		Callback whenever an item has changed, so that Tree
-			//		can update the label, icon, etc.	 Note that changes
-			//		to an item's children or parent(s) will trigger an
-			//		onChildrenChange() so you can ignore those changes here.
+			//		can update the label, icon, etc.
 			// tags:
 			//		callback
 		},
@@ -955,6 +1141,13 @@ define(["dojo/_base/declare", 	// declare
 			//		Callback to do notifications about new, updated, or deleted child items.
 			// parent:
 			// newChildrenList:
+			//
+			// NOTE:
+			// 		Because observable.js uses 'inMethod' to determine if one store method
+			//		is called from within another store method we MUST schedule the update
+			//		of the parent item as a separate task otherwise observable.js will not
+			//		fire any events associated with the parent update.
+			//
 			// tags:
 			//		callback
 			var first = newChildrenList[0];
@@ -971,6 +1164,7 @@ define(["dojo/_base/declare", 	// declare
 			//		parent-child relationship is enabled.
 			// tag:
 			//		callback
+			this.store.validated = true;
 		},
 
 		onDelete: function(/*===== item =====*/){
@@ -991,96 +1185,164 @@ define(["dojo/_base/declare", 	// declare
 		},
 
 		// =======================================================================
-		// Mimic the dojo/data/ItemFileReadStore events
+		// Internal event listeners.
 
-		onNewItem: function (/*Object*/ item, /*Object*/ parentItem,/*QueryResult|Object[]*/ children) {
+		_onChange: function (/*Object*/ newItem, /*Object?*/ oldItem) {
 			// summary:
-			//		Mimic the dojo/data/ItemFileReadStore onNew event.
-			var self = this;
-			// Check if it affects the root.
-			when( this.getParents(item), function (parents) {
-				parents.some( function (parent) {
-					if (parent == self.root) {
-						self.onRootChange(item, "new");
-						return true;
+			//		Test which of the item properties changed, if an existing property was
+			//		removed or if a new property was added.
+			// newItem:
+			//		An updated store item.
+			// oldItem:
+			//		The original store item, that is, before the store update. If oldItem
+			//		is not specified the cache is search for a  match.
+			// tag:
+			//		Private
+			oldItem = oldItem || this._objectCache[this.getIdentity(newItem)];
+			if (oldItem) {
+				var key;
+				//  First, test if an existing property has changed value or if it was
+				//	removed.
+				for (key in oldItem) {
+					if (key in newItem) {
+						if (oldItem[key] != newItem[key]) {
+							this.onSetItem(newItem, key, oldItem[key], newItem[key]);
+						}
+					} else {
+						this.onSetItem(newItem, key, oldItem[key], undefined);
 					}
-				});
-			});
-			children = Array.prototype.slice.call(children);
-			this.onChildrenChange(parentItem, children);
+				}
+				// Second, test if a newproperty was added.
+				for (key in newItem) {
+					if (!(key in oldItem)) {
+						this.onSetItem(newItem, key, undefined, newItem[key]);
+					}
+				}
+			}
+			// Keep a shallow copy of the item for later property comparison.
+			this._objectCache[ this.getIdentity(newItem)] = copyObject(newItem);
 		},
 
-		onDeleteItem: function (/*Object*/ item, /*Object*/ parentItem,/*QueryResult|Object[]*/children) {
+		_onDeleteItem: function (/*Object*/ item) {
 			// summary:
 			//		Handler for delete notifications from the store.
-			// storeItem:
+			// item:
 			//		The store item that was deleted.
-
-			var id   = this.store.getIdentity(item);
+			// tag:
+			//		Private
+			var id   = this.getIdentity(item);
 			var self = this;
 
-			if (this.childrenCache[id]) {
-				this.childrenCache[id].handle && this.childrenCache[id].handle.remove();
-				delete this.childrenCache[id];
-			}
-			delete this.objects[id];
+			// Because observable does not provide definitive information if the item
+			// was actually deleted or just moved (re-parented) we need to check the
+			// store and see if the item still exist.
+			when(this.store.get(id), function(exists) {
+				if (!exists) {
+					self._deleteCacheEntry(id);
+					delete self._objectCache[id];
+				}
+			});
+			self.onDelete(item);
 
 			// Check if it affects the root.
 			when( this.getParents(item), function (parents) {
-				parents.some( function (parent) {
+				parents.some(function (parent) {
 					if (parent == self.root) {
 						self.onRootChange(item, "delete");
 						return true;
 					}
 				});
-			});
-			// Because observable does not provide definitive information if the item
-			// was actually deleted or just moved (re-parented) we need to check the
-			// store and see if the item still exist.
-			when(this.store.get(id), function(exists) {
-				if (exists) {
-					children = Array.prototype.slice.call(children);
-					self.onChildrenChange(parentItem, children);
-				} else {
-					self._removeChildFromCache(item, parentItem);
-					self.onDelete(item);
-				}
+				self._childrenChanged( parents );
 			});
 		},
 
-		onError: function (/*Object*/ err) {
+		_onNewItem: function (/*Object*/ item) {
 			// summary:
-			//		Callback when an error occurred.
-			// tags:
-			//		callback
-			console.error(this, err);
-		},
-
-		onSetItem: function (/*Object*/ orgItem,/*Object*/ updatedItem, /*Object*/ parentItem,
-													/*QueryResult|Object[]*/ children) {
-			// summary:
-			//		Mimic the dojo/data/ItemFileReadStore onSet event type.
+			//		Mimic the dojo/data/ItemFileReadStore onNew event.
+			// item:
+			//		The store item that was added.
+			// tag:
+			//		Private
 			var self = this;
-			if (orgItem) {
-				for (var key in orgItem) {
-					if (orgItem[key] != updatedItem[key]) {
-						if (key === this.checkedAttr) {
-							setTimeout( function () {
-								self._updateCheckedParent(updatedItem, false);
-							}, 0);
-						}
-						this.onChange(updatedItem, key, updatedItem[key]);
+
+			// Check if it affects the root.
+			when( this.getParents(item), function (parents) {
+				parents.some(function (parent) {
+					if (parent == self.root) {
+						self.onRootChange(item, "new");
+						return true;
 					}
-				}
-			} else {
-				children = Array.prototype.slice.call(children);
-				this.onChildrenChange(parentItem, children);
+				});
+				self._childrenChanged( parents );
+			});
+		},
+
+		_onStoreEvent: function (event) {
+			// summary:
+			//		Common store event listener for evented stores.  An evented store
+			//		typically dispatches three types of events: 'update', 'delete' or
+			//		'new'.
+			// event:
+			//		Event recieved from the store.
+			// tag:
+			//		Private
+			switch (event.type) {
+				case "update":
+					this._onChange( event.item, null );
+					break;
+				case "delete":
+					this._onDeleteItem(event.item);
+					break;
+				case "new":
+					this._onNewItem(event.item);
+					break;
 			}
+		},
+
+		onSetItem: function (/*dojo.store.item*/ storeItem, /*string*/ property, /*AnyType*/ oldValue,
+													/*AnyType*/ newValue) {
+			// summary:
+			//		Updates the tree view according to changes in the data store.
+			// storeItem:
+			//		Store item
+			// property:
+			//		property-name-string
+			// oldValue:
+			//		Old attribute value
+			// newValue:
+			//		New attribute value.
+			// tags:
+			//		extension
+			var self = this;
+
+			if (property === this.checkedAttr) {
+				setTimeout( function () {
+					self._updateCheckedParent(storeItem, false);
+				}, 0);
+			} else if (property === this.parentAttr) {
+				var np = new Parents(newValue);
+				var op = new Parents(oldValue);
+				var dp = [];
+
+				np.forEach( function(parent) {
+					if(!op.contains(parent) && self._objectCache[parent]) {
+						dp.push(self._objectCache[parent]);
+					}
+				});
+
+				op.forEach( function(parent) {
+					if(!np.contains(parent) && self._objectCache[parent]) {
+						dp.push(self._objectCache[parent]);
+					}
+				});
+				self._childrenChanged( dp );
+			}
+			this.onChange(storeItem, property, newValue);
 		},
 
 		onRootChange: function (/*Object*/ storeItem, /*String*/ action) {
 			// summary:
-			//		Handler for any changes to tree root.
+			//		Handler for any changes to root children.
 			// storeItem:
 			//		The store item that was attached to, or detached from, the root.
 			// action:
@@ -1097,46 +1359,38 @@ define(["dojo/_base/declare", 	// declare
 		//=========================================================================
 		// Misc helper methods
 
-		_addChildToCache: function(/*Object*/ childItem,/*Object*/ parentItem ) {
+		_childrenChanged: function (/*Object[]*/ parents) {
 			// summary:
-			//		Add child to the childrens cache.
-			// childItem:
-			// parentItem:
+			//		Notify the tree the children of parents have changed. This method is
+			//		called by the internal event listeners and the model API.
+			// parents:
+			//		An array of store items.
 			// tag:
 			//		Private
-			if (childItem && parentItem) {
-				var parentId = this.store.getIdentity(parentItem);
-				var children = this.childrenCache[parentId] || [];
+			var self = this;
 
-				children.push(childItem);
-				this.childrenCache[parentId] = children;
-				return children;
+			if (parents && parents.length) {
+				parents.forEach(function(parent) {
+					self._deleteCacheEntry(self.getIdentity(parent));
+					self.getChildren(parent, function(children) {
+						self.onChildrenChange(parent, children.slice(0) );
+					});
+				});
 			}
 		},
 
-		_removeChildFromCache: function(/*Object*/ childItem,/*Object*/ parentItem ) {
+		_deleteCacheEntry: function (id) {
 			// summary:
-			//		Remove a child from the childrens cache.
-			// childItem:
-			// parentItem:
+			//		Delete an entry from the childrens cache and remove the associated
+			//		observer if any.
+			// id:
+			//		Store item identification.
 			// tag:
 			//		Private
-			var parentId = this.store.getIdentity(parentItem);
-			var children = this.childrenCache[parentId];
-			var index    = children ? children.indexOf(childItem) : -1;
-
-			if (index != -1) {
-				children.splice(index,1);
+			if (this.childrenCache[id]) {
+				this.childrenCache[id].handle && this.childrenCache[id].handle.remove();
+				delete this.childrenCache[id];
 			}
-			return children;
-		},
-
-		_indexById: function (id, children) {
-			children.forEach( function(child, idx) {
-				if (this.store.getIdentity(child) == id) {
-					return idx;
-				}
-			}, this);
 		}
 
 	});
