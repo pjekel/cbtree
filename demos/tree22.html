@@ -27,7 +27,8 @@
     <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-				"dojo/_base/connect",
+				"dojo/_base/lang",
+				"dojo/aspect",
         "dojo/store/Memory",
         "dojo/store/Observable",
         "dojo/ready",
@@ -35,7 +36,7 @@
         "cbtree/Tree",                    // Checkbox tree
         "cbtree/TreeStyling",             // Tree styling extensions
         "cbtree/models/ObjectStoreModel"  // ObjectStoreModel
-        ], function( connect, Memory, Observable, ready, on, Tree, TreeStyling, ObjectStoreModel) {
+        ], function( lang, aspect, Memory, Observable, ready, on, Tree, TreeStyling, ObjectStoreModel) {
 
           var store, model, tree;
 					var data = [
@@ -92,7 +93,7 @@
                     nodeIcons: true
                     }, "CheckboxTree" );
             tree.startup();
-            connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
+            aspect.after( tree, "onCheckBoxClick", lang.hitch(model, checkBoxClicked), true );
           });
         });
     </script>
@@ -101,7 +102,7 @@
 
   <body class="claro">
     <h1 class="DemoTitle">The CheckBox Tree and Tree Styling</h1>
-    A basic CheckBox Tree and Observable Object Store demonstrating some tree styling features.
+    A basic CheckBox Tree and observable Memory Object Store demonstrating some tree styling features.
     <div id="CheckboxTree">
     </div>
     <h2>Click a checkbox</h2>

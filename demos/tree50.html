@@ -31,13 +31,16 @@
 		<script type="text/javascript">
 			require(["dojo/ready",
 							 "dojo/Deferred",
+							 "dojo/on",
 							 "dojo/when",
 							 "cbtree/Tree",
 							 "cbtree/models/ObjectStoreModel",
 							 "indexedDB/IDBEnvironment!enforce",
-							 "indexedStore/Observable",
-							 "indexedStore/Store"
-							], function(ready, Deferred, when, Tree, ObjectStoreModel, indexedDB, Observable, indexedStore) {
+							 "indexedDB/store/Evented",
+							 "indexedDB/store/Observable",
+							 "indexedDB/store/Store"
+							], function(ready, Deferred, on, when, Tree, ObjectStoreModel, indexedDB,
+													 Evented, Observable, indexedStore) {
 
 				var dbReady = new Deferred();
 				var store, model;
@@ -71,6 +74,8 @@
 					function (dbConn) {
 						console.log( "We have a connection on: " + dbConn.name);
 						var dbStore = new indexedStore( dbConn, "characters", {parentIndex:"parents"} );
+
+//						var store = Evented(dbStore);
 						store = Observable(dbStore);
 						model = new ObjectStoreModel( { store: store,
 																						query: {name: "Root"},

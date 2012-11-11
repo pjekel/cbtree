@@ -33,8 +33,10 @@
 							 "dijit/tree/dndSource",
 							 "dijit/registry",
 							 "cbtree/models/ObjectStoreModel",
+							 "cbtree/stores/Evented",
+							 "cbtree/stores/util/SimpleQueryEngine",
 							 "cbtree/Tree"
-								], function (lang, Memory, Observable, ready, dndSource, registry, ObjectStoreModel, Tree) {
+								], function (lang, Memory, Observable, ready, dndSource, registry, ObjectStoreModel, Evented, SimpleQueryEngine,Tree) {
 
 				var earth = [	{ id: "earth", name:"The earth", type:"planet", population: "6 billion"}];
 				var data = [
@@ -61,11 +63,15 @@
 							{ id: "IT", name:"Italy", type:"country", parent: "EU" }
 						];
 
-				var childrenStore = new Observable(new Memory({data: data}));
-				var parentStore   = new Observable(new Memory({data: earth}));
+				var childrenStore = new Memory({data: data});
+//				var parentStore   = new Observable(new Memory({data: earth, queryEngine: SimpleQueryEngine}));
+//				var parentStore   = new Evented(new Memory({data: earth, queryEngine: SimpleQueryEngine}));
+				var parentStore   = new Memory({data: earth, queryEngine: SimpleQueryEngine});
 
 				var parentMod = new ObjectStoreModel({ store: parentStore, query: {id:"earth"},
 																								checkedRoot: true });
+//				var secondMod = new ObjectStoreModel({ store: parentStore, query: {id:"earth"},
+//																								checkedRoot: true });
 				var childMod  = new ObjectStoreModel({ store: childrenStore, query: {id:"continents"}});
 				var contTree, earthTree;
 
@@ -94,6 +100,9 @@
 																	return !!source.tree;
 																} });
 					earthTree.placeAt("divEarth");
+
+//					secondTree = new Tree({model:secondMod}, "second");
+
 					// No items can be dropped on the 'continents' tree.
 					contTree  = new Tree({model: childMod, dndController: dndSource,
 																checkAcceptance: function() { return false; }
@@ -114,6 +123,8 @@
 			</div>
 			<div id="divContinents">
 			</div>
+		</div>
+		<div id="second">
 		</div>
   </body>
 </html>
