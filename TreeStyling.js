@@ -11,16 +11,15 @@
 //
 //	In case of doubt, the BSD 2-Clause license takes precedence.
 //
-define([
-	"dojo/_base/array",
-	"dojo/_base/connect",
-	"dojo/_base/lang",
-	"dojo/dom-class",
-	"dojo/dom-prop",
-	"dojo/dom-style",
-	"dojo/has",
-	"dijit/Tree"
-], function (array, connect, lang, domClass, domProp, domStyle, has, Tree) {
+define(["dojo/_base/lang",
+				"dojo/aspect",
+				"dojo/dom-class",
+				"dojo/dom-prop",
+				"dojo/dom-style",
+				"dojo/has",
+				"dijit/Tree",
+				"./shim/Array"            // ECMA-262 Array shim
+			], function (lang, aspect, domClass, domProp, domStyle, has, Tree) {
 	// summary:
 	//		Tree Styling extensions to customize the look and feel of a dijit tree.
 	// description:
@@ -222,7 +221,7 @@ define([
 			classes = lang.trim(classNames).split(/\s+/);
 			if (classes[0]) {
 				for (i=0; i< this._dijitIconClasses.length; i++) {
-					index = array.indexOf(classes, this._dijitIconClasses[i]);
+					index = classes.indexOf(this._dijitIconClasses[i]);
 					if (index != -1 ) {
 						classes.splice(index,1);
 					}
@@ -252,8 +251,8 @@ define([
 			// tag:
 			//		private
 			var name = attr+type;
-			if ((array.indexOf(this._itemAttr, attr) != -1) &&
-					(array.indexOf(this._typeAttr, type) != -1)) {
+			if ((this._itemAttr.indexOf(attr) != -1) &&
+					(this._typeAttr.indexOf(type) != -1)) {
 				var styling = this._getItemStyling(item);
 				return styling[attr][attr+type];
 			}
@@ -321,7 +320,7 @@ define([
 				// This should only happen once during tree instantiation.
 				var attr;
 
-				array.forEach(this._itemAttr, function(attr) {
+				this._itemAttr.forEach(function(attr) {
 						styling[attr] = this._initStyleElement(attr);
 					}, this);
 				styling["root"] = true;
@@ -340,7 +339,7 @@ define([
 			var element = {},
 					type;
 
-			array.forEach(this._typeAttr, function (type) {
+			this._typeAttr.forEach(function (type) {
 					element[attr+type] = null;
 				}, this);
 			return element;
@@ -370,7 +369,7 @@ define([
 			// tag:
 			//		private
 
-			var onItemArgs = (args ? (lang.isArray(args) ? args : this._object2Array(args)) : [])
+			var onItemArgs = (args ? (args instanceof Array ? args : this._object2Array(args)) : [])
 			var identity;
 
 			onItemArgs.unshift(null);		// Create a placeholder for the styling argument
@@ -411,8 +410,8 @@ define([
 			//		The updated styling object if an item was specified otherwise null.
 			// tag:
 			//		private
-			if (lang.isString(cssClass)) {
-				if (array.indexOf(this._itemAttr, attr) != -1) {
+			if (typeof cssClass === "string") {
+				if (this._itemAttr.indexOf(attr) != -1) {
 					// Note: the classname may contain multiple name, use the first as
 					//			 the base class.
 					var classes	= lang.trim(cssClass).split(/\s+/);
@@ -498,7 +497,7 @@ define([
 			//		private
 
 			if (lang.isObject(style)) {
-				if (array.indexOf(this._itemAttr, attr) != -1) {
+				if (this._itemAttr.indexOf(attr) != -1) {
 					if (item) {
 						var styling = this._getItemStyling(item);
 						styling[attr][attr+"Style"] = style;
@@ -572,7 +571,7 @@ define([
 
 			if (nodes){
 				request[attr] = value;
-				array.forEach(nodes, function (node){
+				nodes.forEach(function (node){
 						node.set(request);
 					}, this);
 			}
@@ -928,7 +927,7 @@ define([
 				// If the model specified an icon attribute it must also provide support
 				// for the getIcon() method.
 				if (model.iconAttr) {
-					if (!model.getIcon || !lang.isFunction(model.getIcon)) {
+					if (!model.getIcon || typeof model.getIcon != "function") {
 						console.warn("cbtree/TreeStyling::_connectModel(): model has 'iconAttr' set but does not provide support for getIcon().");
 						this._iconAttr = null;
 					} else {
@@ -937,10 +936,10 @@ define([
 				}
 				// Map any icon updates from the model to '_icon_' and redirect the event
 				// to _modelIconUpdate() but only if mapEventToAttr() is supported.
-				if (this.mapEventToAttr && lang.isFunction(this.mapEventToAttr)) {
+				if (this.mapEventToAttr && typeof this.mapEventToAttr === "function") {
 					this.mapEventToAttr(null, this._iconAttr, "_icon_", this._modelIconUpdate );
 				}
-				this.connect(this.model, "onDelete", "_onStyleDelete");
+				aspect.after( this.model, "onDelete", lang.hitch(this, "_onStyleDelete"), true );
 			}
 		},
 
@@ -973,7 +972,7 @@ define([
 
 			if (icon) {
 				if (!lang.isObject(icon)) {
-					if (lang.isString(icon) && icon.length) {
+					if (typeof icon === "string" && icon.length) {
 						classes	= lang.trim(icon).split(/\s+/);
 						if (classes[0]) {
 							newIcon = this._initStyleElement("icon");
@@ -1016,7 +1015,7 @@ define([
 			var newArray = [],
 					attr;
 
-			if (!lang.isArray(args)) {
+			if (!(args instanceof Array)) {
 				if (lang.isObject(args)) {
 					for(attr in args) {
 						newArray.push(args[attr]);
@@ -1050,7 +1049,7 @@ define([
 			if (node) {
 				if (lang.isObject(request)) {
 					node.set(request);
-					array.forEach(node.getChildren(), function (child) {
+					node.getChildren().forEach(function (child) {
 							this._setTreeNodes(child, request);
 						}, this);
 				}

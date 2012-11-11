@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head> 
+  <head>
     <meta charset="utf-8">
-    <title>Dijit Tree with Checkboxes </title>     
+    <title>Dijit Tree with Checkboxes </title>
     <style type="text/css">
       @import "../../dijit/themes/claro/claro.css";
       @import "../../dijit/themes/claro/document.css";
@@ -24,23 +24,24 @@
       };
     </script>
 
-    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-        "dojo/_base/connect",
+				"dojo/_base/lang",
+				"dojo/aspect",
         "dojo/data/ItemFileWriteStore",
         "dojo/ready",
         "cbtree/Tree",                    // Checkbox tree
         "cbtree/TreeStyling",              // Tree styling extensions
         "cbtree/models/ForestStoreModel"  // ForestStoreModel
-        ], function( connect, ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel) {
+        ], function( lang, aspect, ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel) {
 
           var store, model, tree;
-          
+
           function checkBoxClicked( item, nodeWidget, evt ) {
             var newState = nodeWidget.get("checked" );
             var label    = this.getLabel(item);
-            
+
             if( newState ) {
               tree.set("iconStyle", {border:"solid"}, item );
               tree.set("labelStyle",{color:"red"}, item );
@@ -60,7 +61,7 @@
                   checkedRoot: true,
                   checkedState: true,
                   checkedStrict: true
-                  }); 
+                  });
 
           ready(function() {
             tree = new Tree( {
@@ -71,17 +72,18 @@
                     nodeIcons: true
                     }, "CheckboxTree" );
             tree.startup();
-            connect.connect( tree, "onCheckBoxClick", model, checkBoxClicked );
+
+            aspect.after( tree, "onCheckBoxClick", lang.hitch(model, checkBoxClicked), true );
           });
         });
     </script>
 
   </head>
-    
+
   <body class="claro">
     <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
-    <div id="CheckboxTree">  
+    <div id="CheckboxTree">
     </div>
     <h2>Click a checkbox</h2>
-  </body> 
+  </body>
 </html>

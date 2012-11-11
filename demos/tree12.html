@@ -41,8 +41,8 @@
 
     <script type="text/javascript">
       require([ "dojo/_base/array",
-                "dojo/_base/connect",
                 "dojo/_base/lang",
+                "dojo/aspect",
                 "dojo/ready",
                 "dojox/grid/DataGrid",
                 "cbtree/Tree",                   // Checkbox Tree
@@ -50,8 +50,7 @@
                 "cbtree/models/FileStoreModel", // Forest Store Model
                 "cbtree/stores/FileStore",      // File Store
                 "cbtree/stores/BreadCrumb"      // Breadcrumb trail
-              ], function( array, connect, lang, ready, DataGrid,
-                            Tree, TreeStyling,
+              ], function( array, lang, aspect, ready, DataGrid, Tree, TreeStyling,
                             FileStoreModel, FileStore, BreadCrumb ) {
 
           var queryOptions = { deep: true, storeOnly: true };
@@ -148,11 +147,11 @@
 
             // Create the breadcrumb trail.
             trail = new BreadCrumb( {store: store, cssBaseClass:"fileIcon"}, "BreadCrumbs");
-            connect.connect( trail, "onClick", null, updateGrid );
+            aspect.after( trail, "onClick", updateGrid, true );
 
             // Create the tree
             tree = new Tree( { model: model, checkBoxes: false, persist: false, icon:"fileIcon" }, "CheckboxTree");
-            connect.connect( tree, "onClick", null, treeClicked );
+            aspect.after( tree, "onClick", treeClicked, true );
 
             // Create the data grid...
             grid = new DataGrid( {
@@ -164,7 +163,7 @@
                   selectionMode:"multiple",
                   rowsPerPage:80
                 }, "myGrid");
-            connect.connect( grid, "onSelected", null, gridClicked );
+            aspect.after( grid, "onSelected", gridClicked, true );
 
             tree.startup();
             trail.startup();

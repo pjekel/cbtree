@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head> 
+  <head>
     <meta charset="utf-8">
-    <title>Dijit CheckBox Tree using the cbtree API</title>     
+    <title>Dijit CheckBox Tree using the cbtree API</title>
 
      <style type="text/css">
       @import "../../dijit/themes/claro/claro.css";
@@ -13,7 +13,7 @@
     </style>
 
     <style>
-      html,body { 
+      html,body {
         height: 100%;
         margin: 0;
         overflow: hidden;
@@ -53,7 +53,7 @@
       };
     </script>
 
-    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script>
       require([ "dijit/layout/BorderContainer",
                 "dijit/layout/TabContainer",
@@ -90,7 +90,7 @@
         TAB + "},<br/>" +
         TAB + "model );<br/>" +
         "}</pre></div>",
-        
+
         // Text for 'removeLisa()'
         "<p>The parent Homer now has 2 references to child Lisa. The first because she was " +
         "explicitly created with Homer as a parent reference. Second, she was added in " +
@@ -104,8 +104,8 @@
         TAB + TAB + "model.addReference( child, model.fetchItem('Marge'));<br/>" +
         TAB + "}<br/>" +
         "}</pre></div>",
-       
-        // Text for 'addChildrenLisa()' 
+
+        // Text for 'addChildrenLisa()'
         "<p>Child 'Lisa' was created with a parent reference therefore she is not a top level (root) item in the store. " +
         "Lets add some children to Lisa and give her some custom styling.</p>" +
         "<div id=\"code\"><pre>" +
@@ -167,7 +167,7 @@
         "function <strong>setStrict</strong>() {<br/>" +
         TAB + "model.set( 'checkedStrict', true );<br/>" +
         "}</pre></div>",
-         
+
         // Text for orphanLisa()'
         "<p>Remove all of Lisa children and detach her from the root.</p>" +
         "<div id=\"code\"><pre>" +
@@ -212,7 +212,7 @@
                 "cbtree/TreeStyling",                // Tree Styling extensions
                 "cbtree/models/ForestStoreModel",    // Forest Store Model
                 "cbtree/models/StoreModel-API"      // Store Model API extensions
-              ], function( array, connect, lang, dom, ItemFileWriteStore, ready, Tree, TreeStyling, 
+              ], function( array, connect, lang, dom, ItemFileWriteStore, ready, Tree, TreeStyling,
                             ForestStoreModel ) {
 
         // Declare an empty JSON data object (an empty store).
@@ -232,7 +232,7 @@
           model.newItem( { name: 'Bart', hair:'black', type: 'child' } );
           model.newItem( { name: 'Nelson', hair:'black', type: 'child' } );
         }
- 
+
           addChildren = function(){
             // Fetch all children with a 'checked' state attribute
             model.fetchItemsWithChecked( { type:'child' }, function(children) {
@@ -245,7 +245,7 @@
           };
 
           removeLisa = function() {
-            // The parent Homer now has 2 references to child Lisa. The first because she was 
+            // The parent Homer now has 2 references to child Lisa. The first because she was
             // explicitly created with Homer as a parent reference. Second, she was added in
             // addChildren() because she had a 'checked' state attribute. Remove the reference
             // from Homer and add a new reference to Marge.
@@ -292,7 +292,7 @@
           parentBart = function() {
             // Lets make Bart a parent too, he was already created without a parent reference
             // therefore he is already a top level entry in the store but lets check anyway.
-            // Let fetch him using an object instead of just a name. But because the object 
+            // Let fetch him using an object instead of just a name. But because the object
             // does not have the store identity 'name' we tell which attribute to use instead.
             var newParent = model.fetchItem( {firstName:'Bart', LastName:'Simpson', age:'15'}, "firstName" );
             if( newParent ) {
@@ -307,19 +307,19 @@
               throw new Error( "parentBart(): Unable to fetch 'Bart'");
             }
           }
-          
+
           blondsOnly = function() {
             // Lets uncheck all checkboxes, remember strict checkbox relationship is still OFF....
             // and check only the people with blond hair....
             model.uncheck( {name:'*'} );
             model.check( {hair:'blond'} );
           }
-          
+
           setStrict = function() {
             // Enable strict parent child relationship
             model.set( "checkedStrict", true );
           }
-          
+
           orphanLisa = function() {
             // Remove all of Lisa children and detach her from the root.
             parent = model.fetchItem( 'Lisa' );
@@ -336,21 +336,21 @@
               throw new Error( "orphanLisa(): Unable to fetch 'Lisa'");
             }
           }
-          
+
           removeBart = function() {
             // Bart left the family so lets delete him
             model.deleteItem( model.fetchItem('Bart'));
           }
-          
+
           changeQuery = function() {
-            // Query all people that have blue hair AND are still store root items, 
+            // Query all people that have blue hair AND are still store root items,
             // that should only be Marge.
             model.set( "query", { hair:'blue' });
           }
-          
+
           // Define the order in which the functions will be executed.
-          var funcSet = [createChildren, addChildren, removeLisa, addChildrenLisa, 
-                         makeLisaTop, parentBart,blondsOnly, setStrict, orphanLisa, 
+          var funcSet = [createChildren, addChildren, removeLisa, addChildrenLisa,
+                         makeLisaTop, parentBart,blondsOnly, setStrict, orphanLisa,
                          removeBart, changeQuery ];
 
           buttonClicked = function(value){
@@ -373,7 +373,7 @@
               }
             }
           }
-          
+
           // Create the cbtree store model... NOTE: we startof with strict parent-child
           // relationship disabled....
           model = new ForestStoreModel( {
@@ -383,32 +383,32 @@
                   checkedAll: true,
                   checkedRoot: true,
                   checkedStrict: false
-                  }); 
+                  });
 
           ready(function() {
             // Create the tree (which will be empty). Make sure 'autoExpand' is enabled otherwise
             // you will miss alot of the action...
             tree = new Tree( { model: model, id: "MenuTree",  autoExpand: true }, "CheckboxTree" );
             tree.startup();
-            
+
             dom.byId("codeSegm").innerHTML = html[0];
-          });          
+          });
       });
-    </script> 
+    </script>
   </head>
-    
+
   <body class="claro">
-    <div id="appLayout" class="demoLayout" data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design: 'headline'">      
-      <div class="edgePanel edgeTop" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'top'">
+    <div id="appLayout" class="demoLayout" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design: 'headline'">
+      <div class="edgePanel edgeTop" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'top'">
         Building a Dijit CheckBox Tree using the TreeStoreModel API extensions
       </div>
-      <div class="edgePanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'left', splitter: true" 
+      <div class="edgePanel" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'left', splitter: true"
            style="width:25%;">
         <div id="CheckboxTree">
         </div>
       </div>
 
-      <div class="centerPanel" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region: 'center'">
+      <div class="centerPanel" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'center'">
         <p><h2>The next step</h2></p>
         <div id="textBox" class="textBox" >
           <div id="codeSegm" style="margin-left:5px;">
@@ -416,7 +416,7 @@
         </div>
         <div style="margin:5px;">
           <p>Demonstrate the use of Store Model and Tree Styling API's.</p>
-          <button id="but" data-dojo-type="dijit.form.Button" type="button" value="0" onClick="buttonClicked()">Continue</button>
+          <button id="but" data-dojo-type="dijit/form/Button" type="button" value="0" onClick="buttonClicked()">Continue</button>
         </div>
       </div>
     </div>

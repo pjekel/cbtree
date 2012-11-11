@@ -11,22 +11,23 @@
 //
 //	In case of doubt, the BSD 2-Clause license takes precedence.
 //
-define([
-	"dojo/_base/array",
-	"dojo/_base/declare",
-	"dojo/_base/event",
-	"dojo/_base/lang", 
-	"dojo/DeferredList",
-	"dojo/dom-construct",
-	"dojo/text!./templates/cbtreeNode.html",
-	"dijit/_Container",
-	"dijit/registry",
-	"dijit/Tree",
-	"./CheckBox",
-	"./models/_dndSelector",  // Fixed dijit tree issue...
-	"require"
-], function (array, declare, event, lang, DeferredList, domConstruct, NodeTemplate, 
-							_Container, registry, Tree, CheckBox, _dndSelector, require) {
+define(["dojo/_base/declare",
+				"dojo/_base/event",
+				"dojo/_base/lang",
+				"dojo/aspect",
+				"dojo/DeferredList",
+				"dojo/dom-construct",
+				"dojo/topic",
+				"dojo/text!./templates/cbtreeNode.html",
+				"dijit/_Container",
+				"dijit/registry",
+				"dijit/Tree",
+				"./CheckBox",
+				"./models/_dndSelector",  // Fixed dijit tree issue...
+				"require",
+				"./shim/Array"            // ECMA-262 Array shim
+			 ], function (declare, event, lang, aspect, DeferredList, domConstruct, topic, NodeTemplate,
+										_Container, registry, Tree, CheckBox, _dndSelector, require) {
 
 	// module:
 	//		cbtree/Tree
@@ -39,20 +40,20 @@ define([
 		templateString: NodeTemplate,
 
 		moduleName: "cbTree/_TreeNode",
-		
-		// _checkBox: [private] widget 
+
+		// _checkBox: [private] widget
 		//		Checkbox or custome widget instance.
 		_checkBox: null,
 
 		// _toggle: [private] Boolean
 		//		Indicates if the checkbox widget supports the toggle function.
 		_toggle: true,
-		
+
 		// _widget: [private] Object
 		//		Specifies the widget to be instanciated for the tree node. The default
 		//		is the cbtree CheckBox widget.
 		_widget: null,
-		
+
 		constructor: function (args){
 			// summary:
 			//		If a custom widget is specified, it is used instead of the default
@@ -68,7 +69,7 @@ define([
 				lang.mixin(checkBoxWidget, customWidget);
 			}
 			checkBoxWidget.args = widgetArgs;
-			
+
 			// Test if the widget supports the toggle() method.
 			this._toggle = lang.isFunction (checkBoxWidget.type.prototype.toggle);
 			this._widget = checkBoxWidget;
@@ -92,7 +93,7 @@ define([
 			var enabled   = itemState.enabled;
 			var widget	  = this._widget;
 			var args		  = widget.args;
-			
+
 			if (checked !== undefined) {
 				// Initialize the default checkbox/widget attributes.
 				args.multiState = multiState;
@@ -130,7 +131,7 @@ define([
 			//		get("checked").
 			// tags:
 			//		private
-			
+
 			if (this._checkBox) {
 				return this.tree.model.getChecked(this.item);
 			}
@@ -149,7 +150,7 @@ define([
 				this._checkBox.set("checked", newState);
 			}
 		},
-		
+
 		_setCheckedAttr: function (/*String|Boolean*/ newState) {
 			// summary:
 			//		Set a new state for the tree node checkbox. This method implements
@@ -173,7 +174,7 @@ define([
 			//		Private
 			return this.tree.model.getEnabled(this.item);
 		},
-		
+
 		_set_enabled_Attr: function (enabled) {
 			// summary:
 			//		Set the 'Read Only' property of the checkbox. This method handles
@@ -196,11 +197,11 @@ define([
 			//		Private.
 			return this.tree.model.setEnabled(this.item, newState);
 		},
-		
+
 		_toggleCheckBox: function (){
 			// summary:
 			//		Toggle the current checkbox checked attribute and update the model
-			//		accordingly. Typically called when the spacebar is pressed. 
+			//		accordingly. Typically called when the spacebar is pressed.
 			//		If a custom widget does not support toggle() we will just mimic it.
 			// tags:
 			//		private
@@ -217,7 +218,7 @@ define([
 			}
 			return newState;
 		},
-		
+
 		destroy: function () {
 			// summary:
 			//		Destroy the checkbox of the tree node widget.
@@ -276,7 +277,7 @@ define([
 			// If items contains some of the same items as before then we will reattach them.
 			// Don't call this.removeChild() because that will collapse the tree etc.
 			var oldChildren = this.getChildren();
-			array.forEach(oldChildren, function(child){
+			oldChildren.forEach(function(child){
 				_Container.prototype.removeChild.call(this, child);
 			}, this);
 
@@ -284,7 +285,7 @@ define([
 			//		1) they aren't listed in the new children array (items)
 			//		2) they aren't immediately adopted by another node (DnD)
 			this.defer(function(){
-				array.forEach(oldChildren, function(node){
+				oldChildren.forEach(function(node){
 					if(!node._destroyed && !node.getParent()){
 						// If node is in selection then remove it.
 						tree.dndController.removeTreeNode(node);
@@ -295,7 +296,7 @@ define([
 						if(ary.length == 1){
 							delete tree._itemNodesMap[id];
 						}else{
-							var index = array.indexOf(ary, node);
+							var index = ary.indexOf(node);
 							if(index != -1){
 								ary.splice(index, 1);
 							}
@@ -313,7 +314,7 @@ define([
 				// Create _TreeNode widget for each specified tree node, unless one already
 				// exists and isn't being used (presumably it's from a DnD move and was recently
 				// released
-				array.forEach(items, function(item){	// MARKER: REUSE NODE
+				items.forEach(function(item){	// MARKER: REUSE NODE
 					var id = model.getIdentity(item),
 						existingNodes = tree._itemNodesMap[id],
 						node;
@@ -364,7 +365,7 @@ define([
 
 				// note that updateLayout() needs to be called on each child after
 				// _all_ the children exist
-				array.forEach(this.getChildren(), function(child){
+				this.getChildren().forEach(function(child){
 					child._updateLayout();
 				});
 			}else{
@@ -413,9 +414,9 @@ define([
 
 		// branchReadOnly: Boolean
 		//		Determines if branch checkboxes are read only. If true, the user must
-		//		check/uncheck every child checkbox individually. 
+		//		check/uncheck every child checkbox individually.
 		branchReadOnly: false,
-		
+
 		// checkBoxes: String
 		//		If true it enables the creation of checkboxes, If a tree node actually
 		//		gets a checkbox depends on the configuration of the model. If false no
@@ -427,7 +428,7 @@ define([
 		//		check/uncheck branch checkboxes and thus overwriting the per store item
 		//		'enabled' features for any store item associated with a tree leaf.
 		leafReadOnly: false,
-		
+
 		// nodeIcons: Boolean
 		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
 		nodeIcons: true,
@@ -445,16 +446,16 @@ define([
 		//		or as a dual state. ({"mixed",true,false} vs {true,false}). Its value is
 		//		fetched from the tree model.
 		_multiState: true,
-		
+
 		// _checkedAttr: [private] String
 		//		Attribute name associated with the checkbox checked state of a data item.
 		//		The value is retrieved from the models 'checkedAttr' property and added
 		//		to the list of model events.
 		_checkedAttr: "",
-		
+
 		// _customWidget: [private]
-		//		A custom widget to be used instead of the cbtree CheckBox widget. Any 
-		//		custom widget MUST have a 'checked' property and provide support for 
+		//		A custom widget to be used instead of the cbtree CheckBox widget. Any
+		//		custom widget MUST have a 'checked' property and provide support for
 		//		both the get() and set() methods.
 		_customWidget: null,
 
@@ -484,7 +485,7 @@ define([
 				var dojoVer = (dojo.version.major * 10) + dojo.version.minor,
 						dojoMax = 999,
 						dojoMin = 0;
-						
+
 				if (this._dojoRequired) {
 					if (this._dojoRequired.min !== undefined) {
 						dojoMin = (this._dojoRequired.min.major * 10) + this._dojoRequired.min.minor;
@@ -492,7 +493,7 @@ define([
 					if (this._dojoRequired.max !== undefined) {
 						dojoMax = (this._dojoRequired.max.major * 10) + this._dojoRequired.max.minor;
 					}
-					if (dojoVer < dojoMin || dojoVer > dojoMax) { 
+					if (dojoVer < dojoMin || dojoVer > dojoMax) {
 						throw new Error(this.moduleName+"::_assertVersion(): invalid dojo version.");
 					}
 				}
@@ -500,7 +501,7 @@ define([
 				throw new Error(this.moduleNmae+"::_assertVersion(): unable to determine dojo version.");
 			}
 		},
-		
+
 		_createTreeNode: function (args) {
 			// summary:
 			//		Create a new cbtreeTreeNode instance.
@@ -528,8 +529,8 @@ define([
 			//		private
 
 			var item = nodeWidget.item;
-				
-			this._publish("checkbox", { item: item, node: nodeWidget, state: newState, evt: evt});
+
+			topic.publish("checkbox", { item: item, node: nodeWidget, state: newState, evt: evt});
 			// Generate events incase any listeners are tuned in...
 			this.onCheckBoxClick(item, nodeWidget, evt);
 			this.onClick(nodeWidget.item, nodeWidget, evt);
@@ -551,14 +552,14 @@ define([
 			var checkedWidget = nodeWidget._widget;
 
 			if (evt.target.nodeName == checkedWidget.target) {
-				var newState = nodeWidget._checkBox.get("checked");				
+				var newState = nodeWidget._checkBox.get("checked");
 				this.model.setChecked(nodeWidget.item, newState);
 				this._onCheckBoxClick(nodeWidget, newState, evt);
 			} else {
 				this.inherited(arguments);
 			}
 		},
-		
+
 		_onItemChange: function (/*data.Item*/ item, /*String*/ attr, /*AnyType*/ value){
 			// summary:
 			//		Processes notification of a change to an data item's scalar values and
@@ -579,7 +580,7 @@ define([
 			//		New value of the item attribute
 			// tags:
 			//		private extension
- 
+
 			var nodeProp = this._eventAttrMap[attr];
 			if (nodeProp) {
 				var identity = this.model.getIdentity(item),
@@ -596,7 +597,7 @@ define([
 					} else {
 						request[nodeProp.attribute] = value;
 					}
-					array.forEach(nodes, function (node){
+					nodes.forEach(function (node){
 							node.set(request);
 						}, this);
 				}
@@ -631,7 +632,7 @@ define([
 
 			this.mapEventToAttr(oldValue, newValue, "label");
 		},
-		
+
 		_setWidgetAttr: function (/*String|Function|Object*/ widget) {
 			// summary:
 			//		Set the custom widget. This method is the hook for set("widget",widget).
@@ -640,7 +641,7 @@ define([
 			//		AND methods get() and set() otherwise the widget is rejected and an
 			//		error is thrown. If valid, the widget is used instead of the default
 			//		cbtree checkbox.
-			// widget: 
+			// widget:
 			//		An String, object or function. In case of an object, the object can
 			//		have the following properties:
 			//			type			:	Function | String, the widget constructor or a module Id string
@@ -696,15 +697,15 @@ define([
 			this._assertVersion();
 			this.inherited(arguments);
 		},
-		
+
 		destroy: function() {
 			this.model = null;
 			this.inherited(arguments);
 		},
-		
+
 		getIconStyle:function (/*data.item*/ item, /*Boolean*/ opened) {
 			// summary:
-			//		Return the DOM style for the node Icon. 
+			//		Return the DOM style for the node Icon.
 			// item:
 			//		A valid data item
 			// opened:
@@ -739,7 +740,7 @@ define([
 			//		Value to be assigned to the mapped _TreeNode attribute.
 			// tag:
 			//		public
-			
+
 			if (this.model.isItem(item) && this._eventAttrMap[event]) {
 				this._onItemChange(item, event, value);
 				this.onEvent(item, event, value);
@@ -752,7 +753,7 @@ define([
 			// tags:
 			//		callback
 		},
-		
+
 		onEvent: function (/*===== item, event, value =====*/) {
 			// summary:
 			//		Callback when an event was succesfully mixed in.
@@ -775,7 +776,7 @@ define([
 		postCreate: function () {
 			// summary:
 			//		Handle any specifics related to the tree and model after the
-			//		instanciation of the Tree. 
+			//		instanciation of the Tree.
 			// description:
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
@@ -790,29 +791,30 @@ define([
 					this._checkedAttr = model.checkedAttr;
 
 					// Add item attributes and other attributes of interest to the mapping
-					// table. Checkbox checked events from the model are mapped to the 
+					// table. Checkbox checked events from the model are mapped to the
 					// internal '_checked_' event so a Tree node is able to distinguesh
 					// between events coming from the model and those coming from the API
 					// like set("checked",true)
-					
+
 					this.mapEventToAttr(null,(this._checkedAttr || "checked"), "_checked_");
 					model.validateData();
 				}
 				// Monitor any changes to the models label attribute and add the current
 				// 'label' and 'enabled' attribute to the mapping table.
-				this.connect(model, "onLabelChange", "_onLabelChange");
+
+				aspect.after(model, "onLabelChange", lang.hitch(this, "_onLabelChange"), true);
 
 				this.mapEventToAttr(null, model.get("enabledAttr"), "_enabled_");
 				this.mapEventToAttr(null, model.get("labelAttr"), "label");
 
 				this.inherited(arguments);
-			} 
+			}
 			else // The CheckBox Tree requires a model.
 			{
 				throw new Error(this.moduleName+"::postCreate(): no model was specified.");
 			}
 		},
-		
+
 		// =======================================================================
 		// Misc helper functions/methods
 
@@ -832,12 +834,12 @@ define([
 			//		Name of a _TreeNode attribute to which 'attr' is mapped.
 			// value:
 			//		If specified the value to be assigned to the _TreeNode attribute. If
-			//		value is a function the function is called as: 
+			//		value is a function the function is called as:
 			//
 			//			function(item, nodeAttr, newValue)
 			//
 			//		and the result returned is assigned to the _TreeNode attribute.
-			
+
 			if (lang.isString(attr) && lang.isString(nodeAttr)) {
 				if (attr.length && nodeAttr.length) {
 					if (oldAttr) {
@@ -861,7 +863,7 @@ define([
 			}
 			return false;
 		}
-				
+
 	});	/* end declare() Tree */
 
 });	/* end define() */
