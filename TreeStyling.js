@@ -314,6 +314,7 @@ define(["dojo/_base/lang",
 				var treeStyle = this._itemStyleMap[identity];
 				if (treeStyle) {
 					styling = lang.clone(treeStyle);
+					styling.root = true;
 				}
 			} else {
 				// If no tree root node is available dynamically create a new object.
@@ -323,7 +324,7 @@ define(["dojo/_base/lang",
 				this._itemAttr.forEach(function(attr) {
 						styling[attr] = this._initStyleElement(attr);
 					}, this);
-				styling["root"] = true;
+				styling.root = true;
 			}
 			return styling;
 		},
