@@ -1,9 +1,9 @@
 define(["dojo/_base/declare",
-				"dojo/request/xhr",
 				"dojo/Deferred",
+				"dojo/request",
 				"dojo/store/Memory",
 				"./util/SimpleQueryEngine"			// Provide support for array properties.
-			 ], function (declare, xhr, Deferred, Memory, SimpleQueryEngine){
+			 ], function (declare, Deferred, request, Memory, SimpleQueryEngine){
 
 // module:
 //		cbtree/stores/ObjectStore
@@ -45,7 +45,7 @@ define(["dojo/_base/declare",
 			//		Public
 			if (!this._inProgress && !this.loaded.isFulfilled()) {
 				if (this.url) {
-					var result = xhr(this.url, {method:"GET", handleAs: "json", preventCache: true});
+					var result = request(this.url, {method:"GET", handleAs: "json", preventCache: true});
 					var self   = this;
 
 					this._inProgress = true;

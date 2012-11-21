@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2012, Peter Jekel
+// Copyright (c) 2010-2013, Peter Jekel
 // All rights reserved.
 //
 //	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
@@ -84,6 +84,8 @@ define(["dojo/_base/declare", 	// declare
 		}
 		return newObject;
 	}
+
+	var STORE_ONLY = true;
 
 	return declare([Stateful], {
 
@@ -197,6 +199,7 @@ define(["dojo/_base/declare", 	// declare
 
 			this.childrenCache = {};	// map from id to array of children
 			this._objectCache  = {};
+			this._monitored    = true;
 			this._storeLoaded  = new Deferred();
 
 			declare.safeMixin(this, kwArgs);
@@ -213,6 +216,11 @@ define(["dojo/_base/declare", 	// declare
 					this._writeEnabled = false;
 				}
 
+				// Stick a magic marker on the store if it doesn't have one...
+				if (!store.magic) {
+					store.__magic = (Math.random() * 10000000) >>> 0;		// make it a UINT32
+				}
+
 				// If the store doesn't have a loadStore() method, like the native dojo/store
 				// Memory store, we assume the data is already loaded and available otherwise
 				// the model will call the store loader. ( See validateData() )
@@ -223,6 +231,19 @@ define(["dojo/_base/declare", 	// declare
 					} else {
 						this.storeLoader = function () {};
 					}
+				}
+
+				if (store.defaultProperties && typeof store.defaultProperties === "object") {
+					store.defaultProperties[this.checkedAttr] = this.checkedState;
+				}
+
+				// Test if the store provide support for 'mayHaveChildren'. If so, use
+				// it instead of the models version.
+
+				if (store.mayHaveChildren && typeof store.mayHaveChildren === "function") {
+					this.mayHaveChildren = function (object) {
+						return store.mayHaveChildren(object);
+					};
 				}
 
 				//	Extend the store to provide support for getChildren() and Drag-n-Drop.
@@ -240,20 +261,16 @@ define(["dojo/_base/declare", 	// declare
 					store.getChildren = new Function("object", funcBody);
 				}
 
-				// Stick a magic marker on the store if it doesn't have one...
-				if (!store.magic) {
-					store.__magic = (Math.random() * 10000000) >>> 0;		// make it a UINT32
-				}
-
 				// Test if this store is 'evented', 'observable' or standard. If it is
 				// evented register the event listeners.
-				this._monitored = true;
 				if (store.isEvented) {
 					on( store, "onChange, onDelete, onNew", lang.hitch(this, "_onStoreEvent"));
 				} else {
 					// If this is a default dojo/store (not observable and not evented) we
 					// will have to fire some of the events ourselves.
-					if (!store.notify || !(typeof store.notify === "function")) {
+					if (store.notify && typeof store.notify === "function") {
+						this._observable = true;
+					} else {
 						this._monitored = false;
 					}
 				}
@@ -400,7 +417,8 @@ define(["dojo/_base/declare", 	// declare
 				when(this.childrenCache[id], onComplete, onError);
 				return;
 			}
-			var res  = this.store.getChildren(parentItem);
+
+			var res  = this.childrenCache[id] = this.store.getChildren(parentItem);
 			var self = this;
 
 			// Normalize the children cache. If a store returns a Promise instead of a
@@ -489,12 +507,11 @@ define(["dojo/_base/declare", 	// declare
 			//		Function called with the root item for the tree.
 			// onError:
 			//		Function called in case an error occurred.
+			var self = this;
+
 			if(this.root){
 				onItem(this.root);
 			}else{
-
-				var self   = this;
-
 				when( this._storeLoaded, function () {
 					var result = self.store.query(self.query);
 
@@ -512,7 +529,6 @@ define(["dojo/_base/declare", 	// declare
 								}
 							}, true);	// true to listen for updates to obj
 						}
-						// Call onItem AFTER registering any listener.
 						onItem(self.root);
 					}, onError);
 				});
@@ -734,12 +750,20 @@ define(["dojo/_base/declare", 	// declare
 
 			children = children instanceof Array ? children : [children];
 			children.forEach(function (child) {
-				this.getChildren( child, lang.hitch(this, function(children) {
-						this._validateChildren(child, children);
-					}),
-					function (err) {
-						console.error(err);
-					});
+				if (this.mayHaveChildren(child)) {
+					this.getChildren( child, lang.hitch(this, function(children) {
+							this._validateChildren(child, children);
+						}),
+						function (err) {
+							console.error(err);
+						});
+				} else {
+					currState = this.getChecked(child);
+					if (currState && typeof currState !== "boolean") {
+						this._setValue(child, this.checkedAttr, this._normalizeState(child, currState));
+					}
+				}
+
 			}, this	);
 			newState	= this._getCompositeState(children);
 			currState = this.getChecked(parent);
@@ -869,9 +893,10 @@ define(["dojo/_base/declare", 	// declare
 			//		post creation of the Tree instance.
 			//	tag:
 			//		private
-			var self = this;
+			var options = this.checkedStrict ? {all:true} : null;
+			var self    = this;
 
-			when( this.storeLoader.call(this.store),
+			when( this.storeLoader.call(this.store, options),
 				function () {
 					self._storeLoaded.resolve();
 					if (self.checkedStrict && self._validateStore) {
@@ -968,6 +993,7 @@ define(["dojo/_base/declare", 	// declare
 			if (item[property] !== value) {
 				var orgItem = copyObject(item);
 				var result;
+				var self = this;
 
 				// Keep a shallow copy of the item for property comparison later.
 				this._objectCache[this.getIdentity(item)] = orgItem;
@@ -976,7 +1002,7 @@ define(["dojo/_base/declare", 	// declare
 				result = this.store.put( item, {overwrite: true});
 
 				if (!this._monitored) {
-					when( result, lang.hitch( this, "_onChange",  item, orgItem));
+					when( result, function () { self._onChange(item, orgItem);	});
 				}
 				return result;
 			}
@@ -1050,7 +1076,7 @@ define(["dojo/_base/declare", 	// declare
 							self._setValue( item, self.parentAttr, parentIds.toValue());
 						} else {
 							// Single parented store, move the item.
-							when (self.getParents(item), function (oldParents) {
+							self.getParents(item).then( function (oldParents) {
 								if (oldParents.length) {
 									self.pasteItem( item, oldParents[0], newParents[0], false, insertIndex, before );
 								} else {
@@ -1066,7 +1092,7 @@ define(["dojo/_base/declare", 	// declare
 						return when( result, function(itemId) {
 							when (self.store.get(itemId), function(item) {
 								if (!this._monitored) {
-									when( result, lang.hitch( self, "_onNewItem",  item));
+									when( result, function () { self._onNewItem(item); });
 								}
 								return item;
 							});
@@ -1081,7 +1107,7 @@ define(["dojo/_base/declare", 	// declare
 			return when( result, function(itemId) {
 				when (self.store.get(itemId), function(item) {
 					if (!this._monitored) {
-						when( result, lang.hitch( self, "_onNewItem",  item));
+						when( result, function () { self._onNewItem(item); });
 					}
 					return item;
 				});
@@ -1153,9 +1179,13 @@ define(["dojo/_base/declare", 	// declare
 			var first = newChildrenList[0];
 			var self  = this;
 
-			setTimeout( function () {
+			if (this._observable) {
+				setTimeout( function () {
+					self._updateCheckedParent(first, true);
+				}, 0);
+			} else {
 				self._updateCheckedParent(first, true);
-			}, 0);
+			}
 		},
 
 		onDataValidated: function(){
@@ -1212,9 +1242,9 @@ define(["dojo/_base/declare", 	// declare
 						this.onSetItem(newItem, key, oldItem[key], undefined);
 					}
 				}
-				// Second, test if a newproperty was added.
+				// Second, test if a new property was added.
 				for (key in newItem) {
-					if (!(key in oldItem)) {
+					if (!(key in oldItem) && key !== "__magic") {
 						this.onSetItem(newItem, key, undefined, newItem[key]);
 					}
 				}
@@ -1236,22 +1266,20 @@ define(["dojo/_base/declare", 	// declare
 			// Because observable does not provide definitive information if the item
 			// was actually deleted or just moved (re-parented) we need to check the
 			// store and see if the item still exist.
-			when(this.store.get(id), function(exists) {
-				if (!exists) {
-					self._deleteCacheEntry(id);
+			when(this.store.get(id, STORE_ONLY),
+				function(exists) {
+					if (!exists) {
+						delete self._objectCache[id];
+					}
+				},
+				function(err) {
 					delete self._objectCache[id];
 				}
-			});
+			);
+			self._deleteCacheEntry(id);
 			self.onDelete(item);
 
-			// Check if it affects the root.
-			when( this.getParents(item), function (parents) {
-				parents.some(function (parent) {
-					if (parent == self.root) {
-						self.onRootChange(item, "delete");
-						return true;
-					}
-				});
+			this.getParents(item).then( function (parents) {
 				self._childrenChanged( parents );
 			});
 		},
@@ -1266,13 +1294,7 @@ define(["dojo/_base/declare", 	// declare
 			var self = this;
 
 			// Check if it affects the root.
-			when( this.getParents(item), function (parents) {
-				parents.some(function (parent) {
-					if (parent == self.root) {
-						self.onRootChange(item, "new");
-						return true;
-					}
-				});
+			this.getParents(item).then( function (parents) {
 				self._childrenChanged( parents );
 			});
 		},
@@ -1316,9 +1338,13 @@ define(["dojo/_base/declare", 	// declare
 			var self = this;
 
 			if (property === this.checkedAttr) {
-				setTimeout( function () {
+				if (this._observable) {
+					setTimeout( function () {
+						self._updateCheckedParent(storeItem, false);
+					}, 0);
+				} else {
 					self._updateCheckedParent(storeItem, false);
-				}, 0);
+				}
 			} else if (property === this.parentAttr) {
 				var np = new Parents(newValue);
 				var op = new Parents(oldValue);
@@ -1338,18 +1364,6 @@ define(["dojo/_base/declare", 	// declare
 				self._childrenChanged( dp );
 			}
 			this.onChange(storeItem, property, newValue);
-		},
-
-		onRootChange: function (/*Object*/ storeItem, /*String*/ action) {
-			// summary:
-			//		Handler for any changes to root children.
-			// storeItem:
-			//		The store item that was attached to, or detached from, the root.
-			// action:
-			//		String detailing the type of event: "new", "delete", "attach" or
-			//		"detach"
-			// tag:
-			//		callback
 		},
 
 		toString: function () {

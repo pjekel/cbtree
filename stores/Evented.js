@@ -1,18 +1,50 @@
 define(["dojo/_base/lang",
 				"dojo/Deferred",
 				"dojo/Evented",
-				"dojo/when"
-			 ], function (lang, Deferred, Evented, when) {
+				"dojo/when",
+				"./util/Mutex"
+			 ], function (lang, Deferred, Evented, when, Mutex) {
 
 	var EventedStore = function (/*dojo.store*/ store) {
 		// summary:
+		//		The Evented store wrapper takes a store and adds advice like methods to
+		//		the stores add, put and remove methods. As a result, any store add, put
+		//		or remove operations will generate an event the user application can
+		//		subscribe to using dojo/on. Each event has at least the following two
+		//		properties:
+		//
+		//		type: String
+		//			"delete" | "new" | "update"
+		//		item:
+		//			Store object.
+		//
+		// example:
+		//		Create a Memory store that generate events when the content of the store
+		//		changes.
+		//
+		//	|	var store = Evented( new Memory( {
+		//	|		data: [
+		//	|			{id: 1, name: "one", prime: false},
+		//	|			{id: 2, name: "two", even: true, prime: true},
+		//	|			{id: 3, name: "three", prime: true},
+		//	|			{id: 4, name: "four", even: true, prime: false},
+		//	|			{id: 5, name: "five", prime: true}
+		//	|		]
+		//	|	}));
+		//	|
+		//	| function modified( event ) {
+		//	|		var id = store.getIdentity( event.item );
+		//	|		console.log( "Item: "+id+" was modified.");
+		//	|	}
+		//	|
+		//	|	on( store, "onChange", lang.hitch( this, modified) );
 
 		var orgMethods = {};
-		var mutex      = null;
+		var mutex      = new Mutex();
 
 		// Create a new store instance, mixin the 'on' and 'emit' methods and mark
 		// the object store as being an 'evented' store. This module is intended to
-		// be used with stores which implement the dojo/store/api
+		// be used with stores that implement the dojo/store/Store API
 
 		store = lang.delegate(store, new Evented());
 		store.isEvented = true;
@@ -34,76 +66,52 @@ define(["dojo/_base/lang",
 			}
 		}
 
-		function lock( action ) {
-			// summary:
-			//		Aquire a mutex and call the action routine. Asynchronous transactional
-			//		stores may process read and write transactions out of order and not in
-			//		sequence of their creation. Aquiring a mutex will guarantee that a set
-			//		of store operations are handled as an intrinsic set.
-			// action:
-			//		Function called when the mutex is aquired. On completion the method MUST
-			//		release the mutex by calling unlock().
-			// tag:
-			//		Private
-			when( mutex, function () {
-				mutex = new Deferred();
-				try {
-					action();
-				} catch(err) {
-					unlock();
-					throw err;
-				}
-			});
-		}
-
-		function unlock() {
-			// summary:
-			//		Release mutex
-			mutex.resolve();
-		}
-
-		addAdvice( "add", function(object, options) {
+		addAdvice( "add", function (object, options) {
 			var result = orgMethods["add"].apply(store, arguments);
 			when( result, function(id) {
 				if (id) {
 					store.emit("onNew", {type:"new", item: object});
 				}
 			});
+			return result;
 		});
 
-		addAdvice( "put", function(object, options) {
+		addAdvice( "put", function (object, options) {
 			var args = arguments;
-			lock( function() {
-				when( store.get( store.getIdentity(object) ), function (storeItem) {
-					var orgItem = storeItem ? lang.mixin({}, storeItem) : null;
-					var result  = orgMethods["put"].apply(store, args);
-					when( result, function(id) {
-						unlock();
-						if (id) {
-							if (orgItem) {
-								store.emit("onChange", {type:"update", item: object, oldItem: orgItem});
-							} else {
-								store.emit("onNew", {type:"new", item: object});
-							}
-						}
-					}, unlock);
-				}, unlock);
+			return mutex.aquire( function() {
+				when( store.get( store.getIdentity(object) ),
+					function (storeItem) {
+						var orgItem = lang.mixin({}, storeItem);
+						var result  = orgMethods["put"].apply(store, args);
+						when( result, function(id) {
+							mutex.release(id);
+							store.emit("onChange", {type:"update", item: object, oldItem: orgItem});
+						}, mutex.onError);
+					},
+					function (err) {
+						var result  = orgMethods["put"].apply(store, args);
+						when( result, function(id) {
+							mutex.release(id);
+							store.emit("onNew", {type:"new", item: object});
+						}, mutex.onError);
+					}
+				);
 			});
 		});
 
-		addAdvice( "remove", function(id, options) {
+		addAdvice( "remove", function (id, options) {
 			var args = arguments;
-			lock( function() {
+			return mutex.aquire( function() {
 				when( store.get(id), function (storeItem) {
 					var orgItem = storeItem ? lang.mixin({}, storeItem) : null;
 					var result  = orgMethods["remove"].apply(store, args);
-					when( result, function() {
-						unlock();
+					when( result, function(removed) {
+						mutex.release(removed);
 						if (orgItem) {
 							store.emit("onDelete", {type:"delete", item: orgItem});
 						}
 					});
-				}, unlock );
+				}, mutex.onError );
 			});
 		});
 
