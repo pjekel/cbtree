@@ -236,7 +236,7 @@ ARGS *getArguments( int *piResult )
 				{
 					if( isString(ptArg) )
 					{
-						pArgs->pcBasePath = varGet( ptArg );
+						pArgs->pcBasePath = strtrim(varGet( ptArg ), TRIM_M_QUOTES);
 					}
 					else
 					{
@@ -249,7 +249,7 @@ ARGS *getArguments( int *piResult )
 			{
 				if( isString(ptArg) )
 				{
-					pArgs->pcPath = varGet( ptArg );
+					pArgs->pcPath = strtrim(varGet( ptArg ), TRIM_M_QUOTES);
 				}
 				else
 				{

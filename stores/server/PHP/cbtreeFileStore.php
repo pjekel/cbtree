@@ -51,7 +51,7 @@
 	****************************************************************************************
 	*
 	*		QUERY-STRING Parameters:
-	* 
+	*
 	*			authToken:
 	*
 	*				The authToken parameter is a JSON object. There are no restrictions with
@@ -112,7 +112,7 @@
 	*
 	*			-	Some HTTP servers require  special configuration to make environment
 	*				variables available to  script or CGI application.  For example, the
-	*				Apache HTTP servers requires you to either use the SetEnv or PassEnv 
+	*				Apache HTTP servers requires you to either use the SetEnv or PassEnv
 	*				directive. To make the environment variable CBTREE_METHODS available
 	*				add the following to your httpd.conf file:
 	*
@@ -129,7 +129,7 @@
 	*				If you plan on using this cbtreeFileStore  on large file systems with, for
 	*				example, a  checkbox tree that requires a strict parent-child relationship
 	*				it is highly recommended to use the ANSI-C CGI implementation instead, that
-	*				is, assuming your server is configured to provide CGI support. 
+	*				is, assuming your server is configured to provide CGI support.
 	*				PHP is an interpreter and relatively slow compared to native compiled CGI
 	*				applications. A Microsoft Windows version of the ANSI-C CGI application is
 	*				available.
@@ -172,7 +172,7 @@
 	*					status				::= '"status"' ':' status-code
 	*					status-code		::=	'200' | '204' | '401'
 	*					file-list			::= '"items"' ':' '[' file-info* ']'
-	*					file-info			::= '{' name ',' path ',' size ',' modified (',' directory)? 
+	*					file-info			::= '{' name ',' path ',' size ',' modified (',' directory)?
 	*														(',' oldPath)? (',' children ',' expanded)? '}'
 	*					path					::= '"path"' ':' json-string
 	*					name					::= '"name"' ':' json-string
@@ -188,7 +188,7 @@
 	*
 	*		Notes:
 	*
-	*				-	The expanded property indicates if a deep search was performed on a 
+	*				-	The expanded property indicates if a deep search was performed on a
 	*					directory. Therefore, if expanded is true and children is empty we
 	*					are dealing with an empty directory and not a directory that hasn't
 	*					been searched/expanded yet. The expanded property is typically used
@@ -266,15 +266,19 @@
 
 			case "GET":
 				$files = getFile( $fullPath, $rootDir, $args, $status );
-				$total = count($files);
-				// Compile the final result
-				$result							= new stdClass();
-				$result->total			= $total;
-				$result->status			= $total ? HTTP_V_OK : HTTP_V_NO_CONTENT;
-				$result->items			= $files;
+				if ($files) {
+					$total = count($files);
+					// Compile the final result
+					$result							= new stdClass();
+					$result->total			= $total;
+					$result->status			= $total ? HTTP_V_OK : HTTP_V_NO_CONTENT;
+					$result->items			= $files;
 
-				header("Content-Type: text/json");
-				print( json_encode($result) );
+					header("Content-Type: text/json");
+					print( json_encode($result) );
+				} else {
+					cgiResponse( $status, "Not Found", null );
+				}
 				break;
 
 			case "POST":
@@ -311,7 +315,7 @@
 		$allowed = "GET," . getenv("CBTREE_METHODS");
 		$methods = explode(",", $allowed);
 		$count   = count($methods);
-		
+
 		for ($i = 0;$i<$count; $i++) {
 			if ($method == trim($methods[$i])) {
 				return true;
@@ -340,7 +344,7 @@
 	/**
 	*		_deleteDirectory
 	*
-	*			Delete a directory including its content. All successfully deleted files 
+	*			Delete a directory including its content. All successfully deleted files
 	*			are returned as an array of strings.
 	*
 	*	@param	dirPath					Directory path string
@@ -382,7 +386,7 @@
 		$status = HTTP_V_NOT_FOUND;
 		return null;
 	}
-	
+
 	/**
 	*		deleteFile
 	*
@@ -454,7 +458,7 @@
 	function fileToStruct( /*string*/$dirPath, /*string*/$rootDir, /*string*/$filename, /*object*/$args ) {
 		$fullPath = $dirPath . "/" . $filename;
 		$atts     = stat( $fullPath );
-		
+
 		$relPath  = "./" . substr( $fullPath, (strlen($rootDir)+1) );
 		$relPath  = trim( str_replace( "\\", "/", $relPath ), "/");
 
@@ -481,7 +485,7 @@
 	*			decoded. See the description on top for the ABNF notation of the parameter.
 	*
 	*	@note		All QUERY-STRING parameters are optional, if however a parameter is
-	*					specified it MUST comply with the formentioned ABNF format. 
+	*					specified it MUST comply with the formentioned ABNF format.
 	*					For security, invalid formatted parameters are not skipped or ignored,
 	*					instead they will result in a HTTP Bad Request status (400).
 	*
@@ -493,14 +497,14 @@
 
 		$status	= HTTP_V_BAD_REQUEST;		// Lets assume its a malformed query string
 		$_ARGS  = null;
-		
+
 		$args										= new stdClass();
 		$args->authToken				= null;
 		$args->basePath					= "";
 		$args->deep 						= false;
 		$args->path 						= null;
 		$args->showHiddenFiles	= false;
-				
+
 		switch ($method) {
 			case "DELETE":
 				$_ARGS = $_GET;
@@ -523,14 +527,14 @@
 						if (array_search("showHiddenFiles", $options) > -1) {
 							$args->showHiddenFiles = true;
 						}
-					}	
+					}
 					else	// options is not an array.
 					{
 						return null;
 					}
 				}
 				if (array_key_exists("queryOptions", $_ARGS)) {
-					$queryOptions = str_replace("\\\"", "\"", $_ARGS['queryOptions']);
+					$queryOptions = str_replace("\"\"", "\"", $_ARGS['queryOptions']);
 					$queryOptions = json_decode($queryOptions);
 					if (is_object($queryOptions)) {
 						if (property_exists($queryOptions, "deep")) {
@@ -549,15 +553,15 @@
 
 			case "POST":
 				$_ARGS = $_POST;
-				
+
 				$args->newValue  = null;
-				
-				if( !array_key_exists("newValue", $_ARGS) || 
+
+				if( !array_key_exists("newValue", $_ARGS) ||
 						!array_key_exists("path", $_ARGS)) {
 					return null;
 				}
 				if (is_string($_ARGS['newValue'])) {
-					$args->newValue = $_ARGS["newValue"];
+					$args->newValue = trim($_ARGS["newValue"],"\"");
 				} else {
 					return null;
 				}
@@ -567,9 +571,9 @@
 		// Get authentication token. There are no restrictions with regards to the content
 		// of this object.
 		if (array_key_exists("authToken", $_ARGS)) {
-			$authToken = str_replace("\\\"", "\"", $_ARGS['authToken']);
+			$authToken = str_replace("\"\"", "\"", $_ARGS['authToken']);
 			$authToken = json_decode($authToken);
-			if ($authToken) { 
+			if ($authToken) {
 				$args->authToken = $authToken;
 			}
 		}
@@ -577,7 +581,7 @@
 		$args->basePath = getenv("CBTREE_BASEPATH");
 		if (!$args->basePath) {
 			if (array_key_exists("basePath", $_ARGS)) {
-				$args->basePath = $_ARGS['basePath'];
+				$args->basePath = trim($_ARGS['basePath'],"\"");
 			}
 		}
 		if ($args->basePath && !is_string($args->basePath)) {
@@ -587,7 +591,7 @@
 		//	Check if a specific path is specified.
 		if (array_key_exists("path", $_ARGS)) {
 			if (is_string($_ARGS['path'])) {
-				$args->path = realURL($_ARGS['path']);
+				$args->path = realURL(trim($_ARGS['path'],"\""));
 			} else {
 				return null;
 			}
@@ -632,7 +636,7 @@
 		$status = HTTP_V_NOT_FOUND;
 		return null;
 	}
-	
+
 	/**
 	*		getFile
 	*
@@ -686,11 +690,11 @@
 	function parsePath ($fullPath, $rootDir) {
 		$fullPath = str_replace( "\\", "/", $fullPath );
 		$fullPath = realURL( $fullPath );
-		
+
 		$lsegm    = strrpos($fullPath,"/");
 		$filename = substr( $fullPath, ($lsegm ? $lsegm + 1 : 0));
 		$dirPath  = substr( $fullPath, 0, $lsegm);
-			
+
 		$relPath  = substr( $fullPath, (strlen($rootDir)+1));
 		$relPath  = trim( ("./" . $relPath), "/" );
 
@@ -698,7 +702,7 @@
 		$uri->relPath		= $relPath;
 		$uri->dirPath		= $dirPath;
 		$uri->filename	= $filename;
-		
+
 		return $uri;
 	}
 
@@ -752,7 +756,7 @@
 			$segm = substr( $path, 0, $pos );
 			$path = substr( $path, $pos );
 			$url  = $url . $segm;
-			
+
 		} while( $path != $p );
 		return str_replace( "//", "/", $url );
 	}
@@ -771,11 +775,10 @@
 	**/
 	function renameFile( $fullPath, $rootDir, $args, &$status ) {
 		$status = HTTP_V_OK;
-		
+
 		if( file_exists( $fullPath ) ) {
 			$fileList = array();
 			$newPath  = realURL($rootDir."/".realURL($args->newValue));
-
 			if (!strncmp($newPath, $rootDir, strlen($rootDir))) {
 				if (!file_exists( $newPath )) {
 					if (rename( $fullPath, $newPath )) {
@@ -793,7 +796,7 @@
 			} else {
 				$status = HTTP_V_FORBIDDEN;
 			}
-			return $fileList;			
+			return $fileList;
 		}
 		return null;
 	}
