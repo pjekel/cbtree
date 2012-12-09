@@ -88,11 +88,15 @@ define(["dojo/_base/declare",
 			// tags:
 			//		private
 
-			var itemState = this.tree.model.getItemState(this.item);
-			var checked   = itemState.checked;
-			var enabled   = itemState.enabled;
-			var widget	  = this._widget;
-			var args		  = widget.args;
+			var model   = this.tree.model;
+			var enabled = true;
+			var checked = model.getChecked(this.item);
+			var widget  = this._widget;
+			var args    = widget.args;
+
+			if (typeof model.getEnabled == "function") {
+				enabled = model.getEnabled(this.item);
+			}
 
 			if (checked !== undefined) {
 				// Initialize the default checkbox/widget attributes.
@@ -857,8 +861,8 @@ define(["dojo/_base/declare",
 			// tags:
 			//		private
 
-			if ((this.model.getChecked && lang.isFunction( this.model.getChecked )) &&
-					(this.model.setChecked && lang.isFunction( this.model.setChecked ))) {
+			if ((this.model.getChecked && typeof this.model.getChecked == "function") &&
+					(this.model.setChecked && typeof this.model.setChecked == "function")) {
 				return true;
 			}
 			return false;

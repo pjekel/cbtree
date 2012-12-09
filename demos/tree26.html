@@ -27,16 +27,18 @@
     <script type="text/javascript" src="../../dojo/dojo.js"></script>
 		<script type="text/javascript">
 			require(["dojo/_base/lang",
+							 "dojo/aspect",
 							 "dojo/store/Memory",
 							 "dojo/store/Observable",
 							 "dojo/ready",
 							 "dijit/tree/dndSource",
 							 "dijit/registry",
-							 "cbtree/models/ObjectStoreModel",
-							 "cbtree/stores/Evented",
-							 "cbtree/stores/util/SimpleQueryEngine",
-							 "cbtree/Tree"
-								], function (lang, Memory, Observable, ready, dndSource, registry, ObjectStoreModel, Evented, SimpleQueryEngine,Tree) {
+							 "cbtree/Tree",
+							 "cbtree/model/TreeStoreModel",
+							 "cbtree/store/Evented",
+							 "cbtree/store/Hierarchy"
+								], function (lang, aspect, Memory, Observable, ready, dndSource, registry, Tree, ObjectStoreModel,
+															Evented, ObjectStore) {
 
 				var earth = [	{ id: "earth", name:"The earth", type:"planet", population: "6 billion"}];
 				var data = [
@@ -64,14 +66,24 @@
 						];
 
 				var childrenStore = new Memory({data: data});
-//				var parentStore   = new Observable(new Memory({data: earth, queryEngine: SimpleQueryEngine}));
-//				var parentStore   = new Evented(new Memory({data: earth, queryEngine: SimpleQueryEngine}));
-				var parentStore   = new Memory({data: earth, queryEngine: SimpleQueryEngine});
+//				var parentStore   = new Observable(new Memory({data: earth, queryEngine: QueryEngine}));
+//				var parentStore   = new Evented(new Memory({data: earth, queryEngine: QueryEngine}));
+//				var parentStore   = new Memory({data: earth, queryEngine: QueryEngine});
+
+				var parentStore   = new ObjectStore({data: earth});
+//				var parentStore   = new Observable(new ObjectStore({data: earth}));
+//				var parentStore   = new Evented(new ObjectStore({data: earth}));
 
 				var parentMod = new ObjectStoreModel({ store: parentStore, query: {id:"earth"},
 																								checkedRoot: true });
 //				var secondMod = new ObjectStoreModel({ store: parentStore, query: {id:"earth"},
 //																								checkedRoot: true });
+
+function rootChange(item, action) {
+	console.log("Name: "+item.name+" action: "+action);
+}
+aspect.after( parentMod, "onRootChange", rootChange, true);
+
 				var childMod  = new ObjectStoreModel({ store: childrenStore, query: {id:"continents"}});
 				var contTree, earthTree;
 
@@ -96,6 +108,7 @@
 					earthTree = new Tree({model: parentMod, checkItemAcceptance: acceptItem,
 																itemCreator: domNodeToItem,
 																dndController: dndSource,
+																betweenThreshold:5,
 																checkAcceptance: function (source, nodes) {
 																	return !!source.tree;
 																} });

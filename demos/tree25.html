@@ -31,12 +31,11 @@
 				"dojo/_base/lang",
 				"dojo/aspect",
         "dojo/ready",
-        "cbtree/Tree",                          // Checkbox tree
-        "cbtree/models/ObjectStoreModel",       // ObjectStoreModel
-        "cbtree/models/ObjectStoreModel-API",       // ObjectStoreModel
-        "cbtree/stores/ObjectStore",
-        "cbtree/stores/Evented"
-        ], function( lang, aspect, ready, Tree, ObjectStoreModel, api, ObjectStore, Evented) {
+        "cbtree/Tree",                   // Checkbox tree
+        "cbtree/model/TreeStoreModel",   // Object Store Tree Model
+        "cbtree/store/Hierarchy",        // Object Store with Hierarchy
+        "cbtree/store/Evented"
+        ], function( lang, aspect, ready, Tree, ObjectStoreModel, ObjectStore, Evented) {
 
 					// Declare our multi-parented store objects. Notice: the parent property
 					// of each store item is an array...

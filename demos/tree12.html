@@ -48,8 +48,8 @@
                 "cbtree/Tree",                   // Checkbox Tree
                 "cbtree/TreeStyling",           // Tree Styling extensions
                 "cbtree/models/FileStoreModel", // Forest Store Model
-                "cbtree/stores/FileStore",      // File Store
-                "cbtree/stores/BreadCrumb"      // Breadcrumb trail
+                "cbtree/data/FileStore",      // File Store
+                "cbtree/data/BreadCrumb"      // Breadcrumb trail
               ], function( array, lang, aspect, ready, DataGrid, Tree, TreeStyling,
                             FileStoreModel, FileStore, BreadCrumb ) {
 
@@ -123,7 +123,7 @@
 
           // First create the common store for the tree, grid and breadcrumb trail.
           store = new FileStore( {
-                url: "../../cbtree/stores/server/PHP/cbtreeFileStore.php",
+                url: "../../cbtree/store/server/PHP/cbtreeFileStore.php",
                 cache: false,
                 options:["iconClass"],
                 basePath:"."

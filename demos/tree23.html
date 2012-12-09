@@ -31,10 +31,10 @@
         "dojo/ready",
         "dojo/store/Memory",
         "dojo/store/Observable",
-        "cbtree/Tree",                          // Checkbox tree
-        "cbtree/models/ObjectStoreModel",       // ObjectStoreModel
-        "cbtree/stores/util/SimpleQueryEngine"  // Custom Query Engine
-        ], function( ready, Memory, Observable, Tree, ObjectStoreModel, myQueryEngine) {
+        "cbtree/Tree",                       // Checkbox tree
+        "cbtree/model/TreeStoreModel",       // ObjectStoreModel
+        "cbtree/store/Hierarchy"             // Object Store with hierarchy
+        ], function( ready, Memory, Observable, Tree, ObjectStoreModel, ObjectStore) {
 
 					// Declare our multi-parented store objects. Notice: the parent property
 					// of each store item is an array...
@@ -62,13 +62,7 @@
 						{ name:"Manjula", parent:"[Apu]", hair:"black", checked:false}
 					]
 
-					// In order for the multi-parented store to work properly we need to
-					// change the store configuration:
-					// 1 - Change the store's idProperty to 'name'
-					// 2 - Overwrite the default query engine with one that provide support
-					//		 for array properties. (/cbtree/stores/util/SimpleQueryEngine)
-
-          var store = Observable( new Memory( { data: data, idProperty:"name", queryEngine: myQueryEngine }));
+          var store = Observable( new ObjectStore( { data: data, idProperty:"name" }) );
           var model = new ObjectStoreModel( { store: store,
                                                query: {name: "Root"},
                                                rootLabel: "The Family",

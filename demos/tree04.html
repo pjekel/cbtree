@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head> 
+  <head>
     <meta charset="utf-8">
-    <title>CheckBox Tree with third party widget </title>     
+    <title>CheckBox Tree with third party widget </title>
 <!--
   This demo uses a third party widget 'TriStateCheckbox' instead of the default
   cbtree multi-state checkbox.  Note: for this demo checked state normalization
@@ -30,24 +30,24 @@
             ]
       };
     </script>
-    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
         "dojo/data/ItemFileWriteStore",
         "dojo/ready",
         "dojox/form/TriStateCheckbox",
-        "cbtree/Tree",                      // CheckBox Tree              
+        "cbtree/Tree",                      // CheckBox Tree
         "cbtree/models/ForestStoreModel"    // Tree Forest Store Model
         ], function( ItemFileWriteStore, ready, TriStateCheckBox, Tree, ForestStoreModel ) {
 
-          var store = new ItemFileWriteStore( { url: "../datastore/Simpsons.json" });
+          var store = new ItemFileWriteStore( { url: "../data/json/Simpsons.json" });
           var model = new ForestStoreModel( {
                   store: store,
                   query: {type: 'parent'},
                   rootLabel: 'The Simpsons',
                   checkedRoot: true,
                   normalize: false
-                  }); 
+                  });
 
           ready(function() {
             var tree = new Tree( {
@@ -60,10 +60,10 @@
         });
     </script>
   </head>
-    
+
   <body class="claro">
     <h1>Dijit CheckBox Tree - Mixin Widget: &lt;TriStateCheckBox&gt;</h1>
-    <div id="CheckboxTree">  
+    <div id="CheckboxTree">
     </div>
-  </body> 
+  </body>
 </html>

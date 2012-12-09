@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head> 
+  <head>
 		<meta charset="utf-8">
-    <title>Dijit Tree with Checkboxes and custom Icons</title>     
+    <title>Dijit Tree with Checkboxes and custom Icons</title>
      <style type="text/css">
       @import "../../dijit/themes/claro/claro.css";
       @import "../../dijit/themes/claro/document.css";
@@ -26,7 +26,7 @@
       };
     </script>
 
-    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
         "dojo/data/ItemFileWriteStore",
@@ -37,13 +37,13 @@
         ]);
     </script>
   </head>
-    
+
   <body class="claro">
     <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
 		<div id="content">
-			<div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../datastore/Network-1.7.json"'></div>
+			<div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../data/json/Network.json"'></div>
 			<div data-dojo-id="model" data-dojo-type="cbtree/models/ForestStoreModel" data-dojo-props='store:store, query:{type:"computer"}, rootLabel:"The Network"'></div>
 			<div data-dojo-id="myTree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model, id:"myTree", icon:{iconClass: "networkIcon", indent: true }'>
 		</div>
-  </body> 
+  </body>
 </html>

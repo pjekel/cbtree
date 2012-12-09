@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head> 
+  <head>
     <meta charset="utf-8">
-    <title>Dijit Tree with Checkboxes </title>     
+    <title>Dijit Tree with Checkboxes </title>
     <style type="text/css">
       @import "../../dijit/themes/claro/claro.css";
       @import "../../dijit/themes/claro/document.css";
@@ -24,7 +24,7 @@
       };
     </script>
 
-    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
         "dojo/data/ItemFileWriteStore",
@@ -37,7 +37,7 @@
       function checkBoxClicked( item, nodeWidget, evt ) {
         var newState = nodeWidget.get("checked" );
         var label    = this.getLabel(item);
-        
+
         if( newState ) {
           this.set("iconStyle", {border:"solid"}, item );
           this.set("labelStyle",{color:"red"}, item );
@@ -50,15 +50,15 @@
     </script>
 
   </head>
-    
+
   <body class="claro">
     <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
     <div id="content">
-      <div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../datastore/Family-1.7.json"'></div>
+      <div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../data/json/Family.json"'></div>
       <div data-dojo-id="model" data-dojo-type="cbtree/models/ForestStoreModel" data-dojo-props='store:store, query:{type:"parent"}, rootLabel:"The Family"'></div>
       <div data-dojo-id="tree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model, onCheckBoxClick: checkBoxClicked, id:"tree"'>
       </div>
     </div>
     <h2>Click a checkbox</h2>
-  </body> 
+  </body>
 </html>

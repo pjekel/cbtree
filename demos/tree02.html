@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head> 
+  <head>
 		<meta charset="utf-8">
-    <title>Dijit Tree with Checkboxes and custom Icons</title>     
+    <title>Dijit Tree with Checkboxes and custom Icons</title>
      <style type="text/css">
       @import "../../dijit/themes/claro/claro.css";
       @import "../../dijit/themes/claro/document.css";
@@ -26,7 +26,7 @@
       };
     </script>
 
-    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
         "dojo/data/ItemFileWriteStore",
@@ -36,7 +36,7 @@
         "cbtree/models/ForestStoreModel"  // Forest Store Model
         ], function( ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel ) {
 
-					var store = new ItemFileWriteStore( { url: "../datastore/Network-1.7.json" });
+					var store = new ItemFileWriteStore( { url: "../data/json/Network.json" });
 					var model = new ForestStoreModel( {
 									store: store,
 									query: {type: 'computer'},
@@ -45,7 +45,7 @@
 									checkedRoot: true,
 									checkedState: true,
 									checkedStrict: true
-									}); 
+									});
 
 					ready(function() {
 						var tree = new Tree( {
@@ -61,10 +61,10 @@
         });
     </script>
   </head>
-    
+
   <body class="claro">
     <h1>Dijit Tree with Checkboxes and Custom Icons</h1>
-    <div id="CheckboxTree">  
+    <div id="CheckboxTree">
     </div>
-  </body> 
+  </body>
 </html>

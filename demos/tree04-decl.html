@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head> 
+  <head>
     <meta charset="utf-8">
-    <title>CheckBox Tree with third party widget </title>     
+    <title>CheckBox Tree with third party widget </title>
 <!--
   This demo uses a third party widget 'TriStateCheckbox' instead of the default
   cbtree multi-state checkbox.  Note: for this demo checked state normalization
@@ -30,24 +30,24 @@
             ]
       };
     </script>
-    <script type="text/javascript" src="../../dojo/dojo.js"></script> 
+    <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
         "dojo/data/ItemFileWriteStore",
         "dojo/parser",
         "dojox/form/TriStateCheckbox",
-        "cbtree/Tree",                      // CheckBox Tree              
+        "cbtree/Tree",                      // CheckBox Tree
         "cbtree/models/ForestStoreModel"    // Tree Forest Store Model
         ]);
     </script>
   </head>
-    
+
   <body class="claro">
     <h1>Dijit CheckBox Tree - Mixin Widget: &lt;TriStateCheckBox&gt;</h1>
 		<div id="content">
-			<div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../datastore/Simpsons.json"'></div>
+			<div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../data/json/Simpsons.json"'></div>
 			<div data-dojo-id="model" data-dojo-type="cbtree/models/ForestStoreModel" data-dojo-props='store:store, query:{type:"parent"}, rootLabel:"The Family", normalize: false'></div>
 			<div data-dojo-id="tree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model, id:"tree", widget:{type:"dojox/form/TriStateCheckbox", args: { states:["mixed", true, false] }}'>
 		</div>
-  </body> 
+  </body>
 </html>

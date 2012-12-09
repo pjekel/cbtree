@@ -31,19 +31,21 @@
 				"dojo/_base/lang",
 				"dojo/aspect",
         "dojo/ready",
-        "cbtree/Tree",                           // Checkbox tree
-        "cbtree/models/ObjectStoreModel",        // ObjectStoreModel
-        "cbtree/stores/ObjectStore",             // modified Memory store with custom Query Engine.
-        "cbtree/stores/Evented"                  // Evented instead of Observable
-        ], function( lang, aspect, ready, Tree, ObjectStoreModel, ObjectStore, Evented) {
+        "dojo/on",
+        "cbtree/Tree",                     // Checkbox tree
+        "cbtree/model/TreeStoreModel",     // Object Store Tree Model
+        "cbtree/store/Hierarchy",          // Object Store with Hierarchy
+        "cbtree/store/Evented"             // Evented instead of Observable
+        ], function( lang, aspect, ready, on, Tree, ObjectStoreModel, ObjectStore, Evented) {
 
 					// This demo uses the cbtree/stores/ObjectStore which has an enhanced
 					// query engine to provide support for array properties. In addition,
 					// the store also allows loading data using a URL.
 
-					// Note: this store is evented instead of observable.
+					// Note: this store is evented instead of observable. However this demo
+					//       could simply use the standard ObjectStore.
 
-          var store = Evented( new ObjectStore( { url:"../datastore/Simpsons-1.9.json", idProperty:"name" }) );
+          var store = Evented( new ObjectStore( { url:"../store/json/Simpsons.json", idProperty:"name"}) );
           var model = new ObjectStoreModel( { store: store,
                                                query: {name: "Root"},
                                                rootLabel: "The Family",
