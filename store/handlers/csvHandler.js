@@ -16,21 +16,21 @@ define([], function() {
 	"use strict";
 
 	// module:
-	//		cbtree/stores/handlers/csvHandler
+	//		cbtree/store/handlers/csvHandler
 	// summary:
 	//		Sample CSV data handler.
 	// description:
-	//		This handler can be used with the cbtree/stores/ObjectStore or can be
-	//		registered directly with dojo/request/handlers.  The handler converts
+	//		This handler can be used with the cbtree/store Object Stores or can be
+	//		registered directly with dojo/request/handlers.   The handler converts
 	//		a dojo/request response type object, whose data property value is a CSV
 	//		formatted string, into an array of objects ready for consumption by the
-	//		cbtree ObjectStore or dojo/store.
+	//		cbtree/store Object Stores or dojo/store.
 	//
 	//		(See http://datatracker.ietf.org/doc/rfc4180/)
 	//
 	// example:
-	//	| require(["cbtree/stores/ObjectStore",
-	//	|          "cbtree/stores/handlers/csvHandler"
+	//	| require(["cbtree/store/Memory",
+	//	|          "cbtree/store/handlers/csvHandler"
 	//	|         ], function (ObjectStore, csvHandler) {
 	//	|
 	//	|   var store = new ObjectStore(
@@ -52,9 +52,9 @@ define([], function() {
 	//	| require(["dojo/request",
 	//	|          "dojo/request/handlers",
 	//	|          "dojo/store/Memory",
-	//	|          "cbtree/stores/ObjectStore",
-	//	|          "cbtree/stores/handlers/csvHandler"
-	//	|         ], function (request, handlers, Memory, ObjectStore, csvHandler) {
+	//	|          "cbtree/store/Hierarchy",
+	//	|          "cbtree/store/handlers/csvHandler"
+	//	|         ], function (request, handlers, Memory, Hierarchy, csvHandler) {
 	//	|
 	//  |   var myHandler = new csvHandler( { fieldNames: ["Name", "LastName"],
 	//	|                                     trim: true });
@@ -70,12 +70,13 @@ define([], function() {
 	//	|
 	//	|		// First change the field names
 	//	|   myHandler.set( {fieldNames: ["city", "zipcode", "county", "state"]} );
-	//	|   var ObjStore = new ObjectStore( {url:"/another/location/myCities.csv",
-	//	|                                    handleAs:"csv"} );
+	//	|   var ObjStore = new Hierarchy( {url:"/another/location/myCities.csv",
+	//	|                                  handleAs:"csv"} );
 	//	| });
 	//
 	//		Note: Because the CSV handler was registered before the creation of the
-	//		      ObjectStore we can now simply set the 'handleAs' property to "csv"
+	//		      Hierarchy Store we can now simply set the 'handleAs' property to
+	//          "csv"
 
 	if (!String.prototype.trim) {
 		String.prototype.trim = function () {
