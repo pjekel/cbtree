@@ -668,8 +668,7 @@ define(["dojo/_base/declare",   // declare
       //    will keep store updates to a minimum. If the current checked state
       //    is undefined (ie: no checked property specified in the store) the
       //    'checkedAll' property is tested to see if a checked state needs to
-      //    be created.  In case of the root node the 'checkedRoot' property
-      //    is checked.
+      //    be created.
       //
       //    NOTE: The _setValue() method will add the property for the
       //          item if none exists.

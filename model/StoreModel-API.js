@@ -370,6 +370,11 @@ define(["dojo/_base/lang",
 		_changeParents: function (/*Object*/ storeItem, /*Object|String*/ parent, /*String*/ operation) {
 			// summary:
 			//		Add or remove a parent to/from a store item.
+			// storeItem:
+			// parent:
+			// operation:
+			// tag:
+			//		Private
 			var result, self = this;
 
 			if (isObject(storeItem) && parent) {
@@ -412,6 +417,9 @@ define(["dojo/_base/lang",
 
 		addParent: function (/*Object*/ storeItem, /*Object|String*/ parent) {
 			// summary:
+			//		Add a parent to a store item. This method is provided to support
+			//		stores that do not have native addParent() support.
+			//		(See cbtree/store/api/Store for additional information).
 			// storeItem:
 			// parent:
 			// tag:
@@ -421,6 +429,9 @@ define(["dojo/_base/lang",
 
 		removeParent: function (storeItem, parent) {
 			// summary:
+			//		Remove a parent from a store item. This method is provided to support
+			//		stores that do not have native removeParent() support.
+			//		(See cbtree/store/api/Store for additional information).
 			// storeItem:
 			// parent:
 			// tag:

@@ -25,7 +25,7 @@ define(["dojo/_base/declare", 	// declare
 		//		can be used with an observable, non-observable or evented FileObjectStore.
 		//		(See cbtree/stores/FileObjectStore)
 
-	var moduleName = "cbTree/models/FileStoreModel";
+	var moduleName = "cbTree/model/FileStoreModel";
 
 	return declare([TreeStoreModel], {
 

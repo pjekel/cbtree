@@ -71,23 +71,23 @@ of the same demo.
 To fully support the declarative instantiation of the CheckBox Tree the *type* property
 of a custom widget can now be specified as a module ID string
 
-	<div data-dojo-id="tree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model, id:"tree", 
+	<div data-dojo-id="tree", data-dojo-type="cbtree/Tree" data-dojo-props='model:model, id:"tree",
 		 widget:{type:"dojox/form/TriStateCheckbox", args: { states:["mixed", true, false] }}'>
 	</div>
 
 #### Tree Widget startup() call ###
-Although recommended in the passed, it is now required to call the *startup()* method
+Although recommended in the past, it is now required to call the *startup()* method
 of any tree when created programmatically, including the CheckBox Tree. As an example:
 
 	var myTree = new cbtree( {model: myModel}, "myCheckBoxDiv" );
 	myTree.startup();
 
 				or alternatively
-				
+
 	var myTree = new cbtree( {model: myModel});
 	myTree.placeAt( "myCheckBoxDiv" );
 	myTree.startup();
-	
+
 See the [dojo 1.8 release notes](http://livedocs.dojotoolkit.org/releasenotes/1.8#tree)
 for additional information.
 
@@ -104,8 +104,8 @@ The problem has been fixed.
 The cbtree/main module (main.js) has been removed. Go forward you need to "require"
 the cbtree modules explicitly. As a result the syntax:
 
-	require(["cbtree", 
-				... 
+	require(["cbtree",
+				...
 			], function( cbtree, ... ) {
 			...
 	  var myModel = new cbtree.ForestStoreModel( ... );
@@ -130,10 +130,10 @@ Is no longer supported. Instead, use the following:
 #### New Property ####
 
 A new store model property named ***enabledAttr*** has been added to support
-the 'Per Item Read-Only Checkbox'. 
+the 'Per Item Read-Only Checkbox'.
 
 The *enabledAttr* value is the name of the store item attribute that holds the
-so-called 'enabled' state of the checkbox or alternative widget. 
+so-called 'enabled' state of the checkbox or alternative widget.
 
 **NOTE:** Although it is called the 'enabled' state, the tree will only use this
 property to enable/disable the "readOnly" property of a checkbox. This because
@@ -142,15 +142,15 @@ disabling a widget may exclude it from HTTP POST operations.
 #### New Functions ####
 
 The StoreModel-API functions *get()* and *set()* have been removed and replaced with
-the new dojo 1.8 Stateful.js module at the Store Model level. 
+the new dojo 1.8 Stateful.js module at the Store Model level.
 As a result the *get()* and *set()* methods are now provided by all cbtree Store Models
-without having to load the StoreModel-API module.   
+without having to load the StoreModel-API module.
 See [dojo/Stateful](http://livedocs.dojotoolkit.org/releasenotes/1.8#dojo-stateful) for
 more information.
 
 ## The File Store and Model ##
 
-A new File Store and model have been added which allows the user to render and 
+A new File Store and model have been added which allows the user to render and
 manage the back-end server file system as a tree. The in-memory File Store is
 dynamic in that items may be added, removed or change based on the responses
 received from the back-end server or you can programatically delete or rename
