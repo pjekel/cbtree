@@ -56,7 +56,7 @@ define(["dojo/_base/declare",
 	//			Please refer to the File Store documentation for details on the Server Side
 	//			Application. (cbtree/documentation/FileObjectStore.md)
 
-	var	moduleName = "cbTree/store/FileObjectStore";
+	var	moduleName = "cbTree/store/FileStore";
 
 	var C_ITEM_EXPANDED = "_EX";      // Property indicating if a directory item is fully expanded.
 	var C_PATH_ATTR     = "path";     // Path property name (used as the identifier)

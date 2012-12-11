@@ -16,14 +16,18 @@ define(["dojo/_base/declare",
 				"../shim/Array"                 // ECMA-262 Array shim
 			 ], function (declare, Memory) {
 
-// module:
-//		cbtree/stores/ObjectStore
+	// module:
+	//		cbtree/store/Hierarchy
+	// summary:
+	//		This store implements the cbtree/store/api/Store API which is an extension
+	//		to the dojo/store/api/Store API.
 
 	var moduleName = "cbTree/store/Hierarchy";
 	var undef;
 
 	var Hierarchy = declare([Memory], {
 		// summary:
+		//		This in-memory store implements the full cbtree/store/api/Store API.
 		//		The Hierarchy Store provide support for the dojo/store PutDirectives
 		//		properties 'before' and 'parent'. Objects loaded into the store will
 		//		automatically get a "parent" property if they don't have one already.
@@ -52,60 +56,75 @@ define(["dojo/_base/declare",
 		//=========================================================================
 		// Private methods
 
-		_getParentId: function (/*Object*/ object,/*String|Number*/ objectId,/*Object[]*/ parents) {
+		_getParentArray: function (/*Object*/ object) {
 			// summary:
-			//		Get the parent property of a store object.
-			// object:
-			//		The object to store.
+			//		Return the parents of an object as an array of identifiers.
+			// object: Object
+			//		Store object
+			// returns:
+			//		An array of parent Ids.
+			// tag:
+			//		Private
+			var parentIds = object[this.parentProperty] || [];
+			return (parentIds instanceof Array ? parentIds : [parentIds]);
+		},
+
+		_getParentIds: function (/*String|Number*/ objectId,/*any*/ parents) {
+			// summary:
+			//		Extract the parent ids from a list of parents.
 			// objectId:
 			//		The object identification.
 			// parents:
-			//		The parent(s) of the object. The parents arguments can be a single
-			//		id or an array of id's.
+			//		The parent(s) of an object. The parents arguments can be an id,
+			//		an object or an array of those types.
 			// returns:
-			//		Array of parent Ids.
+			//		An array of parent Ids.
 			// tag:
 			//		Private
-			var i, parentId, np;
+			var parentIds = [];
 
-			if (parents instanceof Array) {
-				for (i=0; i<parents.length; i++) {
-					if (parentId = this.getIdentity(parents[i])) {
-						if (parentId != objectId && np.indexOf(parentId) == -1) {
-							np ? np.push(parentId) : np = [parentId];
+			parents = (parents instanceof Array ? parents : (parents ? [parents] : []));
+			parents.forEach( function (parent) {
+				switch (typeof parent) {
+					case "object":
+						parent = this.getIdentity(parent);
+						/* NO BREAK HERE */
+					case "string":
+					case "number":
+						if (parent) {
+							// Make sure we don't parent ourself.....
+							if (parent != objectId && parentIds.indexOf(parent) == -1) {
+								parentIds.push(parent);
+							}
 						}
-					}
+						break;
+					default:
+						throw new TypeError( moduleName+"::_getParentId(): Invalid identifier type");
 				}
-			} else {
-				if (parentId = this.getIdentity(parents)) {
-					if (parentId != objectId) {
-						np = parentId;
-					}
-				}
-			}
-			return np;
+			}, this);
+			return parentIds;
 		},
 
-		_setParentType: function (/*id|id[]*/ parents) {
+		_setParentType: function (/*id|id[]*/ parentId) {
 			// summary:
 			//		Convert the parent(s) from a single value to an array or vice versa
-			//		depending on the stores multiParented property value.
-			// parents:
+			//		depending on the store multiParented property value.
+			// parentId:
 			//		Parent Id or an array of parent ids.
 			// tag:
 			//		Private
 			if (this.multiParented === true) {
-				if (!(parents instanceof Array)) {
-					parents = (parents != undef) ? [parents] : [];
+				if (!(parentId instanceof Array)) {
+					parentId = (parentId ? [parentId] : []);
 				}
 			} else if (this.multiParented === false) {
-				if (parents instanceof Array) {
-					parents = (parents.length ? parents[0] : undef);
+				if (parentId instanceof Array) {
+					parentId = (parentId.length ? parentId[0] : undef);
 				}
 			} else if (this.multiParented === "auto") {
-				this.multiParented = (parents instanceof Array);
+				this.multiParented = (parentId instanceof Array);
 			}
-			return parents;
+			return parentId;
 		},
 
 		_writeObject: function (/*Object*/ object,/*Number*/ index,/*Store.PutDirectives*/ options) {
@@ -126,7 +145,7 @@ define(["dojo/_base/declare",
 			var id = object[this.idProperty];
 
 			if (options && "parent" in options) {
-				object[this.parentProperty] = this._getParentId(object, id, options.parent);
+				object[this.parentProperty] = this._getParentIds(id, options.parent);
 			}
 			// Convert the 'parent' property to the correct format.
 			object[this.parentProperty] = this._setParentType(object[this.parentProperty]);
@@ -156,7 +175,39 @@ define(["dojo/_base/declare",
 		},
 
 		//=========================================================================
-		// Public dojo/store/api/store API methods
+		// Public cbtree/store/api/store API methods
+
+		addParent: function(/*Object*/ child,/*any*/ parents) {
+			// summary:
+			//		Add parent(s) to the list of parents of child.
+			// parents: any
+			//		Id or Object or an array of those types to be added as the parent(s)
+			//		of child.
+			// child: Object
+			//		Store object to which the parent(s) are added
+			// returns: Boolean
+			//		true if parent id was successfully added otherwise false.
+			var childId  = this.getIdentity(child);
+			var childObj = this.get(childId);
+
+			if (childObj) {
+				var newIds = this._getParentIds(childId, parents);
+				if (newIds.length) {
+					var currIds = this._getParentArray(childObj);
+					newIds.forEach( function (id) {
+						if (currIds.indexOf(id) == -1) {
+							currIds.unshift(id);
+						}
+					});
+					childObj[this.parentProperty] = this._setParentType(currIds);
+					this.put(childObj);
+					return true;
+				}
+				return false;
+			} else {
+				throw new TypeError(moduleName+"::addParent(): child is not a store object");
+			}
+		},
 
 		getChildren: function (/*Object*/ parent, /*Store.QueryOptions?*/ options) {
 			// summary:
@@ -176,9 +227,6 @@ define(["dojo/_base/declare",
 			return this.query( query, options );
 		},
 
-		//=========================================================================
-		// Public dojo/store/api/store API extensions
-
 		getParents: function (/*Object*/ child) {
 			// summary:
 			//		Retrieve the parent(s) of an object
@@ -187,10 +235,9 @@ define(["dojo/_base/declare",
 			//		An array of objects
 			// tag:
 			//		Public
-			var parentIds = child[this.parentProperty] || [];
+			var parentIds = this._getParentArray(child);
 			var parents   = [];
 
-			parentIds = parentIds instanceof Array ? parentIds : [parentIds];
 			parentsIds.forEach( function (parentId) {
 				var parent = this.get(parentId);
 				if (parent) {
@@ -198,6 +245,36 @@ define(["dojo/_base/declare",
 				}
 			}, this);
 			return parents;
+		},
+
+		removeParent: function(/*Object*/ child,/*any*/ parents) {
+			// summary:
+			//		Remove a parent from the list of parents of child.
+			// parents: any
+			//		Id or Object or an array of the those types to be removed from the
+			//		list of parent(s) of child.
+			// child:
+			//		Store object from which the parent(s) are removed
+			// returns: Boolean
+			//		true if the parent id was successfully removed otherwise false.
+			var childId  = this.getIdentity(child);
+			var childObj = this.get(childId);
+
+			if (childObj) {
+				var remIds = this._getParentIds(childId, parents);
+				if (remIds.length) {
+					var currIds = this._getParentArray(childObj);
+					currIds = currIds.filter( function (id) {
+						return (remIds.indexOf(id) == -1);
+					});
+					childObj[this.parentProperty] = this._setParentType(currIds);
+					this.put(childObj);
+					return true;
+				}
+				return false;
+			} else {
+				throw new TypeError(moduleName+"::addParent(): child is not a store object");
+			}
 		}
 
 	});	/* end declare() */

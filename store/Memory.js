@@ -21,31 +21,19 @@ define(["dojo/_base/declare",
 				"../shim/Array"                 // ECMA-262 Array shim
 			 ], function (declare, lang, Deferred, request, handlers, QueryResults, QueryEngine) {
 
-// module:
-//		cbtree/stores/Memory
+	// module:
+	//		cbtree/store/Memory
+	// summary:
+	//		This store implements the cbtree/store/api/Store API which is an extension
+	//		to the dojo/store/api/Store API.
 
 	var moduleName = "cbTree/store/Memory";
 
-	// 		WebIDL dictionary definitions:
-	//
-	// dictionary SortInformation {
-	//   String		attribute = null;
-	//   Boolean?	descending = false;
-	//   Boolean?	ignoreCase = false;
-	// };
-	//
-	// dictionary QueryOptions {
-	//   SortInformation[]? sort = null;
-	//   Number? start = 0;
-	//   Number? count = 0;
-	//   Boolean ignoreCase = false;
-	// };
-
 	var Memory = declare([], {
 		// summary:
-		//		This is an in-memory object store implementing the dojo/store/api/Store
-		//		API.  The store objects can be loaded  using either in-memory data or a
-		//		URL.  The data is pre-processed using the default dojo/request handlers
+		//		This is a memory object store implementing the cbtree/store/api/Store
+		//		API. The store objects can be loaded  using either in-memory data or a
+		//		URL. The data is pre-processed using the default dojo/request handlers
 		//		or the user can register a custom handler to pre-process, for example,
 		//		Comma Separated Values (CSV).
 		//
@@ -88,8 +76,9 @@ define(["dojo/_base/declare",
 		dataHandler: null,
 
 		// defaultProperties: Object
-		//		A JavaScript key:values pairs object whose properties are mixed in with
-		//		any new store object.
+		//		A JavaScript key:values pairs object whose properties and associated
+		//		values are added to new store objects if such properties are missing
+		//		from the new store object.
 		defaultProperties: null,
 
 		// handleAs: String
@@ -184,9 +173,6 @@ define(["dojo/_base/declare",
 			} else {
 				if (this.url) {
 					if (typeof this.url == "string") {
-						if (!this.handleAs) {
-							this.handleAs = this.handleAs = "json";
-						}
 						if (this.autoLoad) {
 							this.load();
 						}
@@ -194,7 +180,9 @@ define(["dojo/_base/declare",
 						throw new Error(moduleName+"::_urlSetter(): URL property must be of type string");
 					}
 				} else {
-					this._setData();		// No data or URL specified.
+					if (this.autoLoad) {
+						this._setData();		// No data or URL specified.
+					}
 				}
 			}
 		},
@@ -230,6 +218,8 @@ define(["dojo/_base/declare",
 
 			this._data = [];
 			this.data  = null;
+
+			data = data || [];
 
 			if (data && data.items) {
 				// just for convenience with the data format IFRS expects
@@ -452,7 +442,7 @@ define(["dojo/_base/declare",
 		//=========================================================================
 		// Public dojo/store/api/store API extensions
 
-		load: function () {
+		load: function (options) {
 			// summary:
 			//		Implements a simple load to load data using a URL.
 			// returns:
@@ -460,6 +450,12 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public, Extension
 			if (!this._isLoading && !this._storeLoaded.isFulfilled()) {
+				if (options && options.url) {
+					this.url = options.url;
+				}
+				if (!this.handleAs) {
+					this.handleAs = "json";
+				}
 				if (this.url) {
 					var result, self = this;
 					this._isLoading = true;
