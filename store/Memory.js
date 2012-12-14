@@ -319,7 +319,7 @@ define(["dojo/_base/declare",
 			var id = this._setObjectId(object, options);
 			var at = this._index[id];
 
-			if (at) {
+			if (at >= 0) {
 				throw new Error("Object already exists");
 			}
 			return this._writeObject(object, at, options);
@@ -381,7 +381,7 @@ define(["dojo/_base/declare",
 			var id = this._setObjectId(object, options);
 			var at = this._index[id];
 
-			if (at) {
+			if (at >= 0) {
 				if (options && options.overwrite === false) {
 					throw new Error("Object already exists");
 				}
@@ -419,7 +419,16 @@ define(["dojo/_base/declare",
 			//	...or find all items where "even" is true:
 			//
 			//	|	var results = store.query({ even: true });
-			return QueryResults(this.queryEngine(query, options)(this._data));
+			var self = this;
+
+			if (this._storeLoaded.isFulfilled()) {
+				return QueryResults( this.queryEngine(query, options)(this._data) );
+			} else {
+				// If the store data isn't loaded yet defer the query until it is...
+				return QueryResults( this._storeLoaded.then( function () {
+					return self.queryEngine(query, options)(self._data)
+				}));
+			}
 		},
 
 		remove: function (/*String|Number*/ id) {
@@ -430,7 +439,7 @@ define(["dojo/_base/declare",
 			// returns:
 			//		Returns true if an object was removed otherwise false.
 			var at = this._index[id];
-			if (at) {
+			if (at >= 0) {
 				this._data.splice(at, 1);
 				// now we have to reindex
 				this._indexData();
@@ -445,6 +454,8 @@ define(["dojo/_base/declare",
 		load: function (options) {
 			// summary:
 			//		Implements a simple load to load data using a URL.
+			// options:
+			//		cbtree/store/api/Store.LoadDirectives
 			// returns:
 			//		dojo/promise/Promise
 			// tag:

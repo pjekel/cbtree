@@ -34,7 +34,7 @@ define(["dojo/_base/declare",
 		//		The object's parent property value is the identifier of the object's
 		//		parent. (see also: multiParented).
 		//
-		// 		For addional information see dojo/store/api/Store.PutDirectives
+		// 		For addional information see cbtree/store/api/Store.PutDirectives
 
 		//=========================================================================
 		// Additional constructor keyword arguments:

@@ -18,18 +18,22 @@ define(["dojo/_base/lang",
 				"./util/Mutex"
 			 ], function (lang, Deferred, Evented, when, Mutex) {
 
-	var EventedStore = function (/*dojo.store*/ store) {
+	var EventedStore = function (/*store*/ store) {
 		// summary:
-		//		The Evented store wrapper takes a store and adds advice like methods to
-		//		the stores add, put and remove methods. As a result, any store add, put
-		//		or remove operations will generate an event the user application can
-		//		subscribe to using dojo/on. Each event has at least the following two
-		//		properties:
+		//		The Evented store wrapper takes  a store and adds advice  like methods
+		//		to the store's add, put and remove methods. As a result, any store add,
+		//		put  or remove operations  will generate an event the user application
+		//		can subscribe to using dojo/on. The generated events have at least the
+		//		following two properties:
 		//
 		//		type: String
 		//			"delete" | "new" | "update"
 		//		item:
 		//			Store object.
+		//
+		// store:
+		//		Object store implementing the cbtree/store/api/Store API or the native
+		//		dojo/store/api/Store API.
 		//
 		// example:
 		//		Create a Memory store that generate events when the content of the store
@@ -55,9 +59,15 @@ define(["dojo/_base/lang",
 		var orgMethods = {};
 		var mutex      = new Mutex();
 
+		// If the original store is already an evented store just return it.
+		if (store.evented) {
+			return store;
+		}
+
 		// Create a new store instance, mixin the 'on' and 'emit' methods and mark
 		// the object store as being an 'evented' store. This module is intended to
-		// be used with stores that implement the dojo/store/Store API
+		// be used with stores that implement the dojo/store/api/Store or extended
+		// cbtree/store/api/Store API
 
 		store = lang.delegate(store, new Evented());
 		store.evented = true;
@@ -80,12 +90,14 @@ define(["dojo/_base/lang",
 		}
 
 		addAdvice( "add", function (object, options) {
+			// TODO: Implement shared mutex (mutex doesn't work with the dojo/store/Memory
+			//       add() method as it calls put())
 			var result = orgMethods["add"].apply(store, arguments);
 			when( result, function(id) {
 				if (id) {
 					store.emit("new", {type:"new", item: object});
 				}
-			});
+			}, mutex.onError);
 			return result;
 		});
 

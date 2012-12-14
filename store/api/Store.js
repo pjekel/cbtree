@@ -1,11 +1,14 @@
 define(["dojo/_base/declare",
+        "dojo/_base/lang",
         "dojo/store/api/Store",
-       ], function (declare, baseStoreAPI) {
+       ], function (declare, lang, Store) {
 
-// module:
-//		cbtree/store/api/Store
+	// module:
+	//		cbtree/store/api/Store
+	// summary:
+	//		Extend the dojo/store API
 
-	var Store = declare([baseStoreAPI], {
+	var cbtreeStore = lang.extend( Store, {
 		// summary:
 		//		This is an extension to the default abstact dojo/store/api/Store API.
 		//		This API defines method signatures ONLY without providing implementation
@@ -78,7 +81,8 @@ define(["dojo/_base/declare",
 			// child: Object.
 			//		The object to find the parent(s) for.
 			// returns: Object[]
-			//		An array of objects.
+			//		An array of objects. Returns an empty array If the child object has
+			//		no parents
 		},
 
 		load: function (options) {
@@ -176,7 +180,11 @@ define(["dojo/_base/declare",
 		//		The number of how many results should be returned.
 		// ignoreCase: Boolean?
 		//		Match object properties case insensitive. Default is false.
+		// cacheOnly: Boolean?
+		//		If the store maintains an internal cache and cacheOnly is set to true
+		//		only the cache is searched without fetching any data from an external
+		//		data source like a back-end server. Default is false.
 	});
 
-	return Store;
+	return cbtreeStore;
 });

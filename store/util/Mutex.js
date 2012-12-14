@@ -1,12 +1,15 @@
 define(["dojo/Deferred"], function (Deferred) {
 	"use strict";
 
-	function Mutex () {
+	function Mutex (shared) {
 		// summary:
-		//  tag:
+		// shared:
+		//		TODO: Implement shared mutex...
+		// tag:
 		//		Public
 		var waiting = [];
 		var locked  = false;
+		var shared  = !!shared;
 		var self    = this;
 
 		function signalWaiting () {
