@@ -12,15 +12,19 @@
 //	In case of doubt, the BSD 2-Clause license takes precedence.
 //
 define(["dojo/_base/lang",
-				"dojo/has",
 				"dojo/when",
 				"./TreeStoreModel",
 				"./_Parents",
 				"../shim/Array"
-       ], function (lang, has, when, ObjectStoreModel, Parents) {
+       ], function (lang, when, StoreModel, Parents) {
 
-	// Add cbTree model API to the available features list
-	has.add("cbtree-objectStoreModel-API", true);
+	// module:
+	//		cbtree/model/StoreModel-API
+	// summary:
+	//		This module extends the cbtree/model/TreeStoreModel API with an additional
+	//		set of methods commenly used to query the store or modify store objects.
+
+  var  moduleName = "cbTree/model/StoreModel-API";
 
 	function objType(obj) {
 		var objClass = Object.prototype.toString.call(obj);
@@ -30,7 +34,7 @@ define(["dojo/_base/lang",
 
 	function isObject(something) {
 		// summary:
-		//		Returns true is 'something' is an Object object and not an array,
+		//		Returns true is 'something' is an Object object, NOT an array,
 		//		function or null.
 		// something:
 		//		Any type.
@@ -39,7 +43,7 @@ define(["dojo/_base/lang",
 		return (something && (objType(something) ===  "Object"));
 	}
 
-	lang.extend(ObjectStoreModel, {
+	lang.extend(StoreModel, {
 
 		// =======================================================================
 		// Private Methods related to checked states
@@ -49,7 +53,7 @@ define(["dojo/_base/lang",
 			// summary:
 			//		Check or uncheck the checked state of all store items that match the
 			//		query and have a checked state.
-			//		This method is called by either the public methods 'check' or 'uncheck'
+			//		This method is called by either the public methods check() or uncheck()
 			//		providing an easy way to programmatically alter the checked state of a
 			//		set of store items associated with the tree nodes.
 			// query:
@@ -92,7 +96,7 @@ define(["dojo/_base/lang",
 		// =======================================================================
 		// Object store item getters and setters
 
-		_ItemCheckedGetter: function (/*dojo.store.Item*/ storeItem) {
+		_itemCheckedGetter: function (/*dojo.store.Item*/ storeItem) {
 			// summary:
 			//		Get the current checked state from the data store for the specified item.
 			//		This is the hook for getItemAttr(item,"checked")
@@ -110,7 +114,7 @@ define(["dojo/_base/lang",
 			return this.getChecked(storeItem);
 		},
 
-	 _ItemCheckedSetter: function (/*dojo.store.Item*/ storeItem, /*Boolean*/ newState) {
+	 _itemCheckedSetter: function (/*dojo.store.Item*/ storeItem, /*Boolean*/ newState) {
 			// summary:
 			//		Update the checked state for the store item and the associated parents
 			//		and children, if any. This is the hook for setItemAttr(item,"checked",value).
@@ -131,7 +135,7 @@ define(["dojo/_base/lang",
 			this.setChecked(storeItem, newState);
 		},
 
-		_ItemLabelGetter: function (storeItem) {
+		_itemLabelGetter: function (storeItem) {
 			// summary:
 			//		Provide the hook for getItemAttr(storeItem,"label") calls. The getItemAttr()
 			//		interface is the preferred method over the legacy getLabel() method.
@@ -139,13 +143,10 @@ define(["dojo/_base/lang",
 			//		The store item whose label is returned.
 			// tag:
 			//		private
-
-			if (isObject(storeItem)) {
-				return this.getLabel(storeItem);
-			}
+			return this.getLabel(storeItem);
 		},
 
-		_ItemLabelSetter: function (storeItem, value) {
+		_itemLabelSetter: function (storeItem, value) {
 			// summary:
 			//		Hook for setItemAttr(storeItem,"label",value) calls.
 			// storeItem:
@@ -177,14 +178,14 @@ define(["dojo/_base/lang",
 			var attr = (attribute == this.checkedAttr ? "checked" : attribute);
 
 			if (isObject(storeItem)) {
-				var func = this._getFuncNames("Item", attr);
+				var func = this._getFuncNames("item", attr);
 				if (typeof this[func.get] === "function") {
 					return this[func.get](storeItem);
 				} else {
 					return storeItem[attr];
 				}
 			}
-			throw new Error(this.moduleName+"::getItemAttr(): argument is not a valid store item.");
+			throw new Error(moduleName+"::getItemAttr(): item is not a valid object.");
 		},
 
 		setItemAttr: function (/*dojo.store.Item*/ storeItem, /*String*/ attribute, /*anytype*/ value) {
@@ -204,7 +205,7 @@ define(["dojo/_base/lang",
 			if (this._writeEnabled) {
 				var attr = (attribute == this.checkedAttr ? "checked" : attribute);
 				if (isObject(storeItem)) {
-					var func = this._getFuncNames("Item", attr);
+					var func = this._getFuncNames("item", attr);
 					if (typeof this[func.set] === "function") {
 						return this[func.set](storeItem,value);
 					} else {
@@ -212,10 +213,10 @@ define(["dojo/_base/lang",
 						return true;
 					}
 				} else {
-					throw new Error(this.moduleName+"::setItemAttr(): argument is not a valid store item.");
+					throw new Error(moduleName+"::setItemAttr(): item is not a valid object.");
 				}
 			} else {
-				throw new Error(this.moduleName+"::setItemAttr(): store is not write enabled.");
+				throw new Error(moduleName+"::setItemAttr(): store is not write enabled.");
 			}
 		},
 
@@ -230,9 +231,9 @@ define(["dojo/_base/lang",
 			//		An object or string used to query the store. If args is a string its
 			//		value is assigned to the store idProperty in the query.
 			//	onComplete:
-			//		 User specified callback method which is called on completion with the
-			//		first store items that matched the query argument. Method onComplete
-			//		is called as: onComplete(storeItems) in the context of scope if scope
+			//		User specified callback method which is called on completion with the
+			//		first store item that matched the query argument. Method onComplete()
+			//		is called as: onComplete(storeItem) in the context of scope if scope
 			//		is specified otherwise in the active context (this).
 			//	scope:
 			//		If a scope object is provided, the function onComplete will be invoked
@@ -242,11 +243,11 @@ define(["dojo/_base/lang",
 			// tag:
 			//		public
 
-			var idQuery    = this._anyToQuery(args, null);
-			var scope      = scope || this;
+			var idQuery = this._anyToQuery(args, null);
+			var scope   = scope || this;
 
 			if (idQuery && onComplete) {
-				when(this.store.query(idQuery), function(queryResult) {
+				when(this.store.query(idQuery), function (queryResult) {
 					var items = Array.prototype.slice.call(queryResult);
 					onComplete.call(scope, (items.length ? items[0] : undefined));
 				});
@@ -257,12 +258,8 @@ define(["dojo/_base/lang",
 																			/*Boolean?*/ storeOnly) {
 			// summary:
 			//		Get the list of store items that match the query and have a checked
-			//		state, that is, a checkedAttr property.
-			// description:
-			//		Get the list of store items that match the query and have a checked state.
-			//		This method provides a simplified interface to the object stores query()
-			//		method.
-			//	 query:
+			//		state (a checkedAttr property).
+			//	query:
 			//		A query object or string. If query is a string the identifier attribute
 			//		of the store is used as the query attribute and the string assigned as
 			//		the associated value.
@@ -274,26 +271,26 @@ define(["dojo/_base/lang",
 			//	scope:
 			//		If a scope object is provided, the function onComplete will be invoked
 			//		in the context of the scope object. In the body of the callback function,
-			//		the value of the "this" keyword will be the scope object. If no scope
-			//		object is provided, onComplete will be called in the context of tree.model.
+			//		the value of the "this" object will be the scope. If no scope object is
+			//		provided, onComplete will be called in the context of tree.model.
 			// storeOnly:
-			//		Indicates if the fetch operation should be limited to the in-memory store
+			//		Indicates if the fetch operation should be limited to the in-memory cache
 			//		only. Some stores may fetch data from a back-end server when performing a
 			//		deep search. However, when querying attributes, some attributes may only
 			//		be available in the in-memory store such is the case with a FileStore
-			//		having custom attributes. (See FileStore.fetch() for additional details).
+			//		having custom attributes.
 			// tag:
 			//		public
 
 			var storeQuery = this._anyToQuery( query, null );
 			var storeItems = [];
-			var storeOnly  = (storeOnly !== undefined) ? storeOnly : true;
+			var cacheOnly  = (storeOnly !== undefined) ? !!storeOnly : true;
 			var scope      = scope || this;
 			var self       = this;
 
 			if (isObject(storeQuery)) {
-				when( this.store.query(storeQuery, {storeOnly: storeOnly}), function(items) {
-					items.forEach(function(item) {
+				when( this.store.query(storeQuery, {cacheOnly: cacheOnly}), function (items) {
+					items.forEach(function (item) {
 						if (self.checkedAttr in item) {
 							storeItems.push(item);
 						} else {
@@ -311,7 +308,7 @@ define(["dojo/_base/lang",
 					}
 				}, this.onError);
 			} else {
-				throw new Error(this.moduleName+"::fetchItemsWithChecked(): query must be of type object.");
+				throw new Error(moduleName+"::fetchItemsWithChecked(): query must be of type object.");
 			}
 		},
 
@@ -367,48 +364,50 @@ define(["dojo/_base/lang",
 			this._checkOrUncheck(query, false, onComplete, scope, storeOnly);
 		},
 
-		_changeParents: function (/*Object*/ storeItem, /*Object|String*/ parent, /*String*/ operation) {
+		_changeParents: function (/*Object*/ storeItem, /*Object*/ parent, /*String*/ operation) {
 			// summary:
-			//		Add or remove a parent to/from a store item.
+			//		Add a parent to or remove a parent from a store object.
 			// storeItem:
+			//		A valid (existing) Store object
 			// parent:
+			//		Parent object.
 			// operation:
+			//		"attach" | "detach"
 			// tag:
 			//		Private
 			var result, self = this;
 
-			if (isObject(storeItem) && parent) {
-				var parentId = isObject(parent) ? this.getIdentity(parent) : parent;
+			if (storeItem && parent) {
+				var parentId = this.getIdentity(parent);
 				var itemId   = this.getIdentity(storeItem);
 				if (itemId && parentId) {
 					when( this.store.get(itemId), function (item) {
 						if (item) {
-							var forestRoot = (self.forest && self.root.id == parentId);
-							var parentIds  = new Parents(item, self.parentProperty);
+							var isRootChild = self.isChildOf(self.root, item);
+							var forestRoot  = (self._forest && self.root.id == parentId);
+							var parentIds   = new Parents(item, self.parentProperty);
 
 							if (forestRoot) {
 								if (!parentIds.multiple) {
 									self._setValue( item, self.parentProperty, undefined );
 								}
-								self.onRootChange(storeItem, (operation == "add" ? "attach" : "detach"));
-								self._childrenChanged(self.root);
+								if ((!isRootChild && operation == "attach") || (isRootChild && operation == "detach")) {
+									var children = self._updateChildrenCache(operation, parent, storeItem );
+									when( children, function () {
+										self.onRootChange(storeItem, operation);
+										self._childrenChanged(self.root);
+									});
+								}
 							} else {
 								if (parentIds[operation](parentId)) {
-									when( self.store.get(parentId), function (parent) {
-										if (parent) {
-											self._setValue( item, self.parentProperty, parentIds.toValue());
-											if (!self._monitored) {
-												self._childrenChanged(parent);
-											}
-										} else {
-											throw new Error(this.moduleName+"::addParent(): Parent [" + parentId +
-											                 "] is not a valid store item");
-										}
-									});
+									self._setValue( item, self.parentProperty, parentIds.toValue());
+									if (!self._monitored) {
+										self._childrenChanged(parent);
+									}
 								}
 							}
 						} else {
-							throw new Error(this.moduleName+"::addParent(): Item ["+itemId+"] is not a valid store item");
+							throw new Error(moduleName+"::addParent(): Item ["+itemId+"] is not a valid store item");
 						}
 					});
 				}
@@ -417,26 +416,36 @@ define(["dojo/_base/lang",
 
 		addParent: function (/*Object*/ storeItem, /*Object|String*/ parent) {
 			// summary:
-			//		Add a parent to a store item. This method is provided to support
-			//		stores that do not have native addParent() support.
-			//		(See cbtree/store/api/Store for additional information).
+			//		Add a parent to a store item.
 			// storeItem:
 			// parent:
 			// tag:
 			//		Public
-			this._changeParents( storeItem, parent, "add" );
+			if (typeof parent == "string") {
+				var self = this;
+				when (this.store.get(parent), function(parent) {
+					self._changeParents( storeItem, parent, "attach" );
+				});
+			} else {
+				this._changeParents( storeItem, parent, "attach" );
+			}
 		},
 
 		removeParent: function (storeItem, parent) {
 			// summary:
-			//		Remove a parent from a store item. This method is provided to support
-			//		stores that do not have native removeParent() support.
-			//		(See cbtree/store/api/Store for additional information).
+			//		Remove a parent from a store item.
 			// storeItem:
 			// parent:
 			// tag:
 			//		Public
-			this._changeParents( storeItem, parent, "remove" );
+			if (typeof parent == "string") {
+				var self = this;
+				when (this.store.get(parent), function(parent) {
+					self._changeParents( storeItem, parent, "detach" );
+				});
+			} else {
+				this._changeParents( storeItem, parent, "detach" );
+			}
 		},
 
 		// =======================================================================
@@ -444,34 +453,37 @@ define(["dojo/_base/lang",
 
 		_anyToQuery: function (/*String|Object*/ args, /*String?*/ attribute) {
 			// summary:
+			//		Compose a query object.
 			// args:
 			//		 Query object, if args is a string it value is assigned to the store
-			//		identifier property in the query.
+			//		identifier property (idProperty) in the query object.
 			// attribute:
 			//		Optional attribute name.	If specified, the attribute in args to be
 			//		used as its identifier. If an external item is dropped on the tree,
 			//		the new item may not have the same identifier property as all store
 			//		items do.
+			// returns:
+			//		A JavaScript key:value pairs object.
 			// tag:
 			//		private
 
 			var identAttr = this.store.idProperty;
 
 			if (identAttr) {
-				var objAttr = attribute ? attribute : identAttr,
-						query = {};
+				var objAttr = attribute || identAttr,
+						query   = {};
 				if (typeof args === "string") {
 					query[identAttr] = args;
 					return query;
 				}
 				if (args && isObject(args)) {
 					lang.mixin( query, args );
-					if (args[objAttr]) {
+					if (objAttr in args) {
 						query[identAttr] = args[objAttr]
 					}
 					return query;
 				} else {
-					query[identAttr] = /./;
+					query[identAttr] = /.*/;
 					return query;
 				}
 			}
@@ -493,7 +505,7 @@ define(["dojo/_base/lang",
 				var fncSet = { set: "_"+prefix+cc+"Setter", get: "_"+prefix+cc+"Getter" };
 				return fncSet;
 			}
-			throw new Error(this.moduleName+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be of type string.");
+			throw new Error(moduleName+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be string.");
 		}
 
 	});	/* end lang.extend() */

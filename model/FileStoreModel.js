@@ -18,12 +18,13 @@ define(["dojo/_base/declare", 	// declare
 				"../shim/Array"					// ECMA-262 Array shim
 			 ], function (declare, when, TreeStoreModel, Parents){
 	"use strict";
+
 		// module:
-		//		cbtree/models/FileObjectStoreModel
+		//		cbtree/model/FileStoreModel
 		// summary:
-		//		Implements cbtree/models/model API connecting to a dojo/store.  This model
-		//		can be used with an observable, non-observable or evented FileObjectStore.
-		//		(See cbtree/stores/FileObjectStore)
+		//		Implements cbtree/model/Model API connecting to a dojo/store.  This model
+		//		can be used with an observable, non-observable or evented FileStore.
+		//		(See cbtree/store/FileStore)
 
 	var moduleName = "cbTree/model/FileStoreModel";
 

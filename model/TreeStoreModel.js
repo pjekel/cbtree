@@ -6,8 +6,8 @@
 //  is released under to following three licenses:
 //
 //  1 - BSD 2-Clause               (http://thejekels.com/cbtree/LICENSE)
-//  2 - The "New" BSD License       (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//  3 - The Academic Free License   (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//  2 - The "New" BSD License      (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//  3 - The Academic Free License  (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 //  In case of doubt, the BSD 2-Clause license takes precedence.
 //
@@ -17,70 +17,74 @@ define(["dojo/_base/declare",   // declare
         "dojo/Deferred",
         "dojo/on",              // on()
         "dojo/promise/all",
-        "dojo/promise/Promise",  // instanceof
+        "dojo/promise/Promise", // instanceof
         "dojo/Stateful",        // get() and set()
         "dojo/when",            // when()
         "./_Parents",
-        "../shim/Array"          // ECMA-262 Array shim
+        "../shim/Array"         // ECMA-262 Array shim
        ], function (declare, lang, aspect, Deferred, on, all, Promise, Stateful, when, Parents) {
   "use strict";
     // module:
     //    cbtree/model/TreeStoreModel
     // summary:
     //    Implements cbtree/models/model API connecting to any store that exposes
-    //    the dojo/store/api/Store API.
+    //    the dojo/store/api/Store API or the extended cbtree/store/api/Store API.
     //    The model supports observable, non-observable and evented stores. Both
     //    synchronous and asynchronous store implementations are supported.
     //
     //    Store Types:
     //
-    //    - An observable store monitors the results of previously executed queries.
-    //      Any changes to the store that effect the outcome of those queries result
-    //      in an automatic update of the query results and a call to the observers
-    //      callback function.
+    //    - An observable store monitors the results of previously executed
+    //			queries. Any changes to the store that effect the outcome of those
+    //			queries result in an automatic update of the query results and a
+    //			call to the observers callback function.
+    //			(See dojo/store/Observable for additional information).
     //
-    //    - An evented store will dispatch an event whenever a store item is added,
-    //      deleted or updated. The events are NOT associated with any query.
+    //    - An evented store dispatch an event whenever a store item is added,
+    //			deleted or updated. The events are NOT associated with any query.
+    //			(See cbtree/store/Evented for additional information).
     //
     //    Which store to use:
     //
     //      myStore = Observable( new Memory( ...) );
     //
-    //    Although an observable store may seem the most obvious choice there is a
-    //    significant overhead associated with this type of store simply because it
-    //    keeps track of all previous executed store queries.  Fetching children of
-    //    any tree nodes results in the creation of such query. Therefore, on large
-    //    datasets (large trees) you can end up with hundreds of queries and as a
-    //    result each change to the store will result in running all those queries
-    //    against the newly added, deleted or changed store item.
+    //    Although an observable store may seem the most obvious choice there
+    //		is a significant overhead associated with this type of store simply
+    //		because it keeps track of all previous executed store queries.
+    //		Fetching children of any tree nodes results in the creation of such
+    //		query. Therefore, on large datasets (large trees) you can end up with
+    //		hundreds of queries and as a result each change to the store will
+    //		result in running all those queries against the newly added, deleted
+    //		or changed store item.
     //
     //      myStore = Evented( new Memory( ... ) );
     //
-    //    An evented store dispatches an event each time the store changes, that is,
-    //    an item is added, deleted or changed. It merely notifies the model of the
-    //    type of store operation performed and does NOT run potentially hundreds or
-    //    even thousands of queries each time the store changes.
+    //    An evented store dispatches an event each time the store changes, that
+    //		is, an item is added, deleted or changed. It merely notifies the model
+    //		of the type of store operation performed and does NOT run potentially
+    //		hundreds or even thousands of queries each time the store changes.
     //
     //      myStore = new Memory( ... )
     //
-    //    The basic dojo/store, please note that Memory is just one implementation of
-    //    the dojo/store API. Any store that complies with the dojo/store API can be
-    //    used with this model. In case of direct use of a store, that is, not evented
-    //    or observable the model will automatically generate the required events for
-    //    the tree. However, any changes to the store outside the scope of the model
-    //    will NOT be captured. For example, if you application modifies the store in
-    //    any way of fashion by performing direct operations on it like store.put() or
-    //    store.remove() than those changes will NOT be reflected in the tree and the
-    //    internal cache will be out of sync. If however, you have static store content
-    //    and nothing else is operating on the store then the basic store offers the
-    //    best performance and least amount of overhead.
+    //    The basic dojo/store, note that Memory is just one implementation of
+    //    the dojo/store API. Any store that complies with the dojo/store API
+    //		can be used with this model. In case of direct use of a store, that
+    //		is, not evented or observable the model will automatically generate
+    //		the required events for the tree. However, any changes to the store
+    //		outside the scope of the model will NOT be captured. For example, if
+    //		you application modifies the store in any way of fashion by performing
+    //		direct operations on it like store.put() or store.remove() than those
+    //		changes will NOT be reflected in the tree and the internal cache will
+    //		be out of sync. If however, you have static store content and nothing
+    //		else is operating on the store then the basic store offers the best
+    //		performance and least amount of overhead.
 
   var  moduleName = "cbTree/model/TreeStoreModel";
   var undef;
 
   function prologue (/*Object*/ object,/*Store.PutDirectives*/ options) {
     // summary:
-    //    The prologue method is added to the stores add and put methods as before
+    //    This prologue method is added to the stores add and put methods as before
     //    advice to provide support for the 'parent' property of store objects.
     //    This method looks for two things:
     //
@@ -246,6 +250,9 @@ define(["dojo/_base/declare",   // declare
     //      tree root.
     _forest: false,
 
+		// _loadRequested: Boolean
+		_loadRequested: false,
+
     // _validateStore: Boolean
     _validateStore: true,
 
@@ -262,11 +269,13 @@ define(["dojo/_base/declare",   // declare
       // tags:
       //    private
 
-      this.childrenCache = {};  // map from id to array of children
-      this._objectCache  = {};
-      this._monitored    = true;
-      this._forest       = false;
-      this._storeLoaded  = new Deferred();
+      this.childrenCache  = {};  // map from id to array of children
+      this._objectCache   = {};
+      this._monitored     = true;
+      this._forest        = false;
+      this._storeLoaded   = new Deferred();
+			this._loadRequested = false;
+			this._evtHandles    = { remove: function () {} };
 
       declare.safeMixin(this, kwArgs);
 
@@ -296,7 +305,7 @@ define(["dojo/_base/declare",   // declare
           if (store.load && typeof store.load === "function") {
             this.storeLoader = store.load;
           } else {
-            this.storeLoader = function () {};
+            this.storeLoader = function () {return true;};
           }
         }
 
@@ -330,7 +339,7 @@ define(["dojo/_base/declare",   // declare
         // Test if this store is 'evented', 'observable' or standard. If it is
         // evented register the event listeners.
         if (store.evented === true) {
-          on( store, "change, delete, new", lang.hitch(this, this._onStoreEvent));
+          this._evtHandles = on( store, "change, delete, new", lang.hitch(this, this._onStoreEvent));
         } else {
           // If this is a default dojo/store (not observable and not evented) we
           // will have to fire some of the events ourselves.
@@ -347,13 +356,12 @@ define(["dojo/_base/declare",   // declare
 
     destroy: function(){
       // summary:
-      //    Distroy this model.
-      var handle, id;
-      for(id in this.childrenCache) {
+      //    Distroy this model releasing memory and handles.
+      for(var id in this.childrenCache) {
         this._deleteCacheEntry(id);
       }
-      // Release memory.
       this.childrenCache = {};
+      this._evtHandles.remove();	// Remove event listeners if any..
       this._objectCache = {};
       this.store   = undef;
     },
@@ -368,6 +376,8 @@ define(["dojo/_base/declare",   // declare
       //    and the new value is true.
       // value:
       //    New value applied to 'checkedStrict'. Any value is converted to a boolean.
+			// returns:
+			//		Boolean, updated "checkedStrict" value.
       // tag:
       //    private
 
@@ -466,7 +476,7 @@ define(["dojo/_base/declare",   // declare
       // the children list are updated in some way. (Only applies to observable
       // stores).
 
-      if (result.observe) {
+      if (this._observable && result.observe) {
         var handle = result.observe( function (obj, removedFrom, insertedInto) {
           if (insertedInto == -1) {
             when( result, lang.hitch(self, "_onDeleteItem", obj ));
@@ -485,7 +495,7 @@ define(["dojo/_base/declare",   // declare
             });
           }
         }, true);  // true means to notify on item changes
-        result.handle = handle;
+        result.handle = handle; // Save the observer handle with the result.
       }
       // Call User callback AFTER registering any listeners.
       when(result, onComplete, onError);
@@ -547,6 +557,10 @@ define(["dojo/_base/declare",   // declare
       if (this.root) {
         onItem(this.root);
       } else {
+				// If no store load request was issued, do so now.
+				if (!this._loadRequested) {
+					this._loadStore();
+				}
         when( this._storeLoaded, function () {
           var result = self.store.query(self.query);
 
@@ -916,25 +930,22 @@ define(["dojo/_base/declare",   // declare
       var options = this.checkedStrict ? {all:true} : null;
       var self    = this;
 
-      when( this.storeLoader.call(this.store, options),
-        function () {
-          self._storeLoaded.resolve();
-          if (self.checkedStrict && self._validateStore) {
-            if (!self.store.isValidated) {
-              self.getRoot( function (rootItem) {
-                self.getChildren(rootItem, function (children) {
-                  self._validateChildren(rootItem, children);
-                }, self.onError);
-              }, self.onError);
-            } else {
-              self.onDataValidated();    // Trigger event.
-            }
-          } else {
-            self.store.isValidated = true;
-          }
-        }
-      );
-
+      when( this._loadStore(options), function () {
+				self._storeLoaded.resolve();
+				if (self.checkedStrict && self._validateStore) {
+					if (!self.store.isValidated) {
+						self.getRoot( function (rootItem) {
+							self.getChildren(rootItem, function (children) {
+								self._validateChildren(rootItem, children);
+							}, self.onError);
+						}, self.onError);
+					} else {
+						self.onDataValidated();    // Trigger event.
+					}
+				} else {
+					self.store.isValidated = true;
+				}
+			});
     },
 
     // =======================================================================
@@ -1431,7 +1442,7 @@ define(["dojo/_base/declare",   // declare
       //    Notify the tree the children of parents have changed. This method is
       //    called by the internal event listeners and the model API.
       // parents:
-      //    An array of store items.
+      //    Store object or an array of store objects.
       // tag:
       //    Private
       var self = this;
@@ -1459,6 +1470,56 @@ define(["dojo/_base/declare",   // declare
         this.childrenCache[id].handle && this.childrenCache[id].handle.remove();
         delete this.childrenCache[id];
       }
+    },
+
+		_loadStore: function (options) {
+			// summary:
+			//		Issue a store load request
+      var self = this;
+			this._loadRequested = true;
+			return when( this.storeLoader.call(this.store, options),
+			              this._storeLoaded.resolve,
+			              this._storeLoaded.reject );
+		},
+
+    _updateChildrenCache: function (/*String*/ operation, /*Object*/ parent,/*Object*/ child) {
+			// summary:
+			//		Add or remove a child from the parent children cache.
+			// operation:
+			//		String, "add" | "attach" | "delete" | "detach"
+			// parent:
+			//		The parent object.
+			// child:
+			//		Child object to be added or removed.
+			// returns:
+			//		store.QueryResult. (an array-like object).
+			// tag:
+			//		Private
+			var parentId = this.getIdentity(parent);
+			var self = this;
+
+			// Note: The childrens cache may hold a promise...
+			return when( this.childrenCache[parentId], function (children) {
+				var childCache = children || [];
+				var index = childCache.indexOf(child);
+				var total = childCache.total || 0;
+
+				if (operation == "add" || operation == "attach") {
+					if (index == -1) {
+						childCache.push(child);
+						total++;
+					}
+				} else {
+					if (index > -1) {
+						childCache.splice(index,1);
+						total--;
+					}
+				}
+				childCache["total"] = total;
+				self.childrenCache[parentId] = childCache;
+				return childCache;
+
+			});
     }
 
   });

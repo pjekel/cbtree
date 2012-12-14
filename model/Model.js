@@ -64,7 +64,7 @@ define("dojo/_base/declare"], function (declare) {
     getEnabled: function (item) {
       // summary:
       //    Returns the current 'enabled' state of an item as a boolean. The state
-      //    sets the value of the checked widget "readOnly" property.
+      //		returned is the value of the checked widget "readOnly" property.
       // item: Item
       // returns: Boolean
       // tag:
@@ -176,21 +176,25 @@ define("dojo/_base/declare"], function (declare) {
 
     newItem: function (args, parent, insertIndex, before) {
       // summary:
-      //    Creates a new item.
+      //    Creates a new item. This method is required if tree Drag-n-Drop
+      //		functionality is to be supported.
       // args: dojo.dnd.Item
       // parent: Item
       // insertIndex: int?
       // before: Item?
       // tags:
-      //    Public
+      //    Public, Optional
     },
 
     pasteItem: function (childItem, oldParentItem, newParentItem, bCopy,  insertIndex, before) {
       // summary:
-      //    Move or copy an item from one parent item to another.
-      //    Used in drag & drop.
-      //    If oldParentItem is specified and bCopy is false, childItem is removed from oldParentItem.
-      //    If newParentItem is specified, childItem is attached to newParentItem.
+      //    Move or copy an item from one parent item to another. This method
+      //		is required if tree Drag-n-Drop functionality is to be supported.
+      //
+      //    If oldParentItem is specified and bCopy is false, childItem is removed
+      //		from oldParentItem.  If newParentItem is specified, childItem is attached
+      //		to newParentItem.
+			//
       // childItem: Item
       // oldParentItem: Item
       // newParentItem: Item
@@ -257,8 +261,8 @@ define("dojo/_base/declare"], function (declare) {
 
     toString: function () {
       // returns: String
-      //    Returns "[object cbtreeModel]"
-      return "[object cbtreeModel]";
+      //    Returns "[object cbTreeModel]"
+      return "[object cbTreeModel]";
     }
 
   });
