@@ -214,6 +214,7 @@ define([
 					this._queryAttrs.push(attr);
 				}
 			}
+			console.warn("cbTree/models/TreeStoreModel has been deprecated and will be removed with dojo 2.0 !!");
 		},
 
 		destroy: function(){
