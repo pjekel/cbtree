@@ -15,9 +15,10 @@ define(["dojo/_base/declare",
 		//		details. All methods and properties defined in this API are optional and
 		//		require implemention only if the store is to offer the functionality.
 		//
-		//		Every method, whose return value isn't already a promise, should return
-		//		a promise for the specified return value if the execution of the method
-		//		is asynchronous in which case the following conditions must be met:
+		//		Except for hasChildren() and isItem(), every method, whose return value
+		//		isn't already a promise or void, must return a promise for the specified
+		//		return value if the execution of the method is asynchronous.
+		//		Whenever a promise is returned the following conditions must be met:
 		//
 		//			1 - On successful completion of the method the promise must resolve
 		//					with the specified synchronous return value as its result.
@@ -36,23 +37,29 @@ define(["dojo/_base/declare",
 		// defaultProperties: Object
 		//		A JavaScript key:values pairs object whose properties and associated
 		//		values are added to new store objects if such properties are missing
-		//		from the new store object.
+		//		from a new store object.
 		defaultProperties: null,
 
 		// handleAs: String
 		//		Specifies how to interpret the payload returned in a server response
-		//		or the data passed to a store method, responsible for populating the
-		//		store, if any.
+		//		or the data passed to a store method responsible for populating the
+		//		store, if any. (typically the store constructor).
 		handleAs: null,
 
+		// hierarchical: Boolean [read-only]
+		//		Indicates if the store is capable of maintaining an object hierarchy.
+		//		The cbtree Models tests for the presence of this property in order to
+		//		determine if it has to set the parent property of an object or if the
+		//		store will handle it.
+		//		If true, the store MUST implement all logic required to support the
+		//		Put.Directive "parent" and the store's "parentProperty" property.
+		//		Support for the Put.Directive "before" is optional.
+		hierarchical: false,
+
 		// multiParented: Boolean|String
-		//		Indicates if the store is to support multi-parented objects. If true
-		//		the parent property of store objects is stored as an array. If "auto"
-		//		multi-parenting will be determined by the data loaded into the store.
-		//		Also, the cbtree Models tests for the presence of this property in
-		//		order to determine if it has to set the parent property of an object
-		//		or if the store will handle it.
-		multiParented: "auto",
+		//		Indicates if the store supports multi-parented objects. Multi Parented
+		//		objects are objects that can have more than one parent.
+		multiParented: false,
 
 		// parentProperty: String
 		// 		The property name of an object whose value represents the object's
@@ -69,10 +76,15 @@ define(["dojo/_base/declare",
 			// child: Object
 			//		Store object to which the parent(s) are added
 			// parents: any
-			//		Id or Object or an array of those types to be added as the parent(s)
+			//		Id or Object or an array of Ids or objects to be added as the parent(s)
 			//		of child.
 			// returns: Boolean
-			//		true if parent id was successfully added otherwise false.
+			//		true if parents were successfully added otherwise false.
+		},
+
+		destroy: function () {
+			//summary:
+			//		Release all memory, handles and listeners, if any
 		},
 
 		getParents: function (child) {
@@ -80,9 +92,30 @@ define(["dojo/_base/declare",
 			//		Retrieve the parent(s) of a store object
 			// child: Object.
 			//		The object to find the parent(s) for.
-			// returns: Object[]
-			//		An array of objects. Returns an empty array If the child object has
-			//		no parents
+			// returns: Object[] | void
+			//		An array of parent objects. Returns an empty array If the child has
+			//		no parent or void if the child object doesn't exist.
+		},
+
+		hasChildren: function (parent) {
+			// summary:
+			//		Test if a parent object has known children. This method MUST return
+			//		boolean true or false.  Any store that supports deferred loading of
+			//		data objects (e.g. lazy loading) MUST return false if it is unknown
+			//		if an object has children or not.
+			// parent: Object
+			// returns: Boolean
+			// 		true if the parent object has known children otherwise false.
+		},
+
+		isItem: function (object) {
+			// summary:
+			//		Test if an object is a valid member of this store, that is, it came
+			//		from this store instance.  This method MUST return boolean true or
+			//		false.
+			// obJect: Object
+			// returns: Boolean
+			// 		true if the object is a member of this store otherwise false.
 		},
 
 		load: function (options) {
@@ -111,10 +144,10 @@ define(["dojo/_base/declare",
 			// child:
 			//		Store object from which the parent(s) are removed
 			// parents: any
-			//		Id or Object or an array of the those types to be removed from the
+			//		Id or Object or an array of Ids or objects to be removed from the
 			//		list of parent(s) of child.
 			// returns: Boolean
-			//		true if the parent id was successfully removed otherwise false.
+			//		true if the parent(s) are successfully removed otherwise false.
 		}
 
 	});	/* end Store */
