@@ -15,7 +15,7 @@
       var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: true,
+            isDebug: false,
             baseUrl: "../../../",
             packages: [
               { name: "dojo",  location: "dojo" },
@@ -28,14 +28,12 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-        "dojo/_base/lang",
-        "dojo/aspect",
         "dojo/ready",
         "cbtree/Tree",                  // Checkbox tree
         "cbtree/TreeStyling",
         "cbtree/model/FileStoreModel",
         "cbtree/store/FileStore"
-        ], function( lang, aspect, ready, Tree, TreeStyling, FileStoreModel, FileStore) {
+        ], function (ready, Tree, TreeStyling, FileStoreModel, FileStore) {
 
            // Because of the generic nature of this demo it has no knowledge of the file system layout
            // under the DOCUMENT_ROOT, therefore the 'basePath' is set to the document root itself.
@@ -49,7 +47,7 @@
                   store: store,
                   rootLabel: 'My HTTP Document Root',
                   checkedRoot: true,
-                  checkedStrict: false,
+                  checkedStrict: "inherit",
                   iconAttr: "icon"
                });
 
@@ -61,7 +59,7 @@
             var tree = new Tree( { model: model,
                                     id: "MenuTree", persist:false,
                                   }, "CheckboxTree" );
-            aspect.after( tree, "onClick", lang.hitch(store, onClick), true );
+            tree.on( "click", onClick );
             tree.startup();
           });
         });

@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Dijit CheckBox Tree using the cbtree File Store</title>
+    <title>The CheckBox Tree and cbtree/data File Store</title>
 
      <style type="text/css">
       @import "../../../dijit/themes/claro/claro.css";
@@ -42,7 +42,6 @@
     <script type="text/javascript">
       require([ "dojo/_base/array",
                 "dojo/_base/lang",
-                "dojo/aspect",
                 "dojo/ready",
                 "dojox/grid/DataGrid",
                 "cbtree/Tree",                   // Checkbox Tree
@@ -50,7 +49,7 @@
                 "cbtree/models/FileStoreModel", // Forest Store Model
                 "cbtree/data/FileStore",      // File Store
                 "cbtree/data/BreadCrumb"      // Breadcrumb trail
-              ], function( array, lang, aspect, ready, DataGrid, Tree, TreeStyling,
+              ], function( array, lang, ready, DataGrid, Tree, TreeStyling,
                             FileStoreModel, FileStore, BreadCrumb ) {
 
           var queryOptions = { deep: true, storeOnly: true };
@@ -94,7 +93,7 @@
             //    Update the grid with the new item data. If the item is currently
             //    not loaded in the store go load it first.
             if (!store.isItemLoaded(item)) {
-              store.loadItem( { item: item,  onItem: lang.hitch( this, updateGrid ) });
+              store.loadItem( { item: item,  onItem: updateGrid });
             } else {
               setQuery( store.getValue(item,"path") );
             }
@@ -147,11 +146,11 @@
 
             // Create the breadcrumb trail.
             trail = new BreadCrumb( {store: store, cssBaseClass:"fileIcon"}, "BreadCrumbs");
-            aspect.after( trail, "onClick", updateGrid, true );
+            trail.on("click", updateGrid);
 
             // Create the tree
             tree = new Tree( { model: model, checkBoxes: false, persist: false, icon:"fileIcon" }, "CheckboxTree");
-            aspect.after( tree, "onClick", treeClicked, true );
+            tree.on("click", treeClicked);
 
             // Create the data grid...
             grid = new DataGrid( {
@@ -163,7 +162,8 @@
                   selectionMode:"multiple",
                   rowsPerPage:80
                 }, "myGrid");
-            aspect.after( grid, "onSelected", gridClicked, true );
+
+            grid.on( "selected", gridClicked);
 
             tree.startup();
             trail.startup();

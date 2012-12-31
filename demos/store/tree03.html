@@ -15,7 +15,7 @@
       var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: true,
+            isDebug: false,
             baseUrl: "../../../",
             packages: [
               { name: "dojo",  location: "dojo" },
@@ -39,7 +39,7 @@
 					// Declare our multi-parented store objects. Notice: the parent property
 					// of each store item is an array...
 					var data = [
-						{ name:"Root" },
+						{ name:"Root", parent:[] },
 
 						{ name:"Lisa", parent:["Homer","Marge"], hair:"blond", checked:true, icon:"simpsonsIcons lisa" },
 						{ name:"Bart", parent:["Homer","Marge"], hair:"blond", checked:"what", icon:"simpsonsIcons bart" },
@@ -78,8 +78,10 @@
   </head>
 
   <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
-    A CheckBox Tree using an observable multi-parented cbtree/store Hierarchy Store.<br/>
+    <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
+    <p>
+			A CheckBox Tree using an observable, multi-parented cbtree/store Hierarchy Store.<br/>
+		</p>
     <div id="CheckboxTree">
     </div>
   </body>

@@ -8,14 +8,13 @@
       @import "../../../dijit/themes/claro/document.css";
       @import "../../../dijit/tests/css/dijitTests.css";
       @import "../../themes/claro/claro.css";
-
     </style>
 
     <script type="text/javascript">
       var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: true,
+            isDebug: false,
             baseUrl: "../../../",
             packages: [
               { name: "dojo",  location: "dojo" },
@@ -28,15 +27,13 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-        "dojo/_base/lang",
-        "dojo/aspect",
         "dojo/ready",
 				"dojo/request/handlers",
         "cbtree/Tree",                        // Checkbox tree
         "cbtree/model/TreeStoreModel",        // Object Store Tree Model
         "cbtree/store/ObjectStore",           // Evented Object Store with Hierarchy
         "cbtree/store/handlers/csvHandler"   // CSV Data Handler.
-        ], function( lang, aspect, ready, handlers, Tree, ObjectStoreModel, ObjectStore, csvHandler) {
+        ], function (ready, handlers, Tree, ObjectStoreModel, ObjectStore, csvHandler) {
 
 					// Manually instantiate the custom data handler and register it with dojo/request
 					// (see tree10.html for an automatic approach).
@@ -61,7 +58,7 @@
 
           ready(function(){
             var tree = new Tree( { model: model, id: "FamilyTree" }, "CheckboxTree" );
-            aspect.after( tree, "onCheckBoxClick", lang.hitch(model, checkBoxClicked), true );
+            tree.on("checkBoxClick", checkBoxClicked);
             tree.startup();
           });
         });
@@ -70,12 +67,16 @@
   </head>
 
   <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+    <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
     <p>
-    A CheckBox Tree using a cbtree/store ObjectStore with a custom CSV data handler.<br/>
-    The store is loading the data using a URL<br/>
+			A CheckBox Tree using a cbtree/store ObjectStore with a custom CSV data handler.<br/>
+			The store loads an rfc4180 compliant CSV file using a URL.
     </p>
     <div id="CheckboxTree">
     </div>
+		<p>
+			This example is the same as demo tree10 with the exception that this example registers<br/>
+			the data handler directly with dojo/request/handlers
+    </p>
   </body>
 </html>

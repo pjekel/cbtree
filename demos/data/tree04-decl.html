@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>CheckBox Tree with third party widget </title>
+    <title>The CheckBox Tree with third party widget </title>
 <!--
   This demo uses a third party widget 'TriStateCheckbox' instead of the default
   cbtree multi-state checkbox.  Note: for this demo checked state normalization
@@ -43,7 +43,10 @@
   </head>
 
   <body class="claro">
-    <h1>Dijit CheckBox Tree - Mixin Widget: &lt;TriStateCheckBox&gt;</h1>
+    <h1>The CheckBox Tree - Mixin Widget: &lt;TriStateCheckBox&gt;</h1>
+    <p>
+			Mixin a thrid party widget instead of the default checkbox. This demo requires dojox installed on your platform.
+    </p>
 		<div id="content">
 			<div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../../data/json/Simpsons.json"'></div>
 			<div data-dojo-id="model" data-dojo-type="cbtree/models/ForestStoreModel" data-dojo-props='store:store, query:{type:"parent"}, rootLabel:"The Family", normalize: false'></div>

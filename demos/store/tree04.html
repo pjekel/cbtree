@@ -8,14 +8,13 @@
       @import "../../../dijit/themes/claro/document.css";
       @import "../../../dijit/tests/css/dijitTests.css";
       @import "../../themes/claro/claro.css";
-
     </style>
 
     <script type="text/javascript">
       var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: true,
+            isDebug: false,
             baseUrl: "../../../",
             packages: [
               { name: "dojo",  location: "dojo" },
@@ -28,13 +27,11 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-				"dojo/_base/lang",
-				"dojo/aspect",
         "dojo/ready",
         "cbtree/Tree",                     // Checkbox tree
         "cbtree/model/TreeStoreModel",     // Object Store Tree Model
         "cbtree/store/ObjectStore"         // Evented Object Store with Hierarchy
-        ], function( lang, aspect, ready, Tree, ObjectStoreModel, ObjectStore) {
+        ], function( ready, Tree, ObjectStoreModel, ObjectStore) {
 
           var store = new ObjectStore( { url:"../../store/json/Simpsons.json", idProperty:"name"});
           var model = new ObjectStoreModel( { store: store,
@@ -49,7 +46,7 @@
 
           ready(function(){
             var tree = new Tree( { model: model, id: "FamilyTree" }, "CheckboxTree" );
-						aspect.after( tree, "onCheckBoxClick", lang.hitch(model, checkBoxClicked), true );
+						tree.on( "checkBoxClick", checkBoxClicked);
 						tree.startup();
           });
         });
@@ -58,9 +55,9 @@
   </head>
 
   <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+    <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
 		<p>
-    A CheckBox Tree using an Evented cbtree/store Hierarchy Store. The store is loading the data using a URL<br/>
+			A CheckBox Tree using an Evented cbtree/store Object Store. The store is loading the data using a URL<br/>
 		</p>
     <div id="CheckboxTree">
     </div>

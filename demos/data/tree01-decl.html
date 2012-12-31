@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Dijit Tree with Checkboxes </title>
+    <title>The CheckBox Tree</title>
     <style type="text/css">
       @import "../../../dijit/themes/claro/claro.css";
       @import "../../../dijit/themes/claro/document.css";
@@ -52,7 +52,10 @@
   </head>
 
   <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+    <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
+    <p>
+			A basic CheckBox Tree using demonstrating some of the tree styling API capabilities.
+		</p>
     <div id="content">
       <div data-dojo-id="store" data-dojo-type="dojo/data/ItemFileWriteStore" data-dojo-props='url:"../../data/json/Family.json"'></div>
       <div data-dojo-id="model" data-dojo-type="cbtree/models/ForestStoreModel" data-dojo-props='store:store, query:{type:"parent"}, rootLabel:"The Family"'></div>

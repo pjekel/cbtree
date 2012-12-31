@@ -1,40 +1,38 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>The CheckBox Tree with non-Observable Store</title>
-    <style type="text/css">
-      @import "../../../dijit/themes/claro/claro.css";
-      @import "../../../dijit/themes/claro/document.css";
-      @import "../../../dijit/tests/css/dijitTests.css";
-      @import "../../themes/claro/claro.css";
+	<head>
+		<meta charset="utf-8">
+		<title>The CheckBox Tree with non-Observable dojo/store</title>
+		<style type="text/css">
+			@import "../../../dijit/themes/claro/claro.css";
+			@import "../../../dijit/themes/claro/document.css";
+			@import "../../../dijit/tests/css/dijitTests.css";
+			@import "../../themes/claro/claro.css";
+		</style>
 
-    </style>
+		<script type="text/javascript">
+			var dojoConfig = {
+						async: true,
+						parseOnLoad: true,
+						isDebug: false,
+						baseUrl: "../../../",
+						packages: [
+							{ name: "dojo",	location: "dojo" },
+							{ name: "dijit", location: "dijit" },
+							{ name: "cbtree",location: "cbtree" }
+						]
+			};
+		</script>
 
-    <script type="text/javascript">
-      var dojoConfig = {
-            async: true,
-            parseOnLoad: true,
-            isDebug: true,
-            baseUrl: "../../../",
-            packages: [
-              { name: "dojo",  location: "dojo" },
-              { name: "dijit", location: "dijit" },
-              { name: "cbtree",location: "cbtree" }
-            ]
-      };
-    </script>
-
-    <script type="text/javascript" src="../../../dojo/dojo.js"></script>
-    <script type="text/javascript">
-      require([
-        "dojo/ready",
-        "dojo/store/Memory",           // dojo/store
-        "dojo/store/Observable",
-        "cbtree/Tree",                 // Checkbox tree
-        "cbtree/model/TreeStoreModel"  // ObjectStoreModel
-        ], function( ready, Memory, Observable, Tree, ObjectStoreModel) {
-            // Declare an JSON object
+		<script type="text/javascript" src="../../../dojo/dojo.js"></script>
+		<script type="text/javascript">
+			require([
+				"dojo/ready",
+				"dojo/store/Memory",					 // basic dojo/store
+				"cbtree/Tree",								 // Checkbox tree
+				"cbtree/model/TreeStoreModel"	// ObjectStoreModel
+				], function( ready, Memory, Tree, ObjectStoreModel) {
+						// Declare an JSON object
 
 					var data = [
 							{ id: "earth", name:"The earth", type:"planet", population: "6 billion"},
@@ -59,11 +57,11 @@
 								{ id: "ES", name:"Spain", type:"country", parent: "EU" },
 								{ id: "IT", name:"Italy", type:"country", parent: "EU" },
 							{ id: "NA", name:"North America", type:"continent", parent: "earth" },
-								{ id: "MX", name:"Mexico", type:"country",  population:"108 million", area:"1,972,550 sq km",
+								{ id: "MX", name:"Mexico", type:"country",	population:"108 million", area:"1,972,550 sq km",
 										parent: "NA" },
 									{ id: "Mexico City", name:"Mexico City", type:"city", population:"19 million", timezone:"-6 UTC", parent: "MX"},
 									{ id: "Guadalajara", name:"Guadalajara", type:"city", population:"4 million", timezone:"-6 UTC", parent: "MX" },
-								{ id: "CA", name:"Canada", type:"country",  population:"33 million", area:"9,984,670 sq km", parent: "NA" },
+								{ id: "CA", name:"Canada", type:"country",	population:"33 million", area:"9,984,670 sq km", parent: "NA" },
 									{ id: "Ottawa", name:"Ottawa", type:"city", population:"0.9 million", timezone:"-5 UTC", parent: "CA"},
 									{ id: "Toronto", name:"Toronto", type:"city", population:"2.5 million", timezone:"-5 UTC", parent: "CA" },
 								{ id: "US", name:"United States of America", type:"country", parent: "NA" },
@@ -72,25 +70,28 @@
 								{ id: "AR", name:"Argentina", type:"country", population:"40 million", parent: "SA" }
 						];
 
-          var store = new Memory( { data: data });
-          var model = new ObjectStoreModel( { store: store,
-                                               query: {id: "earth"},
-                                               rootLabel: "The Earth",
-                                               checkedRoot: true
-                                             });
-          ready(function(){
-            var tree = new Tree( { model: model, id: "earthTree" }, "CheckboxTree" );
-            tree.startup();
-          });
-        });
-      </script>
+					var store = new Memory( { data: data });
+					var model = new ObjectStoreModel( { store: store,
+																							 query: {id: "earth"},
+																							 rootLabel: "The Earth",
+																							 checkedRoot: true
+																						 });
 
-  </head>
+					ready(function(){
+						var tree = new Tree( { model: model, id: "earthTree" }, "CheckboxTree" );
+						tree.startup();
+					});
+				});
+			</script>
 
-  <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
-    A basic CheckBox Tree using a dojo/store Memory Store (non-observable).
-    <div id="CheckboxTree">
-    </div>
-  </body>
+	</head>
+
+	<body class="claro">
+		<h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
+		<p>
+			A basic CheckBox Tree using a dojo/store Memory store (non-observable).
+		</p>
+		<div id="CheckboxTree">
+		</div>
+	</body>
 </html>

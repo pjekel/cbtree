@@ -15,7 +15,7 @@
       var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: true,
+            isDebug: false,
             baseUrl: "../../../",
             packages: [
               { name: "dojo",  location: "dojo" },
@@ -28,13 +28,11 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-				"dojo/_base/lang",
-				"dojo/aspect",
         "dojo/ready",
         "cbtree/Tree",                   // Checkbox tree
         "cbtree/model/TreeStoreModel",   // Object Store Tree Model
         "cbtree/store/ObjectStore"       // Evented Object Store with Hierarchy
-        ], function( lang, aspect, ready, Tree, ObjectStoreModel, ObjectStore) {
+        ], function( ready, Tree, ObjectStoreModel, ObjectStore) {
 
 					// Declare our multi-parented store objects. Notice: the parent property
 					// of each store item is an array...
@@ -54,8 +52,8 @@
 						{ name:"Abe", parent:["Root"], hair:"none", checked:true },
 						{ name:"Mona", parent:["Root"], hair:"none", checked:false },
 						{ name:"Jacqueline", parent:["Root"], hair:"none", checked:true },
-						{ name:"Homer", parent:["Abe","Mona"], hair:"none", checked:false, icon:"simpsonsIcons homer", "enabled": false },
-						{ name:"Marge", parent:["Jacqueline"], hair:"none", checked:true, icon:"simpsonsIcons marge" },
+						{ name:"Homer", parent:["Abe","Mona"], hair:"none", checked:false },
+						{ name:"Marge", parent:["Jacqueline"], hair:"none", checked:true},
 						{ name:"Ned", parent:["Root"], hair:"none", checked:true },
 
 						{ name:"Apu", parent:["Root"], hair:"black", checked:true },
@@ -88,8 +86,10 @@
   </head>
 
   <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
-    Two CheckBox Trees each with their own model but both using the same cbtree/store ObjectStore.<br/>
+    <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
+    <p>
+			Two CheckBox Trees each with their own model but both using the same cbtree/store ObjectStore.<br/>
+		</p>
     <div id="CheckboxTree0">
     </div>
 		<p></p>

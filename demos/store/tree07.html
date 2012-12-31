@@ -8,14 +8,13 @@
       @import "../../../dijit/themes/claro/document.css";
       @import "../../../dijit/tests/css/dijitTests.css";
       @import "../../themes/claro/claro.css";
-
     </style>
 
     <script type="text/javascript">
       var dojoConfig = {
             async: true,
             parseOnLoad: true,
-            isDebug: true,
+            isDebug: false,
             baseUrl: "../../../",
             packages: [
               { name: "dojo",  location: "dojo" },
@@ -28,14 +27,12 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-				"dojo/_base/lang",
-				"dojo/aspect",
         "dojo/ready",
         "cbtree/Tree",                     // Checkbox tree
         "cbtree/model/ForestStoreModel",   // Object Store Forest Model
         "cbtree/model/StoreModel-API",     // Extend the ForestModel API
         "cbtree/store/ObjectStore"         // Object Store with Hierarchy
-        ], function( lang, aspect, ready, Tree, ObjectStoreModel, API, ObjectStore) {
+        ], function( ready, Tree, ObjectStoreModel, API, ObjectStore) {
 
           var store = new ObjectStore( { url:"../../store/json/Simpsons.json", idProperty:"name"});
           var model = new ObjectStoreModel( { store: store,
@@ -49,24 +46,23 @@
 						// Any code to make the item match the root query would go here, like:
 						//
 						//    item.hair = "black"
-						//		store.put(item);
-
-						console.log("Name: "+item.name+" action: "+action);
 
 						item.hair = "black";
-						store.put(item);
 					}
 
 					function checkBoxClicked( item, nodeWidget, event ) {
-						// Do something when a checkbox is clicked...
-						model.addParent( item, this.root );
+						// Add the tree root as a new parent of the item (requires the StoreModel-API).
+						// NOTE: If the item doesn't match the root query yet, adding the root as a new
+						//       parent merely triggers an onRootChange event.
+						model.addParent( item, this.model.root );
 					}
 
-
-          ready(function(){
+          ready( function () {
             var tree = new Tree( { model: model, id: "FamilyTree" }, "CheckboxTree" );
-						aspect.after( tree, "onCheckBoxClick", lang.hitch(model, checkBoxClicked), true );
-						aspect.after( model, "onRootChange", rootChange, true );
+						// Establish event listeneres.
+						tree.on("checkBoxClick", checkBoxClicked);
+						model.on("rootChange", rootChange);
+            // Start the tree.
 						tree.startup();
           });
         });
@@ -75,7 +71,7 @@
   </head>
 
   <body class="claro">
-    <h1 class="DemoTitle">Dijit Tree with Multi State CheckBoxes</h1>
+    <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
 		<p>
     A CheckBox Tree using the cbtree/model ForestStoreModel and cbtree/store Object Store.
     The store is loading the data using a URL<br/>

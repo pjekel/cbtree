@@ -27,7 +27,6 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
 		<script type="text/javascript">
 			require(["dojo/_base/lang",
-							 "dojo/aspect",
 							 "dojo/store/Memory",
 							 "dojo/store/Observable",
 							 "dojo/ready",
@@ -36,7 +35,7 @@
 							 "cbtree/Tree",
 							 "cbtree/model/TreeStoreModel",
 							 "cbtree/store/Hierarchy"
-								], function (lang, aspect, Memory, Observable, ready, dndSource, registry, Tree, ObjectStoreModel,
+								], function (lang, Memory, Observable, ready, dndSource, registry, Tree, ObjectStoreModel,
 															ObjectStore) {
 
 				var earth = [	{ id: "earth", name:"The earth", type:"planet", population: "6 billion"}];
@@ -64,6 +63,7 @@
 							{ id: "IT", name:"Italy", type:"country", parent: "EU" }
 						];
 
+				// Use two different store types to demonstrate inter-operability.
 				var childrenStore = new Memory({data: data});
 				var parentStore   = new ObjectStore({data: earth});
 
@@ -112,7 +112,9 @@
 
   <body class="claro">
     <h1 class="DemoTitle">The CheckBox Tree Drag-n-Drop</h1>
-    A basic CheckBox Tree and cbtree/store Hierarchy store demonstrating Drag-n-Drop features.
+    <p>
+			A basic CheckBox Tree and cbtree/store Hierarchy store demonstrating Drag-n-Drop features.
+		</p>
 		<div id="content">
 			<div id="divEarth" style="width:250px; float:left;">
 			</div>
