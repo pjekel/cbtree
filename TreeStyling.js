@@ -1,15 +1,12 @@
 //
-// Copyright (c) 2010-2012, Peter Jekel
+// Copyright (c) 2010-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
-//
-//	In case of doubt, the BSD 2-Clause license takes precedence.
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/lang",
 				"dojo/aspect",
@@ -18,7 +15,7 @@ define(["dojo/_base/lang",
 				"dojo/dom-style",
 				"dojo/has",
 				"dijit/Tree",
-				"./shim/Array"            // ECMA-262 Array shim
+				"./util/shim/Array"						// ECMA-262 Array shim
 			], function (lang, aspect, domClass, domProp, domStyle, has, Tree) {
 	// summary:
 	//		Tree Styling extensions to customize the look and feel of a dijit tree.
@@ -923,7 +920,7 @@ define(["dojo/_base/lang",
 			var model = this.model;
 
 			this._itemStyleMap = {};
-			this._connected    = true;
+			this._connected		= true;
 			if (model) {
 				// If the model specified an icon attribute it must also provide support
 				// for the getIcon() method.

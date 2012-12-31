@@ -1,15 +1,12 @@
 //
-// Copyright (c) 2010-2012, Peter Jekel
+// Copyright (c) 2010-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
-//
-//	In case of doubt, the BSD 2-Clause license takes precedence.
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/declare",
 				"dojo/_base/event",
@@ -17,16 +14,17 @@ define(["dojo/_base/declare",
 				"dojo/aspect",
 				"dojo/DeferredList",
 				"dojo/dom-construct",
+				"dojo/keys",
 				"dojo/topic",
 				"dojo/text!./templates/cbtreeNode.html",
 				"dijit/_Container",
 				"dijit/registry",
 				"dijit/Tree",
 				"./CheckBox",
-				"./models/_dndSelector",  // Fixed dijit tree issue...
+				"./models/_dndSelector",	// Fixed dijit tree issue... (remove with dojo 1.9)
 				"require",
-				"./shim/Array"            // ECMA-262 Array shim
-			 ], function (declare, event, lang, aspect, DeferredList, domConstruct, topic, NodeTemplate,
+				"./util/shim/Array"						// ECMA-262 Array shim
+			 ], function (declare, event, lang, aspect, DeferredList, domConstruct, keys, topic, NodeTemplate,
 										_Container, registry, Tree, CheckBox, _dndSelector, require) {
 
 	// module:
@@ -71,7 +69,7 @@ define(["dojo/_base/declare",
 			checkBoxWidget.args = widgetArgs;
 
 			// Test if the widget supports the toggle() method.
-			this._toggle = lang.isFunction (checkBoxWidget.type.prototype.toggle);
+			this._toggle = (typeof checkBoxWidget.type.prototype.toggle == "function");
 			this._widget = checkBoxWidget;
 		},
 
@@ -88,11 +86,11 @@ define(["dojo/_base/declare",
 			// tags:
 			//		private
 
-			var model   = this.tree.model;
+			var model	 = this.tree.model;
 			var enabled = true;
 			var checked = model.getChecked(this.item);
-			var widget  = this._widget;
-			var args    = widget.args;
+			var widget	= this._widget;
+			var args		= widget.args;
 
 			if (typeof model.getEnabled == "function") {
 				enabled = model.getEnabled(this.item);
@@ -104,13 +102,13 @@ define(["dojo/_base/declare",
 				args.checked		= checked;
 				args.value			= this.label;
 
-				if (lang.isFunction(widget.mixin)) {
+				if (typeof widget.mixin == "function") {
 					lang.hitch(this, widget.mixin)(args);
 				}
 
 				this._checkBox = new widget.type( args );
 				if (this._checkBox) {
-					if (lang.isFunction(this._widget.postCreate)) {
+					if (typeof this._widget.postCreate == "function") {
 						lang.hitch(this._checkBox, this._widget.postCreate)(this);
 					}
 					domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
@@ -118,13 +116,13 @@ define(["dojo/_base/declare",
 			}
 			if (this._checkBox) {
 				if (this.isExpandable) {
-          if (this.tree.branchReadOnly || !enabled) {
-            this._checkBox.set("readOnly", true);
-          }
+					if (this.tree.branchReadOnly || !enabled) {
+						this._checkBox.set("readOnly", true);
+					}
 				} else {
-          if (this.tree.leafReadOnly || !enabled) {
-            this._checkBox.set("readOnly", true);
-          }
+					if (this.tree.leafReadOnly || !enabled) {
+						this._checkBox.set("readOnly", true);
+					}
 				}
 			}
 		},
@@ -188,7 +186,9 @@ define(["dojo/_base/declare",
 			//		The new enabled state.
 			// tags:
 			//		private
-      this._checkBox.set("readOnly", !enabled);
+			if (this._checkBox) {
+				this._checkBox.set("readOnly", !enabled);
+			}
 		},
 
 		_setEnabledAttr: function (/*Boolean*/ newState) {
@@ -399,7 +399,7 @@ define(["dojo/_base/declare",
 				}
 			}
 
-			var def =  new DeferredList(defs);
+			var def =	new DeferredList(defs);
 			this.tree._startPaint(def);		// to reset TreeNode widths after an item is added/removed from the Tree
 			return def;		// dojo/_base/Deferred
 		}
@@ -438,6 +438,7 @@ define(["dojo/_base/declare",
 		nodeIcons: true,
 
 		// FIX: 3 - Force tree to use the modified _dndSelector (see ./models/_dndSelector)
+		// 					Remove with dojo 1.9
 		dndController: _dndSelector,
 
 		// End Parameters to constructor
@@ -474,8 +475,8 @@ define(["dojo/_base/declare",
 		//		implementation of the cbtree.
 		//
 		//			vers-required	::= '{' (min-version | max-version | min-version ',' max-version) '}'
-		//			min-version		::= version
-		//			max-version		::= version
+		//			min-version		::= "min:" version
+		//			max-version		::= "max:" version
 		//			version				::= '{' "major" ':' number ',' "minor" ':' number '}'
 		//
 		_dojoRequired: { min: {major:1, minor:8}, max: {major:1, minor:9}},
@@ -537,9 +538,7 @@ define(["dojo/_base/declare",
 			topic.publish("checkbox", { item: item, node: nodeWidget, state: newState, evt: evt});
 			// Generate events incase any listeners are tuned in...
 			this.onCheckBoxClick(item, nodeWidget, evt);
-			this.onClick(nodeWidget.item, nodeWidget, evt);
 			this.focusNode(nodeWidget);
-			event.stop(evt);
 		},
 
 		_onClick: function(/*TreeNode*/ nodeWidget, /*Event*/ evt){
@@ -559,6 +558,8 @@ define(["dojo/_base/declare",
 				var newState = nodeWidget._checkBox.get("checked");
 				this.model.setChecked(nodeWidget.item, newState);
 				this._onCheckBoxClick(nodeWidget, newState, evt);
+				this.onClick(nodeWidget.item, nodeWidget, evt);
+				event.stop(evt);
 			} else {
 				this.inherited(arguments);
 			}
@@ -593,7 +594,7 @@ define(["dojo/_base/declare",
 
 				if (nodes){
 					if (nodeProp.value) {
-						if (lang.isFunction(nodeProp.value)) {
+						if (typeof nodeProp.value == "function") {
 							request[nodeProp.attribute] = lang.hitch(this, nodeProp.value)(item, nodeProp.attribute, value);
 						} else {
 							request[nodeProp.attribute] = nodeProp.value;
@@ -608,20 +609,16 @@ define(["dojo/_base/declare",
 			}
 		},
 
-		_onKeyPress: function (/*Event*/ evt){
+		_onKeyDown: function (/*TreeNode*/ nodeWidget, /*Event*/ evt){
 			// summary:
-			//		Toggle the checkbox state when the user pressed the spacebar.
-			// description:
 			//		Toggle the checkbox state when the user pressed the spacebar.
 			//		The spacebar is only processed if the widget that has focus is
 			//		a tree node and has a checkbox.
 			// tags:
-			//		private extension
-
-			if (!evt.altKey) {
-				var treeNode = registry.getEnclosingWidget(evt.target);
-				if (lang.isString(evt.charOrCode) && (evt.charOrCode == ' ')) {
-					treeNode._toggleCheckBox();
+			//		private
+			if (nodeWidget && nodeWidget._checkBox) {
+				if (!evt.altKey && evt.keyCode == keys.SPACE) {
+					this._onCheckBoxClick(nodeWidget, nodeWidget._toggleCheckBox(), evt);
 				}
 			}
 			this.inherited(arguments);	/* Pass it on to the parent tree... */
@@ -660,17 +657,17 @@ define(["dojo/_base/declare",
 					message,
 					proto;
 
-			if (lang.isString(widget)) {
+			if (typeof widget == "string") {
 				return this._setWidgetAttr({ type: widget });
 			}
 
 			if (lang.isObject(widget) && widget.hasOwnProperty("type")) {
 				customWidget = widget.type;
-				if (lang.isFunction (customWidget)) {
+				if (typeof customWidget == "function") {
 					proto = customWidget.prototype;
 					if (proto && typeof proto[property] !== "undefined"){
 						// See if the widget has a getter and setter methods...
-						if (lang.isFunction (proto.get) && lang.isFunction (proto.set)) {
+						if (typeof proto.get == "function" && typeof proto.set == "function") {
 							this._customWidget = widget;
 							return;
 						} else {
@@ -681,7 +678,7 @@ define(["dojo/_base/declare",
 					}
 				}else{
 					// Test for module id string to support declarative definition of tree
-					if (lang.isString(customWidget) && ~customWidget.indexOf('/')) {
+					if (typeof customWidget == "string" && ~customWidget.indexOf('/')) {
 						var self = this;
 							require([customWidget], function(newWidget) {
 								widget.type = newWidget;
@@ -753,7 +750,8 @@ define(["dojo/_base/declare",
 
 		onCheckBoxClick: function (/*data.item*/ item, /*treeNode*/ treeNode, /*Event*/ evt) {
 			// summary:
-			//		Callback when a checkbox on a tree node is clicked.
+			//		Callback when a checkbox on a tree node is clicked or when the tree
+			//		node has focus and the spacebar is pressed.
 			// tags:
 			//		callback
 		},
@@ -788,20 +786,22 @@ define(["dojo/_base/declare",
 
 			if (this.model) {
 				if (this.checkBoxes === true) {
-					if (!this._modelOk()) {
-						throw new Error(this.moduleName+"::postCreate(): model does not support getChecked() and/or setChecked().");
+					if (this._modelOk()) {
+						this._multiState	= model.multiState;
+						this._checkedAttr = model.checkedAttr;
+
+						// Add item attributes and other attributes of interest to the mapping
+						// table. Checkbox checked events from the model are mapped to the
+						// internal '_checked_' event so a Tree node is able to distinguesh
+						// between events coming from the model and those coming from the API
+						// like set("checked",true)
+
+						this.mapEventToAttr(null,(this._checkedAttr || "checked"), "_checked_");
+						model.validateData();		// Remove with dojo 2.0
+					} else {
+						console.warn(this.moduleName+"::postCreate(): model does not support getChecked() and/or setChecked().");
+						this.checkBoxes = false;
 					}
-					this._multiState	= model.multiState;
-					this._checkedAttr = model.checkedAttr;
-
-					// Add item attributes and other attributes of interest to the mapping
-					// table. Checkbox checked events from the model are mapped to the
-					// internal '_checked_' event so a Tree node is able to distinguesh
-					// between events coming from the model and those coming from the API
-					// like set("checked",true)
-
-					this.mapEventToAttr(null,(this._checkedAttr || "checked"), "_checked_");
-					model.validateData();
 				}
 				// Monitor any changes to the models label attribute and add the current
 				// 'label' and 'enabled' attribute to the mapping table.
@@ -844,7 +844,7 @@ define(["dojo/_base/declare",
 			//
 			//		and the result returned is assigned to the _TreeNode attribute.
 
-			if (lang.isString(attr) && lang.isString(nodeAttr)) {
+			if (typeof attr == "string" && typeof nodeAttr == "string") {
 				if (attr.length && nodeAttr.length) {
 					if (oldAttr) {
 						delete this._eventAttrMap[oldAttr];
