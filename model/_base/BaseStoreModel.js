@@ -199,9 +199,11 @@ define(["dojo/_base/declare",		  // declare
 								};
 								break;
 							case "get":
+								// The store must at a minimum support get()
+								throw new TypeError(moduleName+"::constructor(): store MUST the get() methods");
 							case "put":
-								// The store must at a minimum support get() and put()
-								throw new TypeError(moduleName+"::constructor(): store MUST support put() and get() methods");
+								this._writeEnabled = false;
+								break;
 						}
 					}
 				}, this);
@@ -633,7 +635,7 @@ define(["dojo/_base/declare",		  // declare
 				}
 				// Second, test if a new property was added.
 				for (key in newItem) {
-					if (!(key in oldItem) && key !== "__storeId") {
+					if ( !(key in oldItem) ) {
 						this._onSetItem(newItem, key, undef, newItem[key]);
 					}
 				}
@@ -750,8 +752,8 @@ define(["dojo/_base/declare",		  // declare
 
 		_onStoreEvent: function (event) {
 			// summary:
-			//		Common store event listener for evented stores.	An evented store
-			//		typically dispatches three types of events: 'update', 'delete' or
+			//		Common store event listener for eventable stores.	An eventable store
+			//		typically dispatches three types of events: 'change', 'delete' or
 			//		'new'.
 			// event:
 			//		Event recieved from the store.
@@ -949,8 +951,7 @@ define(["dojo/_base/declare",		  // declare
 		_setValue: function (/*Object*/ item, /*String*/ property, /*any*/ value) {
 			// summary:
 			//		Set the new value of a store item property and fire the 'onChange'
-			//		event if the store is not observable, not evented or when the item
-			//		is the forest root.
+			//		event if the store is not observable or eventable.
 			//item:
 			//		Store object
 			// property:
