@@ -17,9 +17,10 @@ define(["dojo/_base/array",
 				"dijit/MenuBarItem",
 				"dijit/DropDownMenu",
 				"dijit/registry",
-				"dojo/text!../templates/TrailBarItem.html"
+				"dojo/text!../templates/TrailBarItem.html",
+				"../Evented"
 ], function (array, declare, event, lang, MenuBar, MenuItem, MenuBarItem, DropDownMenu, registry,
-						  TrailBarItemTemplate) {
+						  TrailBarItemTemplate, Evented) {
 	// module:
 	//		cbtree/data/BreadCrumb
 	// summary:
@@ -37,7 +38,7 @@ define(["dojo/_base/array",
 
 	});
 
-	var BreadCrumb = declare([MenuBarItem],{
+	var BreadCrumb = declare([MenuBarItem, Evented],{
 		//==============================
 		// Parameters to constructor
 
@@ -118,7 +119,7 @@ define(["dojo/_base/array",
 
 	});
 
-	var CrumbTrail = declare([MenuBar],{
+	var CrumbTrail = declare([MenuBar, Evented],{
 		//==============================
 		// Parameters to constructor
 
@@ -239,7 +240,7 @@ define(["dojo/_base/array",
 			//		Menu item widget that was clicked
 			// evt:
 			//		Event object.
-		},
+		}
 
 	});
 	return CrumbTrail;

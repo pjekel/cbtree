@@ -94,7 +94,7 @@ define(["dojo/_base/array",
 			for(var prop in args) {
 				this.set(prop, args[prop]);
 			}
-			console.warn("cbTree/data/FileStore has been deprecated and will be removed with dojo 2.0 !!");
+			dojo.deprecated("{cbtree/data/FileStore}", "Migrate to cbtree/store/FileStore", "2.0");
 		},
 
 		//==============================

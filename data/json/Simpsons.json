@@ -12,7 +12,7 @@
     { "name":"Todd", "type":"child", "hair":"blond", "checked":true },
 
     { "name":"Abe", "type":"parent", "hair":"none", "checked":true,
-        "children":[{"_reference":"Homer"}]
+        "children":[{"_reference": {"name":"Homer"}}]
     },
     { "name":"Mona", "type":"parent", "hair":"none", "checked":true,
         "children":[{"_reference":"Homer"}]

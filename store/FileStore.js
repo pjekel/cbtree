@@ -1,15 +1,12 @@
 //
-// Copyright (c) 2010-2013, Peter Jekel
+// Copyright (c) 2012-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
-//
-//	In case of doubt, the BSD 2-Clause license takes precedence.
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/declare",
 				"dojo/_base/lang",
@@ -22,7 +19,7 @@ define(["dojo/_base/declare",
 				"dojo/when",
 				"./util/Mutex",
 				"./util/QueryEngine",
-				"../shim/Array"		// ECMA-262 Backward Compatibility Array shim
+				"../util/shim/Array"		// ECMA-262 Backward Compatibility Array shim
 			 ], function (declare, lang, Deferred, Evented, json, request, Stateful, QueryResults,
 										 when, Mutex, QueryEngine) {
 	"use strict";
@@ -32,7 +29,7 @@ define(["dojo/_base/declare",
 	// summary:
 	//		The FileObjectStore implements the dojo/store/api/Store API. The store
 	//		retrieves file and directory information from a back-end server which
-	//		is cached as an in-memory object store.  The store allows applications
+	//		is cached as an in-memory object store.	The store allows applications
 	//		to add custom properties to file object not provided by the server side
 	//		application such as a checked state. The in-memory FileObject Store is
 	//		dynamic in that file object may be added, removed or change based on the
@@ -58,9 +55,9 @@ define(["dojo/_base/declare",
 
 	var	moduleName = "cbTree/store/FileStore";
 
-	var C_ITEM_EXPANDED = "_EX";      // Property indicating if a directory item is fully expanded.
-	var C_PATH_ATTR     = "path";     // Path property name (used as the identifier)
-	var C_ICON_ATTR     = "icon";     // Icon property name
+	var C_ITEM_EXPANDED = "_EX";			// Property indicating if a directory item is fully expanded.
+	var C_PATH_ATTR		  = "path";			// Path property name (used as the identifier)
+	var C_ICON_ATTR		  = "icon";			// Icon property name
 	var undef;
 
 	function fixException( error ) {
@@ -76,7 +73,7 @@ define(["dojo/_base/declare",
 			switch (error.response.status) {
 				case 404:
 					error.message = "404 Object Not Found";
-					error.name    = "NetworkError";
+					error.name		= "NetworkError";
 			}
 		}
 	}
@@ -140,12 +137,6 @@ define(["dojo/_base/declare",
 		//		with any new store object.
 		defaultProperties: {},
 
-		// multiParented: Boolean
-		//		Always false, the ObjectStoreModel tests for the presence of this
-		//		property in order to determine if it has to set the parent property
-		//		of an object.
-		multiParented: false,
-
 		// options: String[] || String
 		//		A string of comma separated keywords or an array of keyword string.
 		//		Some of the keywords are passed to the server side application and
@@ -167,10 +158,10 @@ define(["dojo/_base/declare",
 
 		// sort: Object|Object[]
 		//		Object or an array of sort field objects, each sort field is a JavaScript
-		//		'key : value' pair object.  Valid sort field properties are: 'attribute',
-		//		'descending' and 'ignoreCase'.  Each sort field object must at least have
+		//		'key : value' pair object.	Valid sort field properties are: 'attribute',
+		//		'descending' and 'ignoreCase'.	Each sort field object must at least have
 		//		the 'attribute' property defined, the default value for both 'descending'
-		//		and 'ignoreCase' is false.   The sort operation is performed in the order
+		//		and 'ignoreCase' is false.	 The sort operation is performed in the order
 		//		in which the sort field objects appear in the sort array.
 		//
 		//		Example: [ {attribute:'directory', descending:true},
@@ -195,12 +186,6 @@ define(["dojo/_base/declare",
 		// _rootName: String
 		_rootName: ".",
 
-		// _validated: [private] Boolean
-		//		Indicates if the store has been validated. This property has no real
-		//		value to the store itself but is used by the model(s) operating on
-		//		the store. It is as a shared variable amongst models.
-		_validated: false,
-
 		// _reservedProp: String[]
 		_reservedProp: ["name", "size", "modified", "directory", "icon", C_PATH_ATTR],
 
@@ -221,16 +206,15 @@ define(["dojo/_base/declare",
 			//				url: String?
 			//			}
 
-			this.multiParented   = false;
-			this._loaded         = new Deferred(); // Indicates if the initial load request has completed.
+			this._loaded				 = new Deferred(); // Indicates if the initial load request has completed.
 			this._loadInProgress = false;
-			this._storeLoaded    = false;
-			this._mutex          = new Mutex();
+			this._storeLoaded		= false;
+			this._mutex					= new Mutex();
 
 			// Local in-memory storage
 			this._childIndex = {};
-			this._primIndex  = {};						  // An index of data indices into the _data array by id
-			this._data       = [];             // The array of all the objects in the memory store
+			this._primIndex	= {};							// An index of data indices into the _data array by id
+			this._data			 = [];						 // The array of all the objects in the memory store
 		},
 
 		//=========================================================================
@@ -370,11 +354,11 @@ define(["dojo/_base/declare",
 			//		dojo/promise/Promise	--> true | false
 			// tag:
 			//		Private
-			var items  = dataObject.items;
-			var index  = this._primIndex;
+			var items	= dataObject.items;
+			var index	= this._primIndex;
 			var chdIdx = this._childIndex;
-			var data   = this._data;
-			var self   = this;
+			var data	 = this._data;
+			var self	 = this;
 			var i;
 
 			function deleteChild(id) {
@@ -419,7 +403,7 @@ define(["dojo/_base/declare",
 			if (items && items.length) {
 				return this._mutex.aquire( function () {
 					items.forEach( deleteItem );
-					//  Purge sparse array and re-index..
+					//	Purge sparse array and re-index..
 					this._data = data.filter( function () {return true});
 					this._primIndex = {};
 
@@ -444,8 +428,8 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Private
 			var deferred = deferred || new Deferred();
-			var options  = {path: path};
-			var self     = this;
+			var options	= {path: path};
+			var self		 = this;
 			var promise;
 
 			if (queryOptions) {
@@ -477,19 +461,19 @@ define(["dojo/_base/declare",
 			// summary:
 			//		Resynchronize the store. Whenever a XHR request on an existing store item
 			//		returns the HTTP status codes 404 or 410 it is an indication the store is
-			//		out of sync.  This can happen when the file system on the back-end server
+			//		out of sync.	This can happen when the file system on the back-end server
 			//		changed due to other server-side processes.
 			//		To resynchronize the store an attempt is made to reload the parent of the
-			//		failed item  so any other changes to the parent directory are captured at
-			// 		the same time.   This process is recursive until a parent in the upstream
+			//		failed item	so any other changes to the parent directory are captured at
+			// 		the same time.	 This process is recursive until a parent in the upstream
 			//		chain is successfully reloaded.
 			// item:
 			//		Store item that returned a 404 or 410 HTTP status code.
 			// tag:
 			//		Private
 			var dataObject = {total: 1, status: 200, items:[]};
-			var parentId   = item.parent;
-			var self       = this;
+			var parentId	 = item.parent;
+			var self			 = this;
 
 			function nestChildren (item) {
 				if (item.directory) {
@@ -500,7 +484,7 @@ define(["dojo/_base/declare",
 				}
 				return item;
 			}
-			//  Compose a server style response object (eg. with nested children).
+			//	Compose a server style response object (eg. with nested children).
 			dataObject.items.push( nestChildren(item) );
 			this._deleteFromStore(dataObject);
 
@@ -531,7 +515,7 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Private
 			var files = [];
-			var self  = this;
+			var self	= this;
 
 			function updateChildren( oldChildren, newChildren ) {
 				// summary:
@@ -570,9 +554,9 @@ define(["dojo/_base/declare",
 				// tag:
 				//		Private
 				var identity = self.getIdentity(item);
-				var oldItem  = self._fetchFromStore(identity);
+				var oldItem	= self._fetchFromStore(identity);
 				var children = item.children;
-				var parentId =  parent(item.path);
+				var parentId =	parent(item.path);
 				var property;
 				var index;
 
@@ -615,7 +599,7 @@ define(["dojo/_base/declare",
 				addToParent(item);
 
 				if (self._storeLoaded && evented) {
-					// If this is a new item  create a temporary place holder to prevent
+					// If this is a new item	create a temporary place holder to prevent
 					// an evented put() from trying to get the same item from the server
 					// before the new item is actually stored. An evented put() tries to
 					// get the item first to determine if it is a new or updated item.
@@ -752,9 +736,9 @@ define(["dojo/_base/declare",
 			//		dojo/store/api/Store.queryResults.
 			// tag:
 			//		Public
-			var objId  = this.getIdentity(object);
-			var query  = {parent: objId};
-			var self   = this;
+			var objId	= this.getIdentity(object);
+			var query	= {parent: objId};
+			var self	 = this;
 			var result = [];
 
 			if (this.sort) {
@@ -816,7 +800,7 @@ define(["dojo/_base/declare",
 			var id = this.getIdentity(object);
 			if (id) {
 				var index = this._primIndex;
-				var data  = this._data;
+				var data	= this._data;
 				if(id in index) {
 					data[index[id]] = object;
 				} else {
@@ -850,8 +834,8 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public
 			var query = query || {name: this._rootName};
-			var data  = _dataSet != undef ? _dataSet : this._data;
-			var self  = this;
+			var data	= _dataSet != undef ? _dataSet : this._data;
+			var self	= this;
 
 			if (this._optionDirsOnly && !query.directory) {
 				query.directory = true;
@@ -888,7 +872,7 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public
 			var deferred = new Deferred();
-			var self     = this;
+			var self		 = this;
 
 			this.get(id).then(
 				function (item) {
@@ -931,8 +915,8 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public, Extension
 			var queryOptions = { deep: (options ? !!options.all : false) };
-			var result       = this._loaded;
-			var self         = this;
+			var result			 = this._loaded;
+			var self				 = this;
 
 			if (!this._storeLoaded && !this._loadInProgress) {
 				this._loadInProgress = true;
@@ -941,7 +925,7 @@ define(["dojo/_base/declare",
 					function (files) {
 						self.emit("load", {type:"load", store: self});
 						self._loadInProgress = false;
-						self._storeLoaded    = true;
+						self._storeLoaded		= true;
 					},
 					function (err) {
 						self.emit("error", {type:"load", error: err, store: self});
@@ -971,7 +955,7 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public, Extension
 			var deferred = new Deferred();
-			var self     = this;
+			var self		 = this;
 
 			if (newPath && typeof newPath === "string") {
 				var itemId = this.getIdentity(object);
