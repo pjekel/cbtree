@@ -1,22 +1,19 @@
 //
-// Copyright (c) 2010-2013, Peter Jekel
+// Copyright (c) 2012-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
-//
-//	In case of doubt, the BSD 2-Clause license takes precedence.
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/lang",
 				"dojo/when",
-				"./TreeStoreModel",
-				"./_Parents",
-				"../shim/Array"
-       ], function (lang, when, StoreModel, Parents) {
+				"./_base/BaseStoreModel",
+				"./_base/Parents",
+				"../util/shim/Array"
+			 ], function (lang, when, StoreModel, Parents) {
 
 	// module:
 	//		cbtree/model/StoreModel-API
@@ -24,23 +21,12 @@ define(["dojo/_base/lang",
 	//		This module extends the cbtree/model/TreeStoreModel API with an additional
 	//		set of methods commenly used to query the store or modify store objects.
 
-  var  moduleName = "cbTree/model/StoreModel-API";
+	var	moduleName = "cbTree/model/StoreModel-API";
 
-	function objType(obj) {
-		var objClass = Object.prototype.toString.call(obj);
-		var type     = objClass.match(/^\[object\s*(\b.*\b)\]$/);
-		return type ? type[1] : null;
-	}
-
-	function isObject(something) {
+	function isObject( object ) {
 		// summary:
-		//		Returns true is 'something' is an Object object, NOT an array,
-		//		function or null.
-		// something:
-		//		Any type.
-		// tag:
-		//		Private
-		return (something && (objType(something) ===  "Object"));
+		//		Returns true if an object is a key:value pairs object.
+		return (Object.prototype.toString.call(object) == "[object Object]");
 	}
 
 	lang.extend(StoreModel, {
@@ -49,7 +35,7 @@ define(["dojo/_base/lang",
 		// Private Methods related to checked states
 
 		_checkOrUncheck: function (/*String|Object*/ query, /*Boolean*/ newState, /*Callback*/ onComplete,
-																/*thisArg*/ scope, /*Boolean*/ storeOnly) {
+																/*thisArg*/ scope) {
 			// summary:
 			//		Check or uncheck the checked state of all store items that match the
 			//		query and have a checked state.
@@ -57,7 +43,7 @@ define(["dojo/_base/lang",
 			//		providing an easy way to programmatically alter the checked state of a
 			//		set of store items associated with the tree nodes.
 			// query:
-			//		A query object or string.   If query is a string the idProperty attribute
+			//		A query object or string.	 If query is a string the idProperty attribute
 			//		of the store is used as the query attribute and the query string assigned
 			//		as the associated value.
 			// newState:
@@ -71,13 +57,12 @@ define(["dojo/_base/lang",
 			//		in the context of the scope object. In the body of the callback function,
 			//		the value of the "this" keyword will be the scope object. If no scope is
 			//		is provided, onComplete will be called in the context of tree.model.
-			// storeOnly:
-			//		See fetchItemsWithChecked()
 			// tag:
 			//		private
 
-			var matches = 0,
-					updates = 0;
+			var storeOnly = this.checkedStrict ? true : false,
+					matches	 = 0,
+					updates	 = 0;
 
 			this.fetchItemsWithChecked(query, function (storeItems) {
 				storeItems.forEach(function (storeItem) {
@@ -91,133 +76,6 @@ define(["dojo/_base/lang",
 					onComplete.call((scope ? scope : this), matches, updates);
 				}
 			}, this, storeOnly);
-		},
-
-		// =======================================================================
-		// Object store item getters and setters
-
-		_itemCheckedGetter: function (/*dojo.store.Item*/ storeItem) {
-			// summary:
-			//		Get the current checked state from the data store for the specified item.
-			//		This is the hook for getItemAttr(item,"checked")
-			// description:
-			//		Get the current checked state from the dojo.data store. The checked state
-			//		in the store can be: 'mixed', true, false or undefined. Undefined in this
-			//		context means no checked identifier (checkedAttr) was found in the store
-			// storeItem:
-			//		The item in the dojo/store whose checked state is returned.
-			// example:
-			//	|	var currState = model.getItemAttr(item,"checked");
-			// tag:
-			//		private
-
-			return this.getChecked(storeItem);
-		},
-
-	 _itemCheckedSetter: function (/*dojo.store.Item*/ storeItem, /*Boolean*/ newState) {
-			// summary:
-			//		Update the checked state for the store item and the associated parents
-			//		and children, if any. This is the hook for setItemAttr(item,"checked",value).
-			// description:
-			//		Update the checked state for a single store item and the associated
-			//		parent(s) and children, if any. This method is called from the tree if
-			//		the user checked/unchecked a checkbox. The parent and child tree nodes
-			//		are updated to maintain consistency if 'checkedStrict' is set to true.
-			//	storeItem:
-			//		The item in the dojo/store whose checked state needs updating.
-			//	newState:
-			//		The new checked state: 'mixed', true or false
-			//	example:
-			//	|	model.setItemAttr(item,"checked",newState);
-			// tags:
-			//		private
-
-			this.setChecked(storeItem, newState);
-		},
-
-		_itemLabelGetter: function (storeItem) {
-			// summary:
-			//		Provide the hook for getItemAttr(storeItem,"label") calls. The getItemAttr()
-			//		interface is the preferred method over the legacy getLabel() method.
-			// storeItem:
-			//		The store item whose label is returned.
-			// tag:
-			//		private
-			return this.getLabel(storeItem);
-		},
-
-		_itemLabelSetter: function (storeItem, value) {
-			// summary:
-			//		Hook for setItemAttr(storeItem,"label",value) calls.
-			// storeItem:
-			//		The store item whose label is being set.
-			// value:
-			//		New label value.
-			// tags:
-			//		private
-
-			if (this.labelAttr) {
-				if (isObject(storeItem) && typeof value === "string") {
-					this._setValue( storeItem, this.labelAttr, value);
-				}
-			}
-		},
-
-		getItemAttr: function (/*dojo.store.Item*/ storeItem , /*String*/ attribute) {
-			// summary:
-			//		Provide the getter capabilities for store items thru the model.
-			//		The getItemAttr() method strictly operates on store items not
-			//		the model itself.
-			// storeItem:
-			//		The store item whose property to get.
-			// attribute:
-			//		Name of property to get
-			// tag:
-			//		public
-
-			var attr = (attribute == this.checkedAttr ? "checked" : attribute);
-
-			if (isObject(storeItem)) {
-				var func = this._getFuncNames("item", attr);
-				if (typeof this[func.get] === "function") {
-					return this[func.get](storeItem);
-				} else {
-					return storeItem[attr];
-				}
-			}
-			throw new Error(moduleName+"::getItemAttr(): item is not a valid object.");
-		},
-
-		setItemAttr: function (/*dojo.store.Item*/ storeItem, /*String*/ attribute, /*anytype*/ value) {
-			// summary:
-			//		Provide the setter capabilities for store items thru the model.
-			//		The setItemAttr() method strictly operates on store items not
-			//		the model itself.
-			// storeItem:
-			//		The store item whose property is to be set.
-			// attribute:
-			//		Property name to set.
-			// value:
-			//		Value to be applied.
-			// tag:
-			//		public
-
-			if (this._writeEnabled) {
-				var attr = (attribute == this.checkedAttr ? "checked" : attribute);
-				if (isObject(storeItem)) {
-					var func = this._getFuncNames("item", attr);
-					if (typeof this[func.set] === "function") {
-						return this[func.set](storeItem,value);
-					} else {
-						this._setValue(storeItem, attr, value);
-						return true;
-					}
-				} else {
-					throw new Error(moduleName+"::setItemAttr(): item is not a valid object.");
-				}
-			} else {
-				throw new Error(moduleName+"::setItemAttr(): store is not write enabled.");
-			}
 		},
 
 		// =======================================================================
@@ -244,7 +102,7 @@ define(["dojo/_base/lang",
 			//		public
 
 			var idQuery = this._anyToQuery(args, null);
-			var scope   = scope || this;
+			var scope	 = scope || this;
 
 			if (idQuery && onComplete) {
 				when(this.store.query(idQuery), function (queryResult) {
@@ -284,9 +142,9 @@ define(["dojo/_base/lang",
 
 			var storeQuery = this._anyToQuery( query, null );
 			var storeItems = [];
-			var cacheOnly  = (storeOnly !== undefined) ? !!storeOnly : true;
-			var scope      = scope || this;
-			var self       = this;
+			var cacheOnly	= (storeOnly !== undefined) ? !!storeOnly : true;
+			var scope			= scope || this;
+			var self			 = this;
 
 			if (isObject(storeQuery)) {
 				when( this.store.query(storeQuery, {cacheOnly: cacheOnly}), function (items) {
@@ -337,11 +195,6 @@ define(["dojo/_base/lang",
 			// tag:
 			//		public
 
-			// If in strict checked mode the store is already loaded and therefore no
-			// need to fetch the store again.
-			if (this.checkedStrict) {
-				storeOnly = true;
-			}
 			this._checkOrUncheck(query, true, onComplete, scope, storeOnly);
 		},
 
@@ -356,11 +209,6 @@ define(["dojo/_base/lang",
 			// tag:
 			//		public
 
-			// If in strict checked mode the store is already loaded and therefore no
-			// need to fetch the store again.
-			if (this.checkedStrict) {
-				storeOnly = true;
-			}
 			this._checkOrUncheck(query, false, onComplete, scope, storeOnly);
 		},
 
@@ -380,16 +228,19 @@ define(["dojo/_base/lang",
 			if (storeItem && parent) {
 				var parentId = this.getIdentity(parent);
 				var itemId   = this.getIdentity(storeItem);
-				if (itemId && parentId) {
+				var isRoot   = (this._forest && this.root.id == itemId);
+
+				if (itemId && parentId && !isRoot) {
 					when( this.store.get(itemId), function (item) {
 						if (item) {
 							var isRootChild = self.isChildOf(self.root, item);
-							var forestRoot  = (self._forest && self.root.id == parentId);
 							var parentIds   = new Parents(item, self.parentProperty);
+							var forestRoot  = (self._forest && self.root.id == parentId);
 
 							if (forestRoot) {
 								if (!parentIds.multiple) {
-									self._setValue( item, self.parentProperty, undefined );
+										item[self.parentProperty] = undefined;
+										this.store.put(item);
 								}
 								if ((!isRootChild && operation == "attach") || (isRootChild && operation == "detach")) {
 									var children = self._updateChildrenCache(operation, parent, storeItem );
@@ -400,9 +251,12 @@ define(["dojo/_base/lang",
 								}
 							} else {
 								if (parentIds[operation](parentId)) {
-									self._setValue( item, self.parentProperty, parentIds.toValue());
+									item[self.parentProperty] = parentIds.toValue();
+									itemId = self.store.put(item);
 									if (!self._monitored) {
-										self._childrenChanged(parent);
+										when( itemId, function () {
+											self._childrenChanged(parent);
+										});
 									}
 								}
 							}
@@ -471,8 +325,8 @@ define(["dojo/_base/lang",
 
 			if (identAttr) {
 				var objAttr = attribute || identAttr,
-						query   = {};
-				if (typeof args === "string") {
+						query	 = {};
+				if (typeof args == "string") {
 					query[identAttr] = args;
 					return query;
 				}
@@ -488,24 +342,6 @@ define(["dojo/_base/lang",
 				}
 			}
 			return null;
-		},
-
-		_getFuncNames: function (/*String*/ prefix, /*String*/ name) {
-			// summary:
-			//		Helper function for the get() and set() methods. Returns the function names
-			//		in lowerCamelCase for the get and set functions associated with the 'name'
-			//		property.
-			// name:
-			//		Attribute name.
-			// tags:
-			//		private
-
-			if (typeof name === "string") {
-				var cc = name.replace(/^[a-z]|-[a-zA-Z]/g, function (c) { return c.charAt(c.length-1).toUpperCase(); });
-				var fncSet = { set: "_"+prefix+cc+"Setter", get: "_"+prefix+cc+"Getter" };
-				return fncSet;
-			}
-			throw new Error(moduleName+"::_getFuncNames(): get"+prefix+"/set"+prefix+" attribute name must be string.");
 		}
 
 	});	/* end lang.extend() */

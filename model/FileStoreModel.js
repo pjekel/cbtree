@@ -1,34 +1,31 @@
 //
-// Copyright (c) 2010-2013, Peter Jekel
+// Copyright (c) 2012-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
-//
-//	In case of doubt, the BSD 2-Clause license takes precedence.
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/declare", 	// declare
 				"dojo/when",						// when()
-				"./TreeStoreModel",
-				"./_Parents",
-				"../shim/Array"					// ECMA-262 Array shim
-			 ], function (declare, when, TreeStoreModel, Parents){
+				"./_base/CheckedStoreModel",
+				"./_base/Parents",
+				"../util/shim/Array"		// ECMA-262 Array shim
+			 ], function (declare, when, CheckedStoreModel, Parents){
 	"use strict";
 
 		// module:
 		//		cbtree/model/FileStoreModel
-		// summary:
-		//		Implements cbtree/model/Model API connecting to a dojo/store.  This model
-		//		can be used with an observable, non-observable or evented FileStore.
-		//		(See cbtree/store/FileStore)
 
 	var moduleName = "cbTree/model/FileStoreModel";
 
-	return declare([TreeStoreModel], {
+	var FileStoreModel = declare([CheckedStoreModel], {
+		// summary:
+		//		Implements cbtree/model/Model API connecting to a cbtree/store/FileStore.
+		//		This model can be used with an observable, non-observable or evented File
+		//		Store. (See cbtree/store/FileStore)
 
 		constructor: function(/* Object */ kwArgs){
 			// summary:
@@ -39,10 +36,33 @@ define(["dojo/_base/declare", 	// declare
 			var model = this;
 
 			if (store) {
-				if (store.defaultProperties && typeof store.defaultProperties === "object") {
+				if (store.defaultProperties && typeof store.defaultProperties == "object") {
 					store.defaultProperties[this.checkedAttr] = this.checkedState;
 				}
 			}
+		},
+
+		// =======================================================================
+		// cbtree/model/Model API methods.
+
+		getChildren: function (/*Object*/ parent, /*Function*/ onComplete, /*Function*/ onError) {
+			// summary:
+			//		Calls onComplete() with array of child items of given parent item,
+			//		all loaded. (See cbtree/model/_base/BaseStoreModel.getChildren()
+			//		for implementation details).
+			// parent:
+			//		Object.
+			// onComplete:
+			//		Callback function, called on completion with an array of child items
+			//		as the argumen: onComplete(children)
+			// onError:
+			//		Callback function, called in case an error occurred.
+			// tags:
+			//		public
+
+			this._getChildren( parent, function (parent) {
+				return this.store.getChildren(parent);
+			}, onComplete, onError );
 		},
 
 		mayHaveChildren: function(/*Object*/ item){
@@ -58,7 +78,10 @@ define(["dojo/_base/declare", 	// declare
 			return item && !!item.directory;
 		},
 
-		newItem: function(/*dijit/tree/dndSource.__Item*/ args, /*Item*/ parent, /*int?*/ insertIndex, /*Item*/ before){
+		// =======================================================================
+		// Drag-n-Drop support.
+
+		newItem: function(/*Object*/ args, /*Item*/ parent, /*int?*/ insertIndex, /*Item*/ before){
 			// summary:
 			// tag:
 			//		Private
@@ -71,9 +94,9 @@ define(["dojo/_base/declare", 	// declare
 			//		Used in drag & drop
 
 			if (newParentItem.directory && (newParentItem.path != oldParentItem.path)) {
-				var parentIds   = new Parents( childItem, this.parentAttr );
+				var parentIds	 = new Parents( childItem, this.parentAttr );
 				var oldParentId = this.getIdentity(oldParentItem);
-				var self        = this;
+				var self				= this;
 
 				var newPath = newParentItem.path + "/" + childItem.name;
 				when (this.store.rename(childItem, newPath), function () {
@@ -94,7 +117,7 @@ define(["dojo/_base/declare", 	// declare
 			//		The store item that was deleted.
 			// tag:
 			//		Private
-			var id   = this.getIdentity(item);
+			var id	 = this.getIdentity(item);
 			var self = this;
 
 			// Because observable does not provide definitive information if the item
@@ -116,7 +139,14 @@ define(["dojo/_base/declare", 	// declare
 			this.getParents(item).then( function (parents) {
 				self._childrenChanged( parents );
 			});
+		},
+
+		toString: function () {
+			return "[object FileStoreModel]";
 		}
 
 	});
+
+	return FileStoreModel;
+
 });
