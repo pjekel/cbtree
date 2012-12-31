@@ -1,4 +1,10 @@
 var testResourceRe = /^cbtree\/tests\//;
+var excludePath = [ /^cbtree\/((.*)?\/)?tests\//,
+									  /^cbtree\/((.*)?\/)?demos\//,
+									  /^cbtree\/((.*)?\/)?json\//,
+									  /^cbtree\/((.*)?\/)?csv\//,
+									  /^cbtree\/((.*)?\/)?documentation\//
+									 ];
 var copyOnly = function(filename, mid) {
 	var list = {
 		"cbtree/cbtree.profile":1,
@@ -9,7 +15,6 @@ var copyOnly = function(filename, mid) {
 };
 
 var profile = {
-
 	releaseDir: "../release",
 	basePath : "..",
 	action: "release",
@@ -17,16 +22,16 @@ var profile = {
 	optimize: "closure",
 	layerOptimize: "closure",
 	selectorEngine: "acme",
-	mini: false,
+	mini: true,
 
 	layers: {
 		"dojo/dojo": {
 				include: [
-					"dojo/dojo",
 					"dojo/_base/array",
+					"dojo/dojo",
 					"dojo/data/ItemFileWriteStore",
-					"dojo/domReady",
 					"dojo/dom",
+					"dojo/domReady",
 					"dojo/i18n",
 					"dojo/ready"
 				],
@@ -35,14 +40,24 @@ var profile = {
 		},
 		"cbtree/main": {
 				include: [
+					// Legacy dojo/data store models (remove with dojo 2.0)
 					"cbtree/models/FileStoreModel",
 					"cbtree/models/ForestStoreModel",
 					"cbtree/models/TreeStoreModel",
 					"cbtree/models/StoreModel-API",
-					"cbtree/models/ObjectStoreModel",
-					"cbtree/models/ObjectStoreModel-API",
-					"cbtree/models/_Parents",
-					"cbtree/stores/FileStore",
+					"cbtree/data/FileStore",
+					// New dojo/store & cbtree/store models
+					"cbtree/model/FileStoreModel",
+					"cbtree/model/ForestStoreModel",
+					"cbtree/model/StoreModel-API",
+					"cbtree/model/TreeStoreModel",
+					// New cbtree/store stores & wrappers
+					"cbtree/store/Eventable",
+					"cbtree/store/FileStore",
+					"cbtree/store/Hierarchy",
+					"cbtree/store/Memory",
+					"cbtree/store/ObjectStore",
+					// cbtree
 					"cbtree/CheckBox",
 					"cbtree/TreeStyling",
 					"cbtree/Tree"
@@ -65,7 +80,9 @@ var profile = {
 		},
 
 		miniExclude: function(filename, mid){
-			var result = /^cbtree\/tests\//.test(mid) || /^cbtree\/demos\//.test(mid);
+			var result = excludePath.some( function (regex) {
+				return regex.test(mid);
+			});
 			return result;
 		}
 	}
