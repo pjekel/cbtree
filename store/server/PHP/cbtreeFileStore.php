@@ -1,6 +1,6 @@
 <?php
 	/****************************************************************************************
-	*	Copyright (c) 2012, Peter Jekel
+	*	Copyright (c) 2012-2013, Peter Jekel
 	*	All rights reserved.
 	*
 	*		The cbtree FileStore Server Side Application (cbtreeFileStore.php) is released under
@@ -10,12 +10,13 @@
 	*
 	*	@author		Peter Jekel
 	*
-	*	@date			08/01/2012
+	*	@date			12/01/2012
 	*
-	*	@version	1.1
+	*	@version	1.2
 	*
 	*	History:
 	*
+	*		1.2			12/01/12	Path and BasePath parameters can now be a quoted string.
 	*		1.1			08/01/12	Removed handling of queries and sorting, improved performance,
 	*											reduced the overall JSON response sizes.
 	*		1.0			07/01/12	Initial release

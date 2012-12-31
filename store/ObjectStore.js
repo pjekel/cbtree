@@ -1,20 +1,18 @@
 //
-// Copyright (c) 2010-2013, Peter Jekel
+// Copyright (c) 2012-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
-//
-//	In case of doubt, the BSD 2-Clause license takes precedence.
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/declare",
-				"dojo/Evented",
-				"./Hierarchy"
-			 ], function (declare, Evented, Hierarchy) {
+				"dojo/store/util/QueryResults",
+				"./Hierarchy",
+				"../Evented"
+			 ], function (declare, QueryResults, Hierarchy, Evented) {
 	"use strict";
 
 	// module:
@@ -29,24 +27,20 @@ define(["dojo/_base/declare",
 		// summary:
 		//		This in-memory store implements the full cbtree/store/api/Store API.
 		//		The store combines the functionality of the cbtree/store/Hierarchy
-		//		store with the event capabilities of the cbtree/store/Evented store
+		//		store with the event capabilities of the cbtree/store/Eventable store
 		//		wrapper without the extra overhead of having to warp a store. From
 		//		a functional stand point the following two examples are the same:
 		//
-		//			myStore = Evented( new Hierary( ... ) );
+		//			myStore = Eventable( new Hierary( ... ) );
 		//			myStore = new ObjectStore( ... );
 		//
+		//		This store type is the preferred store when multiple models operate
+		//		on a single store.
 
-		// evented: Boolean
-		//		Indicates this is an "evented" store.
-		evented: true,
-
-		//=========================================================================
-		// Constructor
-
-		constructor: function () {
-			this.evented = true;		// Force evented to be true...
-		},
+		// eventable: Boolean
+		//		Indicates this store emits events when the content of the store changes.
+		//		This type of store is referred to as an "Eventable" store.
+		eventable: true,
 
 		//=========================================================================
 		// Public dojo/store/api/store API methods
@@ -57,19 +51,19 @@ define(["dojo/_base/declare",
 			// object:
 			//		The object to store.
 			// options:
-			//		Additional metadata for storing the data.  Includes an "id"
+			//		Additional metadata for storing the data.	Includes an "id"
 			//		property if a specific id is to be used.
 			// returns:
 			//		String or Number
 			// tag:
 			//		Public
-			var id = this._setObjectId(object, options);
-			var at = this._index[id];
+			var id = this._getObjectId(object, options);
+			var at = this._indexId[id];
 
 			if (at >= 0) {
 				throw new Error("Object already exists");
 			}
-			id = this._writeObject(object, at, options);
+			id = this._writeObject(id, object, at, options);
 			this.emit("new", {type:"new", item: object});
 			return id;
 		},
@@ -85,8 +79,8 @@ define(["dojo/_base/declare",
 			//		String or Number
 			// tag:
 			//		Public
-			var id = this._setObjectId(object, options);
-			var at = this._index[id];
+			var id = this._getObjectId(object, options);
+			var at = this._indexId[id];
 
 			var orgObj, exist = false;
 
@@ -95,9 +89,9 @@ define(["dojo/_base/declare",
 					throw new Error("Object already exists");
 				}
 				orgObj = this._data[at];
-				exist  = true;
+				exist	 = true;
 			}
-			id = this._writeObject(object, at, options);
+			id = this._writeObject(id, object, at, options);
 			if (exist) {
 				this.emit("change", {type:"change", item: object, oldItem: orgObj});
 			} else {
@@ -113,9 +107,11 @@ define(["dojo/_base/declare",
 			//		The identity to use to delete the object
 			// returns:
 			//		Returns true if an object was removed otherwise false.
-			var at = this._index[id];
+			var at = this._indexId[id];
 			if (at >= 0) {
 				var object = this._data[at];
+				object[this.parentProperty] = undef;
+				this._updateHierarchy(object);
 				this._data.splice(at, 1);
 				// now we have to reindex
 				this._indexData();
@@ -129,4 +125,4 @@ define(["dojo/_base/declare",
 
 	return ObjectStore
 
-});
+});	/*end define() */

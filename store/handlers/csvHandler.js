@@ -2,16 +2,12 @@
 // Copyright (c) 2012-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-//	In case of doubt, the BSD 2-Clause license takes precedence.
-//
-
 define([], function() {
 	"use strict";
 
@@ -232,7 +228,7 @@ define([], function() {
 			// summary:
 			//		The data handler. The handler is registered with dojo/request/handlers
 			//		The response data is converted into an array of JavaScript key:value
-			//		pairs objects. On successful completion of a dojo/request this handler
+			//		pairs objects. On successful completion of a dojo/request this method
 			//		is called with the request response.
 			// response:
 			// tag:

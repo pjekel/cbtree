@@ -1,17 +1,14 @@
 //
-// Copyright (c) 2010-2013, Peter Jekel
+// Copyright (c) 2012-2013, Peter Jekel
 // All rights reserved.
 //
-//  The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//  is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//  1 - BSD 2-Clause               (http://thejekels.com/cbtree/LICENSE)
-//  2 - The "New" BSD License       (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//  3 - The Academic Free License   (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-//  In case of doubt, the BSD 2-Clause license takes precedence.
-//
-define(["../../shim/Array"], function() {
+define(["../../util/shim/Array"], function() {
     "use strict";
   // module:
   //    cbtree/store/util/QueryEngine
@@ -30,26 +27,31 @@ define(["../../shim/Array"], function() {
     // ignoreCase:
     //    If set to true and the array values have a toLowerCase method a case
     //    insensitive match is performed.
+		// returns:
+		//		Boolean true or false
     // tag:
     //    Private
-    if (match.test) {
-      return values.some( function (value) {
-        return match.test(value);
-      });
-    }
-    if (match instanceof Array) {
-      return match.every( function (matchValue) {
-        return contains(values, matchValue, ignoreCase);
-      });
-    }
-    if (ignoreCase) {
-      return values.some( function (value) {
-        value = value.toLowerCase ? value.toLowerCase() : value;
-        match = match.toLowerCase ? match.toLowerCase() : match;
-        return (value == match);
-      });
-    }
-    return (values.indexOf(match) != -1);
+		if (match) {
+			if (match.test) {
+				return values.some( function (value) {
+					return match.test(value);
+				});
+			}
+			if (match instanceof Array) {
+				return match.every( function (matchValue) {
+					return contains(values, matchValue, ignoreCase);
+				});
+			}
+			if (ignoreCase) {
+				return values.some( function (value) {
+					value = value.toLowerCase ? value.toLowerCase() : value;
+					match = match.toLowerCase ? match.toLowerCase() : match;
+					return (value == match);
+				});
+			}
+			return (values.indexOf(match) != -1);
+		}
+		return false;
   }
 
   function match(/*any*/ valueA, /*any*/ valueB, /*Boolean?*/ ignoreCase ) {
@@ -145,7 +147,7 @@ define(["../../shim/Array"], function() {
             value    = object[key];
             if (!match( value, required, ignoreCase )) {
               if (typeof required == "function") {
-                if (required(object, key, value)) {
+                if (required(value, key, object)) {
                   continue;
                 }
               }
@@ -169,7 +171,7 @@ define(["../../shim/Array"], function() {
         throw new TypeError("Can not query with a " + typeof query);
     } /*end switch() */
 
-    function execute(/*Object[]*/ objects) {
+    function execute(/*Object[]*/ objects, /*Boolean*/ noFilter) {
       // summary:
       //    Execute the query on  a set of objects and apply pagination  to the
       //    query result.  This function is returned as the result of a call to
@@ -177,12 +179,14 @@ define(["../../shim/Array"], function() {
       //    for this execute() function.
       // objects:
       //    The array of objects on which the query is performed.
+			// noFilter:
+			//		If true, only sort and pagination is applied to the set of objects.
       // returns:
       //    An array of objects matching the query.
       // tag:
       //    Private
       var sortSet  = options && options.sort;
-      var results  = objects.filter(queryFunc);
+      var results  = noFilter ? objects : objects.filter(queryFunc);
       var sortFunc = sortSet;
 
       if (sortSet) {
