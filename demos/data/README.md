@@ -1,4 +1,4 @@
-This directory contains a set of demos of the Dijit CheckBox Tree (cbTree).
+This directory contains a set of demos of the CheckBox Tree (cbTree).
 The following are examples of the cbtree with a dojo/data/ItemFile store
 
 * tree00.html - Basic CheckBox Tree using an in memory JSON object to create the store.
@@ -22,7 +22,7 @@ requires DOJOX to be installed.
 ***IMPORTANT***
 The use of the dojo/data/ItemFileReadStore, dojo/data/ItemFileWriteStore and the associated
 models in the cbtree/models directory has been deprecated.
-Support for dojo/data and cbtree/data and cbtree/models will be removed with the release of
-dojo 2.0
+Support for dojo/data and cbtree/data stores and cbtree/models models will be removed with
+the release of dojo 2.0
 
 Going forward use the stores and models in the cbtree/store and cbtree/model directories.
