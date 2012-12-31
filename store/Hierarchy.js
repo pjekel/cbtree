@@ -1,20 +1,19 @@
 //
-// Copyright (c) 2010-2013, Peter Jekel
+// Copyright (c) 2012-2013, Peter Jekel
 // All rights reserved.
 //
-//	The Checkbox Tree (cbtree), also known as the 'Dijit Tree with Multi State Checkboxes'
-//	is released under to following three licenses:
+//	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause							 (http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
-//
-//	In case of doubt, the BSD 2-Clause license takes precedence.
+//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/declare",
+				"dojo/_base/lang",
+				"dojo/store/util/QueryResults",
 				"./Memory",
-				"../shim/Array"                 // ECMA-262 Array shim
-			 ], function (declare, Memory) {
+				"../util/shim/Array"						 // ECMA-262 Array shim
+			 ], function (declare, lang, QueryResults, Memory) {
 
 	// module:
 	//		cbtree/store/Hierarchy
@@ -31,21 +30,30 @@ define(["dojo/_base/declare",
 		//		The Hierarchy Store provide support for the dojo/store PutDirectives
 		//		properties 'before' and 'parent'. Objects loaded into the store will
 		//		automatically get a "parent" property if they don't have one already.
-		//		The object's parent property value is the identifier of the object's
-		//		parent. (see also: multiParented).
+		//		The object's parent property value is the identifier, or an array of
+		//		identifiers, of the object's parent(s). (see also: multiParented).
 		//
 		// 		For addional information see cbtree/store/api/Store.PutDirectives
+		//
+		// NOTE:
+		//		To maintain the object hierarchy both store properties idProperty and
+		//		parentProperty MUST be set otherwise object parents and children can
+		//		only be retrieved using the store query() method.
 
 		//=========================================================================
 		// Additional constructor keyword arguments:
 
+		//	indexChildren: Boolean
+		//		Indicates if the store is to maintain a separate index for children.
+		//		If true the store will use this index to fetch the children of any
+		//		given parent.
+		indexChildren: true,
+
 		// multiParented: Boolean|String
 		//		Indicates if the store is to support multi-parented objects. If true
-		//		the parent property of store objects is stored as an array. If "auto"
-		//		multi-parenting will be determined by the data loaded into the store.
-		//		Also, the cbtree Models tests for the presence of this property in
-		//		order to determine if it has to set the parent property of an object
-		//		or if the store will handle it.
+		//		the parent property  of store objects is stored as an array allowing
+		//		for any object to have multiple parents.  If "auto", multi-parenting
+		//		will be determined by the data loaded into the store.
 		multiParented: "auto",
 
 		// parentProperty: String
@@ -53,20 +61,51 @@ define(["dojo/_base/declare",
 		//		parent id(s).
 		parentProperty: "parent",
 
+		// End constructor keyword arguments
+		//=========================================================================
+
+		// hierarchical: Boolean [read-only]
+		//		Indicates this store is capable of maintaining an object hierarchy.
+		//		The cbtree Models tests for the presence of this property in order to
+		//		determine if it has to set the parent property of an object or if the
+		//		store will handle it.
+		hierarchical: true,
+
+		//=========================================================================
+
+		_indexParent: {},
+		_indexChild: {},
+
+		constructor: function () {
+			// summary:
+			//		Store constructor, initialize the optional indexes.
+			this.hierarchical  = true;
+			this.indexChildren = this._indexStore ? this.indexChildren : false;
+		},
+
+		destroy: function () {
+			//summary:
+			//		Release all memory and handles, if any
+			this._indexParent = {};
+			this._indexChild	= {};
+
+			this.inherited(arguments);
+		},
+
 		//=========================================================================
 		// Private methods
 
 		_getParentArray: function (/*Object*/ object) {
 			// summary:
-			//		Return the parents of an object as an array of identifiers.
+			//		Return the parent(s) of an object as an array of identifiers.
 			// object: Object
 			//		Store object
 			// returns:
 			//		An array of parent Ids.
 			// tag:
 			//		Private
-			var parentIds = object[this.parentProperty] || [];
-			return (parentIds instanceof Array ? parentIds : [parentIds]);
+			var parentIds = object[this.parentProperty];
+			return (parentIds ? (this.multiParented ? parentIds : [parentIds]) : []);
 		},
 
 		_getParentIds: function (/*String|Number*/ objectId,/*any*/ parents) {
@@ -76,39 +115,90 @@ define(["dojo/_base/declare",
 			//		The object identification.
 			// parents:
 			//		The parent(s) of an object. The parents arguments can be an id,
-			//		an object or an array of those types.
+			//		an object or an array of objects or ids.
 			// returns:
 			//		An array of parent Ids.
 			// tag:
 			//		Private
 			var parentIds = [];
 
-			parents = (parents instanceof Array ? parents : (parents ? [parents] : []));
-			parents.forEach( function (parent) {
-				switch (typeof parent) {
-					case "object":
-						parent = this.getIdentity(parent);
-						/* NO BREAK HERE */
-					case "string":
-					case "number":
-						if (parent) {
-							// Make sure we don't parent ourself.....
-							if (parent != objectId && parentIds.indexOf(parent) == -1) {
-								parentIds.push(parent);
+			if (parents) {
+				parents = (parents instanceof Array ? parents : [parents]);
+				parents.forEach( function (parent) {
+					switch (typeof parent) {
+						case "object":
+							parent = this.getIdentity(parent);
+							/* NO BREAK HERE */
+						case "string":
+						case "number":
+							if (parent) {
+								// Make sure we don't parent ourself.....
+								if (parent != objectId && parentIds.indexOf(parent) == -1) {
+									parentIds.push(parent);
+								}
 							}
-						}
-						break;
-					default:
-						throw new TypeError( moduleName+"::_getParentId(): Invalid identifier type");
-				}
-			}, this);
+							break;
+						default:
+							throw new TypeError( moduleName+"::_getParentId(): Invalid identifier type");
+					}
+				}, this);
+			}
 			return parentIds;
+		},
+
+		_insertBefore: function (/*Object[]*/ dataSet,/*Object*/ object,/*Object?*/ before ) {
+			// summary:
+			//		Insert an object before a given other object.  This will apply a natural
+			//		order to the objects in the store. If the 'before' object does not exist
+			//		or is not specified the new object is inserted at the end of the dataset.
+			// dataSet:
+			//		Array of objects in which the new object is to be inserted.
+			// object:
+			//		Object to be inserted or relocated.
+			// before:
+			//		The store object before which the object will be located. After insertion
+			//		or relocation  of object, the "before" object will immediately follow the
+			//		object in the natural order of the store.
+			// tag:
+			//		Private
+			var beforeAt = dataSet.length;
+
+			if (before) {
+				beforeAt = dataSet.indexOf(before);
+				if (beforeAt != -1) {
+					var objectAt = dataSet.indexOf(object);
+					if (objectAt != -1) {
+						beforeAt = beforeAt > objectAt ? beforeAt - 1 : beforeAt;
+						dataSet.splice(objectAt,1);
+					}
+				}
+			}
+			dataSet.splice(beforeAt, 0, object);
+			return beforeAt;
+		},
+
+		_parentIdsChanged: function (/*id[]*/ newIds, /*id[]*/ oldIds) {
+			// summary:
+			//		Test if the content of two sets of parent ids differ. The order in
+			//		which the ids appear in a set is irrelavant.
+			// newIds:
+			// oldIds:
+			// returns:
+			//		Boolean true if the two sets differ otherwise false
+			// tag:
+			//		Private
+			if (newIds.length == oldIds.length) {
+				return !oldIds.every( function (oldIds) {
+					return (newIds.indexOf(oldIds) != -1);
+				});
+			}
+			return true;
 		},
 
 		_setParentType: function (/*id|id[]*/ parentId) {
 			// summary:
 			//		Convert the parent(s) from a single value to an array or vice versa
-			//		depending on the store multiParented property value.
+			//		depending on the value of the store multiParented property.
 			// parentId:
 			//		Parent Id or an array of parent ids.
 			// tag:
@@ -127,23 +217,93 @@ define(["dojo/_base/declare",
 			return parentId;
 		},
 
-		_writeObject: function (/*Object*/ object,/*Number*/ index,/*Store.PutDirectives*/ options) {
+		_updateHierarchy: function (/*Object*/ object, /*Object*/ before) {
+			// summay:
+			//		Update the store hierarchy. Whenever the parents of object have changed
+			//		or the object needs to be located at a specific predefined location the
+			//		store hierarchy and/or natural order is automatically updated.
+			// object:
+			//		Object whose hierarchical relationship is evaluated.
+			// before:
+			//		If specified, determines the location at which a new object is inserted
+			//		or, if the object already exists, to where the object is relocated.
+			// tag:
+			//		Private
+			if (!this.indexChildren) {
+				return;
+			}
+			var objectId = this.getIdentity(object);
+			var oldIds   = this._indexParent[objectId] || [];
+			var newIds   = this._getParentArray(object);
+
+			var changed = this._parentIdsChanged( newIds, oldIds );
+			if (changed) {
+				oldIds.forEach( function (parentId) {
+					// If a previous parent is no longer present in the new list of parents
+					// remove the object from that previous parent.
+					if (newIds.indexOf(parentId) == -1) {
+						var children = this._indexChild[parentId];
+						var childAt  = children.indexOf(object);
+						if (childAt > -1) {
+							children.splice(childAt,1);
+							if (children.length == 0) {
+								delete this._indexChild[parentId];
+							}
+						}
+					}
+				}, this);
+			}
+
+			if (changed || before) {
+				newIds.forEach( function (parentId) {
+					var children = this._indexChild[parentId] || [];
+					if (before) {
+						this._insertBefore( children, object, before );
+					} else {
+						// Make sure we don't create duplicate references
+						if (children.indexOf(object) == -1) {
+							children.push(object);
+						}
+					}
+					this._indexChild[parentId] = children;
+				}, this);
+				this._indexParent[objectId] = newIds.slice(0);
+				if (!newIds.length) {
+					delete this._indexParent[objectId];
+				}
+			}
+		},
+
+		_validParents: function (/*Object*/ child) {
+			// summary:
+			//		Validate if the parent ids of a given child object reference existing
+			//		objects in the store.
+			// child:
+			//		Object whose parent ids are evaluated.
+			// returns:
+			//		Boolean true if all parents are valid store objects otherwise false.
+			// tag:
+			//		Private
+			var parentIds = this._getParentArray(child);
+			return parentIds.every( function (parentId) {
+				return this._indexId[parentId];
+			}, this);
+		},
+
+		_writeObject: function (id, /*Object*/ object,/*Number*/ index,/*Store.PutDirectives*/ options) {
 			// summary:
 			//		Store an object.
 			// object:
 			//		The object to store.
 			// index:
 			//		Index number of the object in the stores data array. If specified it
-			//		indicates an existing object in the store otherwise it's a new store
-			//		object.
+			//		indicates an existing object otherwise it's a new store object.
 			// options:
 			//		Additional metadata for storing the data.
 			// returns:
 			//		The object ID
 			// tag:
 			//		Private
-			var id = object[this.idProperty];
-
 			if (options && "parent" in options) {
 				object[this.parentProperty] = this._getParentIds(id, options.parent);
 			}
@@ -151,27 +311,19 @@ define(["dojo/_base/declare",
 			object[this.parentProperty] = this._setParentType(object[this.parentProperty]);
 
 			if (options && options.before) {
-				var beforeAt, beforeId;
-				if (beforeId = this.getIdentity(options.before)) {
-					beforeAt = this._index[beforeId];
-					if (beforeAt != undef) {
-						if (index) {
-							if (index != beforeAt) {
-								beforeAt = (beforeAt > index ? beforeAt - 1 : beforeAt);
-								this._data.splice(index,1);
-							} else {
-								this._data[index] = object;
-								return id;
-							}
-						}
-						// Insert the object and re-index the store.
-						this._data.splice( beforeAt, 0, object);
-						this._indexData();
-						return id;
-					}
+				if (!index || index == -1) {
+					// It's a new object.
+					this._applyDefaults(id, object);
+					this.total++;
 				}
+				this._insertBefore( this._data, object, options.before );
+				this._updateHierarchy(object, options.before);
+				this._indexData();
+				return id;
 			}
-			return this.inherited(arguments);
+			var result = this.inherited(arguments);
+			this._updateHierarchy(object, null);
+			return result;
 		},
 
 		//=========================================================================
@@ -187,26 +339,54 @@ define(["dojo/_base/declare",
 			//		Store object to which the parent(s) are added
 			// returns: Boolean
 			//		true if parent id was successfully added otherwise false.
-			var childId  = this.getIdentity(child);
-			var childObj = this.get(childId);
 
-			if (childObj) {
-				var newIds = this._getParentIds(childId, parents);
+			if (this.isItem(child)) {
+				var childId = this.getIdentity(child);
+				var newIds  = this._getParentIds(childId, parents);
 				if (newIds.length) {
-					var currIds = this._getParentArray(childObj);
+					// Clone the store object so evented stores can clearly distinguish
+					// between an old and a new object.
+					var updObj  = lang.clone(child);
+					var currIds = this._getParentArray(updObj);
 					newIds.forEach( function (id) {
 						if (currIds.indexOf(id) == -1) {
 							currIds.unshift(id);
 						}
 					});
-					childObj[this.parentProperty] = this._setParentType(currIds);
-					this.put(childObj);
+					updObj[this.parentProperty] = this._setParentType(currIds);
+					// Call put() making the event observable..
+					this.put(updObj);
 					return true;
 				}
 				return false;
 			} else {
 				throw new TypeError(moduleName+"::addParent(): child is not a store object");
 			}
+		},
+
+		hasChildren: function(/*Object*/ parent) {
+			// summary:
+			//		Test if a parent object has known children.  Whenever the store has a
+			//		childrens index use it otherwise search the store for the first object
+			//		that has a parent reference to parent.
+			// parent: Object
+			// returns: Boolean
+			// 		true if the parent object has known children otherwise false.
+
+			if (this.isItem(parent)) {
+				var parentId = this.getIdentity(parent);
+				if (this.indexChildren) {
+					var children = this._indexChild[parentId] || [];
+					return !!children.length;
+				} else {
+					// Note: search the store, we only need one child...
+					return this._data.some( function (object) {
+						var parentIds = this._getParentArray(object);
+						return (parentIds.indexOf(parentId) != -1);
+					}, this);
+				}
+			}
+			return false;
 		},
 
 		getChildren: function (/*Object*/ parent, /*Store.QueryOptions?*/ options) {
@@ -221,30 +401,98 @@ define(["dojo/_base/declare",
 			//		the parent object.
 			// tag:
 			//		Public
-			var query = {};
 
-			query[this.parentProperty] = this.getIdentity(parent);
-			return this.query( query, options );
+			if (this.isItem(parent)) {
+				var parentId = this.getIdentity(parent);
+				var query    = {};
+				var dataSet;
+
+				// If a childrens index is available use it instead of querying all store
+				// objects.
+				if (this.indexChildren) {
+					var children = this._indexChild[parentId] || [];
+					var dataSet  = children.slice(0);
+				}
+				// Call the query() method so the result can be made observable.
+				query[this.parentProperty] = parentId;
+				return this.query( query, options, dataSet );
+			} else {
+				// Without a valid parent and Id we can't locate any children...
+				return QueryResults([]);
+			}
 		},
 
 		getParents: function (/*Object*/ child) {
 			// summary:
 			//		Retrieve the parent(s) of an object
 			// child:
+			//		Child object to retrieve the parents for.
 			// returns:
-			//		An array of objects
+			//		An array of objects or void if the child is not a valid object.
 			// tag:
 			//		Public
-			var parentIds = this._getParentArray(child);
-			var parents   = [];
 
-			parentsIds.forEach( function (parentId) {
-				var parent = this.get(parentId);
-				if (parent) {
-					parents.push(parent);
-				}
-			}, this);
-			return parents;
+			if (this.isItem(child)) {
+				var parentIds = this._getParentArray(child);
+				var parents	 = [];
+
+				parentIds.forEach( function (parentId) {
+					var parent = this.get(parentId);
+					if (parent) {
+						parents.push(parent);
+					}
+				}, this);
+				return parents;
+			}
+		},
+
+		query: function (/*Object*/ query,/*QueryOptions?*/ options /*Object[]? _dataSet */) {
+			// summary:
+			//		Queries the store for objects.
+			// query: Object
+			//		The query to use for retrieving objects from the store.
+			// options:
+			//		The optional arguments to apply to the resultset.
+			// _dataSet: (INTERNAL USE ONLY)
+			//		If specified this array of objects is used instead of the full store
+			//		data object array. In addition, no filtering is applied by the query
+			//		function returned by QueryEngine.
+			// returns: dojo/store/api/Store.QueryResults
+			//		The results of the query, extended with iterative methods.
+
+			var _dataSet = (arguments.length == 3 ?	arguments[2] : null);
+			var data     = _dataSet || this._data;
+			var self     = this;
+
+			if (this._storeLoaded.isFulfilled() || _dataSet) {
+				return QueryResults( this.queryEngine(query, options)(data, !!_dataSet) );
+			} else {
+				// If the store data isn't loaded yet defer the query until it is...
+				return QueryResults( this._storeLoaded.then( function () {
+					return self.queryEngine(query, options)(self._data, false)
+				}));
+			}
+		},
+
+		remove: function (/*String|Number*/ id) {
+			// summary:
+			//		Deletes an object by its identity
+			// id:
+			//		The identity to use to delete the object
+			// returns:
+			//		Returns true if an object was removed otherwise false.
+			var at = this._indexId[id];
+			if (at >= 0) {
+				var object = this._data[at];
+				// Clear its list of parents.
+				object[this.parentProperty] = undef;
+				this._updateHierarchy(object, null);
+				this._data.splice(at, 1);
+				// now we have to reindex
+				this._indexData();
+				return true;
+			}
+			return false;
 		},
 
 		removeParent: function(/*Object*/ child,/*any*/ parents) {
@@ -257,24 +505,29 @@ define(["dojo/_base/declare",
 			//		Store object from which the parent(s) are removed
 			// returns: Boolean
 			//		true if the parent id was successfully removed otherwise false.
-			var childId  = this.getIdentity(child);
-			var childObj = this.get(childId);
 
-			if (childObj) {
-				var remIds = this._getParentIds(childId, parents);
+			if (this.isItem(child)) {
+				var childId = this.getIdentity(child);
+				var remIds  = this._getParentIds(childId, parents);
 				if (remIds.length) {
-					var currIds = this._getParentArray(childObj);
+					var updObj	= lang.clone(child);
+					var currIds = this._getParentArray(updObj);
 					currIds = currIds.filter( function (id) {
 						return (remIds.indexOf(id) == -1);
 					});
-					childObj[this.parentProperty] = this._setParentType(currIds);
-					this.put(childObj);
+					updObj[this.parentProperty] = this._setParentType(currIds);
+					// Call put() making the event observable..
+					this.put(updObj);
 					return true;
 				}
 				return false;
 			} else {
 				throw new TypeError(moduleName+"::addParent(): child is not a store object");
 			}
+		},
+
+		toString: function () {
+			return "[object HierarchyStore]";
 		}
 
 	});	/* end declare() */
