@@ -27,13 +27,13 @@ define(["dojo/_base/declare",
 	// module:
 	//		cbtree/stores/FileObjectStore
 	// summary:
-	//		The FileObjectStore implements the dojo/store/api/Store API. The store
-	//		retrieves file and directory information from a back-end server which
-	//		is cached as an in-memory object store.	The store allows applications
-	//		to add custom properties to file object not provided by the server side
-	//		application such as a checked state. The in-memory FileObject Store is
-	//		dynamic in that file object may be added, removed or change based on the
-	//		responses received from the back-end server.
+	//		The FileStore implements the dojo/store/api/Store API. The store retrieves
+	//		file and directory information from a back-end server which is cached as
+	//		an in-memory object store.	The store allows applications to add custom
+	//		properties to file object not provided by the server side application such
+	//		as a checked state. The in-memory FileObject Store is dynamic in that file
+	//		object may be added, removed or change based on the responses received from
+	//		the back-end server.
 	//
 	//		Store restrictions:
 	//
@@ -56,8 +56,8 @@ define(["dojo/_base/declare",
 	var	moduleName = "cbTree/store/FileStore";
 
 	var C_ITEM_EXPANDED = "_EX";			// Property indicating if a directory item is fully expanded.
-	var C_PATH_ATTR		  = "path";			// Path property name (used as the identifier)
-	var C_ICON_ATTR		  = "icon";			// Icon property name
+	var C_PATH_ATTR			= "path";			// Path property name (used as the identifier)
+	var C_ICON_ATTR			= "icon";			// Icon property name
 	var undef;
 
 	function fixException( error ) {
@@ -152,7 +152,7 @@ define(["dojo/_base/declare",
 		// preventCache: Boolean
 		//		Indicates if preventCache should be passed to the XHR call or not when
 		//		loading data from a url. Note: this does not mean the store calls the
-		// 		server on each query, only that the data load has preventCache set as
+		//		 server on each query, only that the data load has preventCache set as
 		//		an option.
 		preventCache: false,
 
@@ -290,8 +290,8 @@ define(["dojo/_base/declare",
 
 		_optionsSetter: function (/*String[] | String*/ value) {
 			// summary:
-			// 		Redure the list of options to those specific to the back-end server
-			// 		and create private properties for all others. The private properties
+			//		 Redure the list of options to those specific to the back-end server
+			//		 and create private properties for all others. The private properties
 			//		are named as follows:
 			//
 			//			_optionCcccc
@@ -465,7 +465,7 @@ define(["dojo/_base/declare",
 			//		changed due to other server-side processes.
 			//		To resynchronize the store an attempt is made to reload the parent of the
 			//		failed item	so any other changes to the parent directory are captured at
-			// 		the same time.	 This process is recursive until a parent in the upstream
+			//		 the same time.	 This process is recursive until a parent in the upstream
 			//		chain is successfully reloaded.
 			// item:
 			//		Store item that returned a 404 or 410 HTTP status code.
@@ -685,7 +685,7 @@ define(["dojo/_base/declare",
 		},
 
 		//=========================================================================
-		// Public dojo/store/api/Store API methods
+		// Public cbtree/store/api/Store API methods
 
 		add: function (object, options) {
 			// summary:
@@ -786,6 +786,48 @@ define(["dojo/_base/declare",
 			return object[C_PATH_ATTR];
 		},
 
+		isItem: function (/*Object*/ object) {
+			// summary:
+			//		Test if object is a member of this store.
+			// object:
+			//		Object to test.
+			// returns:
+			//		Boolean true of false
+			// tag:
+			//		Public
+			if (object && typeof object == "object") {
+				return (object == this.get(this.getIdentity(object)));
+			}
+			return false;
+		},
+
+		load: function (/*Object*/ options) {
+			// summary:
+			//		Initiate store load.
+			// options:
+			//		A JavaScript key:value pairs object
+			// tag:
+			//		Public, Extension
+			var queryOptions = { deep: (options ? !!options.all : false) };
+			var result			 = this._loaded;
+			var self				 = this;
+
+			if (!this._storeLoaded && !this._loadInProgress) {
+				this._loadInProgress = true;
+				result = this._fetchFromServer( null, queryOptions, this._loaded)
+				result.then(
+					function (files) {
+						self.emit("load", {type:"load", store: self});
+						self._loadInProgress = false;
+						self._storeLoaded		= true;
+					},
+					function (err) {
+						self.emit("error", {type:"load", error: err, store: self});
+					});
+			}
+			return result.promise;
+		},
+
 		put: function (object, options) {
 			// summary:
 			//		Update an object
@@ -859,6 +901,16 @@ define(["dojo/_base/declare",
 			return QueryResults(self.queryEngine(query, options)(data));
 		},
 
+		ready: function (callback, errback) {
+			// summary:
+			//
+			// returns:
+			//		dojo/promise/Promise
+			// tag:
+			//		Public
+			return this._loaded.then(callback, errback);
+		},
+
 		remove: function (/*String|number*/ id, /*Boolean?*/ _storeOnly) {
 			// summary:
 			//		Deletes an object by its identity
@@ -902,46 +954,6 @@ define(["dojo/_base/declare",
 				deferred.reject
 			);	/* end then() */
 			return deferred.promise;
-		},
-
-		//=========================================================================
-		// Public dojo/store/api/Store API extensions
-
-		load: function (/*Object*/ options) {
-			// summary:
-			//		Initiate store load.
-			// options:
-			//		A JavaScript key:value pairs object
-			// tag:
-			//		Public, Extension
-			var queryOptions = { deep: (options ? !!options.all : false) };
-			var result			 = this._loaded;
-			var self				 = this;
-
-			if (!this._storeLoaded && !this._loadInProgress) {
-				this._loadInProgress = true;
-				result = this._fetchFromServer( null, queryOptions, this._loaded)
-				result.then(
-					function (files) {
-						self.emit("load", {type:"load", store: self});
-						self._loadInProgress = false;
-						self._storeLoaded		= true;
-					},
-					function (err) {
-						self.emit("error", {type:"load", error: err, store: self});
-					});
-			}
-			return result.promise;
-		},
-
-		onLoad: function (callback, errback) {
-			// summary:
-			//
-			// returns:
-			//		dojo/promise/Promise
-			// tag:
-			//		Public
-			return this._loaded.then(callback, errback);
 		},
 
 		rename: function (/*Object*/ object, /*String*/ newPath) {
@@ -989,7 +1001,7 @@ define(["dojo/_base/declare",
 			return deferred.reject( new Error("Invalid path") );
 		}
 
-	});
+	});	/* end declare() */
 
 	return FileObjectStore;
 

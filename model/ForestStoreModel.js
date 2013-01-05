@@ -51,13 +51,13 @@ define(["dojo/_base/declare",	 // declare
 			// tags:
 			//		private
 
-			var root	= { id: this.rootId, root: true };
+			var root  = { id: this.rootId, root: true };
 			var store = this.store;
 			var model = this;
 
 			// Assemble artificial root item
 			root[this.checkedAttr] = this.checkedState;
-			root[this.labelAttr]   = this.rootLabel || this.rootId;
+			root[this.labelAttr]	 = this.rootLabel || this.rootId;
 
 			// Get a query function from the store's Query Engine which we can use to
 			// determine if an item is a child of the forest root.

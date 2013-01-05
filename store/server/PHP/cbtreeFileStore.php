@@ -6,7 +6,7 @@
 	*		The cbtree FileStore Server Side Application (cbtreeFileStore.php) is released under
 	*		to following license:
 	*
-	*	    BSD 2-Clause		(http://thejekels.com/cbtree/LICENSE)
+	*			BSD 2-Clause		(http://thejekels.com/cbtree/LICENSE)
 	*
 	*	@author		Peter Jekel
 	*
@@ -25,7 +25,7 @@
 	*
 	*		Description:
 	*
-	*			This file contains the server side application required  to enable the dojo
+	*			This file contains the server side application required	to enable the dojo
 	*			cbtree FileStore and is part of the github project 'cbtree'. Your server MUST
 	*			provide support for PHP applications in order for it to work properly.
 	*			Alternatively, an ANSI-C CGI application is also available. See the notes on
@@ -35,13 +35,13 @@
 	*			or POST request, the basic ABNF format of a request looks like:
 	*
 	*				HTTP-request	::= uri ('?' query-string)?
-	*				query-string  ::= (qs-param ('&' qs-param)*)?
-	*				qs-param		  ::= authToken | basePath | path | query | queryOptions | options
+	*				query-string	::= (qs-param ('&' qs-param)*)?
+	*				qs-param			::= authToken | basePath | path | query | queryOptions | options
 	*				authToken			::= 'authToken' '=' json-object
-	*				basePath		  ::= 'basePath' '=' path-rfc3986
-	*				path				  ::= 'path' '=' path-rfc3986
+	*				basePath			::= 'basePath' '=' path-rfc3986
+	*				path					::= 'path' '=' path-rfc3986
 	*				query-options ::= 'queryOptions' '=' json-object
-	*				options			  ::= 'options' '=' json-array
+	*				options				::= 'options' '=' json-array
 	*
 	*			Please refer to http://json.org for the correct JSON encoding of the
 	*			parameters.
@@ -96,7 +96,7 @@
 	*			CBTREE_BASEPATH
 	*
 	*				The basePath is a URI reference (rfc 3986) relative to the server's
-	*				document root used to compose the root directory.  If this variable
+	*				document root used to compose the root directory.	If this variable
 	*				is set it overwrites the basePath parameter in any query string and
 	*				therefore becomes the server wide basepath.
 	*
@@ -111,8 +111,8 @@
 	*
 	*		Notes:
 	*
-	*			-	Some HTTP servers require  special configuration to make environment
-	*				variables available to  script or CGI application.  For example, the
+	*			-	Some HTTP servers require	special configuration to make environment
+	*				variables available to	script or CGI application.	For example, the
 	*				Apache HTTP servers requires you to either use the SetEnv or PassEnv
 	*				directive. To make the environment variable CBTREE_METHODS available
 	*				add the following to your httpd.conf file:
@@ -127,8 +127,8 @@
 	*
 	*		PERFORMACE:
 	*
-	*				If you plan on using this cbtreeFileStore  on large file systems with, for
-	*				example, a  checkbox tree that requires a strict parent-child relationship
+	*				If you plan on using this cbtreeFileStore	on large file systems with, for
+	*				example, a	checkbox tree that requires a strict parent-child relationship
 	*				it is highly recommended to use the ANSI-C CGI implementation instead, that
 	*				is, assuming your server is configured to provide CGI support.
 	*				PHP is an interpreter and relatively slow compared to native compiled CGI
@@ -145,9 +145,9 @@
 	*
 	*		SECURITY:
 	*
-	*				Some  basic security issues are addressed  by this implementation.  For example,
+	*				Some	basic security issues are addressed	by this implementation.	For example,
 	*				only HTTP methods allowed are served. Malformed QUERY-STRING parameters are NOT
-	*				skipped and  ignored, instead they will result  in a 'Bad Request' response  to
+	*				skipped and	ignored, instead they will result	in a 'Bad Request' response	to
 	*				the server/client. Requests to access files above the server's document root are
 	*				rejected returning the HTTP forbidden response (403).
 	*
@@ -168,8 +168,8 @@
 	*				Assuming a valid HTTP GET or DELETE request was received the response to
 	*				the client complies with the following ABNF notation:
 	*
-	*					response	  	::= '{' (totals ',')? (status ',')? file-list '}'
-	*					totals 				::= '"total"' ':' number
+	*					response			::= '{' (totals ',')? (status ',')? file-list '}'
+	*					totals				 ::= '"total"' ':' number
 	*					status				::= '"status"' ':' status-code
 	*					status-code		::=	'200' | '204' | '401'
 	*					file-list			::= '"items"' ':' '[' file-info* ']'
@@ -180,7 +180,7 @@
 	*					size					::= '"size"' ':' number
 	*					modified			::= '"modified"' ':' number
 	*					directory			::= '"directory"' ':' ('true' | 'false')
-	*					oldPath		  	::= '"oldPath"' ':' json-string
+	*					oldPath				::= '"oldPath"' ':' json-string
 	*					children			::= '[' file-info* ']'
 	*					expanded			::= '"_EX"' ':' ('true' | 'false')
 	*					quoted-string ::= '"' CHAR* '"'
@@ -198,7 +198,7 @@
 	***************************************************************************************/
 
 	// Define the possible HTTP result codes returned by this application.
-	define( "HTTP_V_OK", 								200);
+	define( "HTTP_V_OK",								 200);
 	define( "HTTP_V_NO_CONTENT",					204);
 	define( "HTTP_V_BAD_REQUEST",				400);
 	define( "HTTP_V_UNAUTHORIZED",				401);
@@ -212,7 +212,7 @@
 	$docRoot = $_SERVER["DOCUMENT_ROOT"];
 
 	$relPath = "";
-	$method  = null;
+	$method	= null;
 	$files	 = null;
 	$total	 = 0;
 	$status	 = 0;
@@ -238,7 +238,7 @@
 		// Your authentication may go here....
 	}
 
-	$rootDir  = str_replace( "\\","/", realPath( $docRoot . "/" . $args->basePath ));
+	$rootDir	= str_replace( "\\","/", realPath( $docRoot . "/" . $args->basePath ));
 	$fullPath = str_replace( "\\","/", realPath( $rootDir . "/" . $args->path ));
 
 	if ($rootDir && $fullPath) {
@@ -315,7 +315,7 @@
 	function cgiMethodAllowed( /*string*/ $method ) {
 		$allowed = "GET," . getenv("CBTREE_METHODS");
 		$methods = explode(",", $allowed);
-		$count   = count($methods);
+		$count	 = count($methods);
 
 		for ($i = 0;$i<$count; $i++) {
 			if ($method == trim($methods[$i])) {
@@ -360,7 +360,7 @@
 		chmod($dirPath, 0777);
 
 		if( ($dirHandle = opendir($dirPath)) ) {
-			$files   = array();
+			$files	 = array();
 
 			while($file = readdir($dirHandle)) {
 				if ($file != "." && $file != "..") {
@@ -368,8 +368,8 @@
 					$filePath = $dirPath . "/" . $file;
 					if (is_dir($filePath)) {
 						$children = _deleteDirectory( $filePath, $rootDir, $args, $stat );
-						$files    = array_merge( $files, $children );
-						$result   = rmdir( $filePath );
+						$files		= array_merge( $files, $children );
+						$result	 = rmdir( $filePath );
 					} else {
 						chmod($path, 0666);
 						$result = unlink($filePath);
@@ -402,13 +402,13 @@
 	**/
 	function deleteFile( /*string*/$filePath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
 		if( file_exists( $filePath ) ) {
-			$status   = HTTP_V_OK;
-			$files 	  = array();
-			$uri 		  = parsePath( $filePath, $rootDir );
+			$status	 = HTTP_V_OK;
+			$files		 = array();
+			$uri			 = parsePath( $filePath, $rootDir );
 			$fileInfo = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
 
 			if (is_dir($filePath)) {
-				$files  = _deleteDirectory( $filePath, $rootDir, $args, $stat );
+				$files	= _deleteDirectory( $filePath, $rootDir, $args, $stat );
 				$result = rmdir( $filePath );
 			} else {
 				chmod($filePath, 0666);
@@ -458,23 +458,23 @@
 	**/
 	function fileToStruct( /*string*/$dirPath, /*string*/$rootDir, /*string*/$filename, /*object*/$args ) {
 		$fullPath = $dirPath . "/" . $filename;
-		$atts     = stat( $fullPath );
+		$atts		 = stat( $fullPath );
 
-		$relPath  = "./" . substr( $fullPath, (strlen($rootDir)+1) );
-		$relPath  = trim( str_replace( "\\", "/", $relPath ), "/");
+		$relPath	= "./" . substr( $fullPath, (strlen($rootDir)+1) );
+		$relPath	= trim( str_replace( "\\", "/", $relPath ), "/");
 
 		$fileInfo							= new stdClass();
-		$fileInfo->name 			= $filename;
+		$fileInfo->name			 = $filename;
 		$fileInfo->path				= $relPath;
-		$fileInfo->modified 	= $atts[9];
+		$fileInfo->modified	 = $atts[9];
 
 		if (is_dir($fullPath)) {
 			$fileInfo->directory = true;
-			$fileInfo->children  = array();
-			$fileInfo->_EX       = false;
-			$fileInfo->size      = 0;
+			$fileInfo->children	= array();
+			$fileInfo->_EX			 = false;
+			$fileInfo->size			= 0;
 		} else {
-			$fileInfo->size      = filesize($fullPath);
+			$fileInfo->size			= filesize($fullPath);
 		}
 		return $fileInfo;
 	}
@@ -497,13 +497,13 @@
 	function getArguments( $method, /*integer*/&$status ) {
 
 		$status	= HTTP_V_BAD_REQUEST;		// Lets assume its a malformed query string
-		$_ARGS  = null;
+		$_ARGS	= null;
 
 		$args										= new stdClass();
 		$args->authToken				= null;
 		$args->basePath					= "";
-		$args->deep 						= false;
-		$args->path 						= null;
+		$args->deep						 = false;
+		$args->path						 = null;
 		$args->showHiddenFiles	= false;
 
 		switch ($method) {
@@ -517,7 +517,7 @@
 			case "GET":
 				$_ARGS = $_GET;
 
-				$args->ignoreCase 			= false;
+				$args->ignoreCase			 = false;
 				$args->rootDir					= "";
 
 				// Get the 'options' and 'queryOptions' first before processing any other parameters.
@@ -555,7 +555,7 @@
 			case "POST":
 				$_ARGS = $_POST;
 
-				$args->newValue  = null;
+				$args->newValue	= null;
 
 				if( !array_key_exists("newValue", $_ARGS) ||
 						!array_key_exists("path", $_ARGS)) {
@@ -625,7 +625,7 @@
 					if (property_exists($fileInfo, "directory") && $args->deep) {
 						$subDirPath = $dirPath . "/" . $fileInfo->name;
 						$fileInfo->children = getDirectory( $subDirPath, $rootDir, $args, $stat );
-						$fileInfo->_EX      = true;
+						$fileInfo->_EX			= true;
 					}
 					$files[] = $fileInfo;
 				}
@@ -654,14 +654,14 @@
 	**/
 	function getFile( /*string*/$filePath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
 		if( file_exists( $filePath ) ) {
-			$files 		= array();
-			$uri 			= parsePath( $filePath, $rootDir );
+			$files		 = array();
+			$uri			 = parsePath( $filePath, $rootDir );
 			$fileInfo = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
 
 			if (!fileFilter( $fileInfo, $args )) {
 				if (property_exists($fileInfo, "directory")) {
 					$fileInfo->children = getDirectory( $filePath, $rootDir, $args, $status );
-					$fileInfo->_EX      = true;
+					$fileInfo->_EX			= true;
 				}
 				// Don't give out details about the root directory.
 				if ($filePath === $rootDir) {
@@ -692,14 +692,14 @@
 		$fullPath = str_replace( "\\", "/", $fullPath );
 		$fullPath = realURL( $fullPath );
 
-		$lsegm    = strrpos($fullPath,"/");
+		$lsegm		= strrpos($fullPath,"/");
 		$filename = substr( $fullPath, ($lsegm ? $lsegm + 1 : 0));
-		$dirPath  = substr( $fullPath, 0, $lsegm);
+		$dirPath	= substr( $fullPath, 0, $lsegm);
 
-		$relPath  = substr( $fullPath, (strlen($rootDir)+1));
-		$relPath  = trim( ("./" . $relPath), "/" );
+		$relPath	= substr( $fullPath, (strlen($rootDir)+1));
+		$relPath	= trim( ("./" . $relPath), "/" );
 
-		$uri 						= new stdClass();
+		$uri						 = new stdClass();
 		$uri->relPath		= $relPath;
 		$uri->dirPath		= $dirPath;
 		$uri->filename	= $filename;
@@ -747,16 +747,16 @@
 			}
 			if($path[0] == '/' ) {
 				if ($path[1] != '/') {
-					$pos  = strcspn( $path, "/", 1 );
+					$pos	= strcspn( $path, "/", 1 );
 				} else {
 					$pos = 1;
 				}
 			} else {
-				$pos  = strcspn( $path, "/" );
+				$pos	= strcspn( $path, "/" );
 			}
 			$segm = substr( $path, 0, $pos );
 			$path = substr( $path, $pos );
-			$url  = $url . $segm;
+			$url	= $url . $segm;
 
 		} while( $path != $p );
 		return str_replace( "//", "/", $url );
@@ -779,11 +779,11 @@
 
 		if( file_exists( $fullPath ) ) {
 			$fileList = array();
-			$newPath  = realURL($rootDir."/".realURL($args->newValue));
+			$newPath	= realURL($rootDir."/".realURL($args->newValue));
 			if (!strncmp($newPath, $rootDir, strlen($rootDir))) {
 				if (!file_exists( $newPath )) {
 					if (rename( $fullPath, $newPath )) {
-						$uri     = parsePath( $newPath, $rootDir );
+						$uri		 = parsePath( $newPath, $rootDir );
 						$newFile = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
 
 						$newFile->oldPath = "./" . substr( $fullPath, (strlen($rootDir)+1));

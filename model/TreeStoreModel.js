@@ -8,7 +8,7 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",	  // declare
+define(["dojo/_base/declare",		// declare
 				"dojo/_base/lang",			// when()
 				"dojo/when",						// when()
 				"./_base/CheckedStoreModel"

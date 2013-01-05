@@ -8,6 +8,7 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
+
 define(["dojo/Deferred"], function (Deferred) {
 	"use strict";
 
@@ -18,9 +19,9 @@ define(["dojo/Deferred"], function (Deferred) {
 		// tag:
 		//		Public
 		var waiting = [];
-		var locked  = false;
-		var shared  = !!shared;
-		var self    = this;
+		var locked	= false;
+		var shared	= !!shared;
+		var self		= this;
 
 		function signalWaiting () {
 			if (waiting.length) {

@@ -1,7 +1,7 @@
 define(["dojo/_base/declare",
-        "dojo/_base/lang",
-        "dojo/store/api/Store",
-       ], function (declare, lang, Store) {
+				"dojo/_base/lang",
+				"dojo/store/api/Store",
+			 ], function (declare, lang, Store) {
 
 	// module:
 	//		cbtree/store/api/Store
@@ -34,6 +34,35 @@ define(["dojo/_base/declare",
 		//		- Number		A JavaScript Number
 		//		- void			undefined
 
+		//=========================================================================
+		// Store Properties
+
+		// dataHandler: Function|Object
+		//		The data handler for the data/response. If dataHandler is an key:value
+		//		pairs object, the object should looks like:
+		//
+		//			{
+		//				handler: Function|Object,
+		//				options: Object?
+		//			}
+		//
+		//		If the handler property is an object the object MUST have a property
+		//		named 'handler' whose value is a function.	In this case the handler
+		//		object provides	the scope/closure for the handler function	and the
+		//		options, if any, are mixed into the scope. For example:
+		//
+		//			dataHandler: { handler: csvHandler,
+		//										 options: { fieldNames:["col1", "col2"] }
+		//									 }
+		//
+		//		The handler function has the following signature:
+		//
+		//			handler( response )
+		//
+		//		The response argument is a JavaScript key:value pairs object with a
+		//		"text" or "data" property.
+		dataHandler: null,
+
 		// defaultProperties: Object
 		//		A JavaScript key:values pairs object whose properties and associated
 		//		values are added to new store objects if such properties are missing
@@ -62,13 +91,18 @@ define(["dojo/_base/declare",
 		multiParented: false,
 
 		// parentProperty: String
-		// 		The property name of an object whose value represents the object's
+		//		 The property name of an object whose value represents the object's
 		//		parent id or ids.
 		parentProperty: "parent",
 
 		// url: String
 		//		The Universal Resource Location (URL) to retrieve the store data from.
+		//		If both the url and data properties are specified, the data property
+		//		takes precedence.
 		url: null,
+
+		//=========================================================================
+		// Store Methods
 
 		addParent: function (child, parents) {
 			// summary:
@@ -100,22 +134,22 @@ define(["dojo/_base/declare",
 		hasChildren: function (parent) {
 			// summary:
 			//		Test if a parent object has known children. This method MUST return
-			//		boolean true or false.  Any store that supports deferred loading of
+			//		boolean true or false.	Any store that supports deferred loading of
 			//		data objects (e.g. lazy loading) MUST return false if it is unknown
 			//		if an object has children or not.
 			// parent: Object
 			// returns: Boolean
-			// 		true if the parent object has known children otherwise false.
+			//		 true if the parent object has known children otherwise false.
 		},
 
 		isItem: function (object) {
 			// summary:
 			//		Test if an object is a valid member of this store, that is, it came
-			//		from this store instance.  This method MUST return boolean true or
+			//		from this store instance.	This method MUST return boolean true or
 			//		false.
 			// obJect: Object
 			// returns: Boolean
-			// 		true if the object is a member of this store otherwise false.
+			//		 true if the object is a member of this store otherwise false.
 		},
 
 		load: function (options) {
@@ -128,7 +162,7 @@ define(["dojo/_base/declare",
 			//		promise is rejected with the error condition as its result.
 		},
 
-		onLoad: function (callback, errback) {
+		ready: function (callback, errback) {
 			// summary:
 			//		Execute the callback when the store data has been loaded. If an error
 			//		occurred during the loading process errback is called instead.
@@ -150,7 +184,7 @@ define(["dojo/_base/declare",
 			//		true if the parent(s) are successfully removed otherwise false.
 		}
 
-	});	/* end Store */
+	});	/* end cbtreeStore */
 
 	Store.LoadDirectives = declare(null, {
 		// summary:
@@ -167,11 +201,12 @@ define(["dojo/_base/declare",
 		//		and creation of stored objects.
 		// id: String|Number?
 		//		Indicates the identity of the object if a new object is created
-		// before: Object?
+		// before: (Object|id)?
 		//		If the collection of objects in the store has a natural ordering, this
 		//		indicates that the created or updated object should be placed before
-		//		the object specified by the value of this property. A value of null
-		//		indicates that the object should be last.
+		//		the object specified by the value of this property. The property value
+		//		can be an object or id. If omitted or null indicates that the object
+		//		should be last.
 		// parent: any?,
 		//		If the store is hierarchical this property indicates the new parent(s)
 		//		of the created or updated object. This property value can be an Id or
@@ -193,7 +228,7 @@ define(["dojo/_base/declare",
 		// attribute: String
 		//		The name of the attribute to sort on.
 		// descending: Boolean?
-		//		The direction of the sort.  Default is false.
+		//		The direction of the sort.	Default is false.
 		// ignoreCase: Boolean?
 		//		Compare attribute values case insensitive. Default is false.
 	});

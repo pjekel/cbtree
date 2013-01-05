@@ -8,6 +8,7 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
+
 define(["../../util/shim/Array"], function () {
 
 	function Parents (/*Object|String|String[]*/ childItem, /*String?*/ attribute) {
@@ -36,8 +37,8 @@ define(["../../util/shim/Array"], function () {
 		var attribute = attribute || "parent";
 
 		this.multiple = true;
-		this.length	  = 0;
-		this.input		= null;
+		this.length   = 0;
+		this.input    = null;
 
 		function assign(ids) {
 			Array.prototype.splice.call(this, 0,this.length);

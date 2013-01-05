@@ -8,6 +8,7 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
+
 define(["dojo/_base/lang"], function (lang) {
 	"use strict";
 		// module:
@@ -48,7 +49,7 @@ define(["dojo/_base/lang"], function (lang) {
 			// tag:
 			//		Private
 			var objectId = this.getIdentity(object);
-			var parents	= options.parent;
+			var parents  = options.parent;
 			var parentId, np = [];
 			var undef, i;
 

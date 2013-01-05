@@ -8,11 +8,12 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",			// declare
-				"dojo/_base/lang",				// lang.hitch()
-				"dojo/when",							// when()
+
+define(["dojo/_base/declare",      // declare
+				"dojo/_base/lang",         // lang.hitch()
+				"dojo/when",               // when()
 				"./BaseStoreModel",
-				"../../util/shim/Array"		// ECMA-262 Array shim
+				"../../util/shim/Array"    // ECMA-262 Array shim
 			 ], function (declare, lang, when, BaseStoreModel) {
 		// module:
 		//		cbtree/model/_base/CheckedStoreModel
@@ -124,7 +125,7 @@ define(["dojo/_base/declare",			// declare
 			// summary:
 			//		If the checkedStrict property was not specified as part of the models
 			//		keyword arguments, set it explicitly to quarentee the validateData()
-			//		method is called when needed.  Note, this method is called after all
+			//		method is called when needed.	Note, this method is called after all
 			//		(chained) constructors have been called.
 			// kwArgs:
 			//		Keyword arguments (see constructor)
@@ -302,9 +303,9 @@ define(["dojo/_base/declare",			// declare
 			// tags:
 			//		private
 
-			var hasChecked	 = false,
+			var hasChecked   = false,
 					hasUnchecked = false,
-					isMixed			= false,
+					isMixed      = false,
 					newState,
 					state;
 
@@ -376,7 +377,7 @@ define(["dojo/_base/declare",			// declare
 			var forceUpdate = false,
 					normState;
 
-			normState	 = this._normalizeState(storeItem, newState);
+			normState   = this._normalizeState(storeItem, newState);
 			forceUpdate = (normState != newState);
 
 			var currState = storeItem[this.checkedAttr];
@@ -495,7 +496,7 @@ define(["dojo/_base/declare",			// declare
 				}
 			}, this );
 			currState = this.getChecked(parent);
-			newState	= this._getCompositeState(children);
+			newState  = this._getCompositeState(children);
 
 			if (currState !== undef && newState !== undef && currState != newState) {
 				this._setChecked(parent, newState);
@@ -517,7 +518,7 @@ define(["dojo/_base/declare",			// declare
 			// tag:
 			//		private
 			var options = this.checkedStrict ? {all:true} : null;
-			var self		= this;
+			var self    = this;
 
 			when( this._loadStore(options), function () {
 				if (self.checkedStrict) {
@@ -560,7 +561,7 @@ define(["dojo/_base/declare",			// declare
 			// tags:
 			//		callback
 			var first = newChildrenList[0];
-			var self	= this;
+			var self  = this;
 
 			if (this.checkedStrict) {
 				if (this._observable) {
@@ -618,7 +619,7 @@ define(["dojo/_base/declare",			// declare
 			this._isValidated = true;
 		}
 
-	});
+	});	/* end declare() */
 
 	return CheckedStoreModel;
 

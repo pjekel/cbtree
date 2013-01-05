@@ -5,9 +5,10 @@
 //	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
 //	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
+
 define([], function() {
 	"use strict";
 
@@ -17,7 +18,7 @@ define([], function() {
 	//		Sample CSV data handler.
 	// description:
 	//		This handler can be used with the cbtree/store Object Stores or can be
-	//		registered directly with dojo/request/handlers.   The handler converts
+	//		registered directly with dojo/request/handlers.	 The handler converts
 	//		a dojo/request response type object, whose data property value is a CSV
 	//		formatted string, into an array of objects ready for consumption by the
 	//		cbtree/store Object Stores or dojo/store.
@@ -26,53 +27,53 @@ define([], function() {
 	//
 	// example:
 	//	| require(["cbtree/store/Memory",
-	//	|          "cbtree/store/handlers/csvHandler"
-	//	|         ], function (ObjectStore, csvHandler) {
+	//	|					"cbtree/store/handlers/csvHandler"
+	//	|				 ], function (ObjectStore, csvHandler) {
 	//	|
-	//	|   var store = new ObjectStore(
-	//	|                  { url: "/some/data/location/myFile.csv",
-	//	|                    handleAs:"csv",
-	//	|                    dataHandler: {
-	//	|                          handler: csvHandler,
-	//	|                          options: {
-	//	|                              fieldNames: ["Name", "LastName"],
-	//	|                              trim: true
-	//	|                          }
-	//	|                    }
-	//	|                  });
+	//	|	 var store = new ObjectStore(
+	//	|									{ url: "/some/data/location/myFile.csv",
+	//	|										handleAs:"csv",
+	//	|										dataHandler: {
+	//	|													handler: csvHandler,
+	//	|													options: {
+	//	|															fieldNames: ["Name", "LastName"],
+	//	|															trim: true
+	//	|													}
+	//	|										}
+	//	|									});
 	//	| });
 	//
 	//		To register the CSV handler directly with dojo/request/handlers use the
 	//		following code sample.
 	//
 	//	| require(["dojo/request",
-	//	|          "dojo/request/handlers",
-	//	|          "dojo/store/Memory",
-	//	|          "cbtree/store/Hierarchy",
-	//	|          "cbtree/store/handlers/csvHandler"
-	//	|         ], function (request, handlers, Memory, Hierarchy, csvHandler) {
+	//	|					"dojo/request/handlers",
+	//	|					"dojo/store/Memory",
+	//	|					"cbtree/store/Hierarchy",
+	//	|					"cbtree/store/handlers/csvHandler"
+	//	|				 ], function (request, handlers, Memory, Hierarchy, csvHandler) {
 	//	|
-	//  |   var myHandler = new csvHandler( { fieldNames: ["Name", "LastName"],
-	//	|                                     trim: true });
+	//	|	 var myHandler = new csvHandler( { fieldNames: ["Name", "LastName"],
+	//	|																		 trim: true });
 	//	|
-	//	|   // Register the CSV data handler
-	//	|   handlers.register("csv", myHandler.handler);
+	//	|	 // Register the CSV data handler
+	//	|	 handlers.register("csv", myHandler.handler);
 	//	|
-	//	|   var result = request("/some/data/location/myFile.csv", {handleAs:"csv"});
-	//	|   result.then( function (data) {
-	//	|     // Create a dojo/store/Memory store...
-	//	|     var store = new Memory( {data: data} );
-	//	|   });
+	//	|	 var result = request("/some/data/location/myFile.csv", {handleAs:"csv"});
+	//	|	 result.then( function (data) {
+	//	|		 // Create a dojo/store/Memory store...
+	//	|		 var store = new Memory( {data: data} );
+	//	|	 });
 	//	|
 	//	|		// First change the field names
-	//	|   myHandler.set( {fieldNames: ["city", "zipcode", "county", "state"]} );
-	//	|   var ObjStore = new Hierarchy( {url:"/another/location/myCities.csv",
-	//	|                                  handleAs:"csv"} );
+	//	|	 myHandler.set( {fieldNames: ["city", "zipcode", "county", "state"]} );
+	//	|	 var ObjStore = new Hierarchy( {url:"/another/location/myCities.csv",
+	//	|																	handleAs:"csv"} );
 	//	| });
 	//
 	//		Note: Because the CSV handler was registered before the creation of the
-	//		      Hierarchy Store we can now simply set the 'handleAs' property to
-	//          "csv"
+	//					Hierarchy Store we can now simply set the 'handleAs' property to
+	//					"csv"
 
 	if (!String.prototype.trim) {
 		String.prototype.trim = function () {
@@ -134,7 +135,7 @@ define([], function() {
 	function split(/*String*/ str, /*String*/ separator) {
 		// summary:
 		//		Splits a String object into an array of strings by separating the string
-		//		into substrings.  If the separtor is enclosed by double quotes (") it is
+		//		into substrings.	If the separtor is enclosed by double quotes (") it is
 		//		ignored.
 		// str:
 		//		String object
@@ -146,7 +147,7 @@ define([], function() {
 		//		Private
 		var tokens = str.split(separator);
 		var substr = "", prefix = "";
-		var array = [];
+		var array  = [];
 		var i, count = 1;
 
 		for(i=0; i<tokens.length; i++) {
@@ -263,7 +264,7 @@ define([], function() {
 
 		this.set = function (/*String|Object*/ property, /*any?*/ value) {
 			// summary:
-			// 		Set a property value
+			//		 Set a property value
 			// property:
 			//		Property name or a JavaScript key:value pairs object.
 			// value:

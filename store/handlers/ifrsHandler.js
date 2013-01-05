@@ -5,9 +5,10 @@
 //	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
 //	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//	2 - The "New" BSD License			 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License	 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
+
 define(["dojo/_base/lang",
 				"dojo/date/stamp",
 				"dojo/json",
@@ -32,28 +33,28 @@ define(["dojo/_base/lang",
 	//
 	// example:
 	//	| require(["cbtree/store/Hierarchy",
-	//	|          "cbtree/store/handlers/ifrsHandler"
-	//	|         ], function (ObjectStore, ifrsHandler) {
+	//	|					"cbtree/store/handlers/ifrsHandler"
+	//	|				 ], function (ObjectStore, ifrsHandler) {
 	//	|
-	//	|   var store = new ObjectStore(
-	//	|                  { url: "/some/data/location/myFile.json",
-	//	|                    handleAs:"ifrs",
-	//	|                    dataHandler: ifrsHandler
-	//	|                  });
+	//	|	 var store = new ObjectStore(
+	//	|									{ url: "/some/data/location/myFile.json",
+	//	|										handleAs:"ifrs",
+	//	|										dataHandler: ifrsHandler
+	//	|									});
 	//	|
-	//	|               or
+	//	|							 or
 	//	|
-	//	|   var store = new ObjectStore(
-	//	|                  { url: "/some/data/location/myFile.json",
-	//	|                    handleAs:"ifrs",
-	//	|                    dataHandler: {
-	//	|                          handler: ifrsHandler,
-	//	|                          options: {
-	//	|                              childProperty: ["children"]
-	//	|                                      ...
-	//	|                          }
-	//	|                    }
-	//	|                  });
+	//	|	 var store = new ObjectStore(
+	//	|									{ url: "/some/data/location/myFile.json",
+	//	|										handleAs:"ifrs",
+	//	|										dataHandler: {
+	//	|													handler: ifrsHandler,
+	//	|													options: {
+	//	|															childProperty: ["children"]
+	//	|																			...
+	//	|													}
+	//	|										}
+	//	|									});
 	//	| });
 	var moduleName = "cbtree/store/handlers/ifrsHandler";
 
@@ -197,7 +198,7 @@ define(["dojo/_base/lang",
 							var dszf = mapObj.deserialize;
 							var ctor = mapObj.type;
 
-							if (isFunction(dszf))  {
+							if (isFunction(dszf))	{
 								return dszf(value);
 							}
 							if (isFunction(ctor)) {
@@ -261,7 +262,7 @@ define(["dojo/_base/lang",
 			ifrsData = JSON.parse(response.text || response.data);
 
 			if (ifrsData && ifrsData.items) {
-				var identProp  = ifrsData.identifier || identProp;
+				var identProp	= ifrsData.identifier || identProp;
 
 				ifrsData.items.forEach( flattenHierarchy );
 				allItems.forEach( resolveRefAndType );
@@ -282,7 +283,7 @@ define(["dojo/_base/lang",
 
 		this.set = function (/*String|Object*/ property, /*any?*/ value) {
 			// summary:
-			// 		Set a handler property value
+			//		 Set a handler property value
 			// property:
 			//		Property name or a JavaScript key:value pairs object.
 			// value:

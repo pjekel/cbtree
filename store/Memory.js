@@ -8,6 +8,7 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
+
 define(["dojo/_base/declare",
 				"dojo/_base/lang",
 				"dojo/Deferred",
@@ -60,7 +61,7 @@ define(["dojo/_base/declare",
 
 		// dataHandler: Function|Object
 		//		The data handler for the data/response. If dataHandler is an key:value
-		//		pairs object,	the object should looks like:
+		//		pairs object, the object should looks like:
 		//
 		//			{ handler: Function|Object,
 		//				options: Object?
@@ -68,12 +69,19 @@ define(["dojo/_base/declare",
 		//
 		//		If the handler property is an object the object MUST have a property
 		//		named 'handler' whose value is a function.	In this case the handler
-		//		object provides	the scope/closure for the handler function	and the
+		//		object provides	the scope/closure for	the handler function and the
 		//		options, if any, are mixed into the scope. For example:
 		//
 		//			dataHandler: { handler: csvHandler,
 		//										 options: { fieldNames:["col1", "col2"] }
 		//									 }
+		//		The handler function has the following signature:
+		//
+		//			handler( response )
+		//
+		//		The response argument is a JavaScript key:value pairs object with a
+		//		"text" or "data" property.
+		//
 		//		(See cbtree/stores/handlers/csvHandler.js for an example handler).
 		dataHandler: null,
 
@@ -145,7 +153,7 @@ define(["dojo/_base/declare",
 			declare.safeMixin( this, kwArgs );
 
 			if (this.handleAs && this.dataHandler) {
-				var scope	 = this.dataHandler.handler || this.dataHandler;
+				var scope   = this.dataHandler.handler || this.dataHandler;
 				var options = this.dataHandler.options;
 				var setter, handler;
 
@@ -154,13 +162,13 @@ define(["dojo/_base/declare",
 						scope = new scope();
 						if (typeof scope.handler != "function") {
 							handler = this.dataHandler;
-							scope	 = undefined;
+							scope   = undefined;
 							break;
 						}
 						/* NO BREAK HERE */
 					case "object":
 						handler = scope.handler;
-						setter	= scope.set;
+						setter  = scope.set;
 						break;
 					default:
 						throw new Error(moduleName+"::constructor(): handler must be a function");
@@ -209,16 +217,42 @@ define(["dojo/_base/declare",
 				object._destoyed = true;
 			});
 			this._destroyed = true;
-			this._indexId = {};
-			this._data = [];
+			this._indexId   = {};
+			this._data      = [];
 		},
 
 		//=========================================================================
 		// Private methods
 
+		_anyToObject: function (/*any*/ something) {
+			// summary:
+			//		Returns the store object associated with "something".
+			// something:
+			//		Object, string or number
+			// returns:
+			//		Object | undefined
+			//tag:
+			//		Private
+			if (something) {
+				var objId;
+				switch (typeof something) {
+					case "string":
+					case "number":
+						objId = something;
+						break;
+					case "object":
+						objId = this.getIdentity(something);
+						break;
+					default:
+						return;
+				}
+				return this.get(objId);
+			}
+		},
+
 		_applyDefaults: function (/*String|Number*/ id, /*Object*/ object) {
 			// summary:
-			// 		Add missing default properties and set the object id.
+			//		 Add missing default properties and set the object id.
 			// id:
 			//		Object identification.
 			// object:
@@ -276,7 +310,7 @@ define(["dojo/_base/declare",
 
 		_loadData: function (/*Object[]?*/ data) {
 			// summary:
-			//		Load an array of data objects into the store and indexes it.  This
+			//		Load an array of data objects into the store and indexes it.	This
 			//		method is called after the raw data has been processed by the data
 			//		handler in case the 'handleAs' property is set.
 			// data:
@@ -284,6 +318,7 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Private
 			var object, id, i;
+			var self = this;
 
 			this._data = [];
 			this.data  = null;
@@ -416,7 +451,7 @@ define(["dojo/_base/declare",
 			// returns:
 			//		dojo/promise/Promise
 			// tag:
-			//		Public, Extension
+			//		Public
 			if (!this._isLoading && !this._storeLoaded.isFulfilled()) {
 				if (options && options.url) {
 					this.url = options.url;
@@ -434,17 +469,6 @@ define(["dojo/_base/declare",
 				}
 			}
 			return this._storeLoaded.promise;
-		},
-
-		onLoad: function (callback, errback) {
-			// summary:
-			//		Execute the callback when the store data has been loaded. If an error
-			//		is detected during the loading process errback is called instead.
-			// returns:
-			//		dojo/promise/Promise
-			// tag:
-			//		Public, Extension
-			return this._storeLoaded.then(callback, errback);
 		},
 
 		put: function (/*Object*/ object,/*PutDirectives?*/ options) {
@@ -482,9 +506,9 @@ define(["dojo/_base/declare",
 			// example:
 			//		Given the following store:
 			//
-			// 	|	var store = new Memory({
-			// 	|		data: [
-			// 	|			{id: 1, name: "one", prime: false },
+			//	|	var store = new Memory({
+			//	|		data: [
+			//	|			{id: 1, name: "one", prime: false },
 			//	|			{id: 2, name: "two", even: true, prime: true},
 			//	|			{id: 3, name: "three", prime: true},
 			//	|			{id: 4, name: "four", even: true, prime: false},
@@ -499,6 +523,8 @@ define(["dojo/_base/declare",
 			//	...or find all items where "even" is true:
 			//
 			//	|	var results = store.query({ even: true });
+			// tag:
+			//		Public
 			var self = this;
 
 			if (this._storeLoaded.isFulfilled()) {
@@ -511,6 +537,17 @@ define(["dojo/_base/declare",
 			}
 		},
 
+		ready: function (callback, errback) {
+			// summary:
+			//		Execute the callback when the store data has been loaded. If an error
+			//		is detected during the loading process errback is called instead.
+			// returns:
+			//		dojo/promise/Promise
+			// tag:
+			//		Public
+			return this._storeLoaded.then(callback, errback);
+		},
+
 		remove: function (/*String|Number*/ id) {
 			// summary:
 			//		Deletes an object by its identity
@@ -518,6 +555,8 @@ define(["dojo/_base/declare",
 			//		The identity to use to delete the object
 			// returns:
 			//		Returns true if an object was removed otherwise false.
+			// tag:
+			//		Public
 			var at = this._indexId[id];
 			if (at >= 0) {
 				this._data.splice(at, 1);

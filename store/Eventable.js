@@ -17,8 +17,8 @@ define(["dojo/_base/lang",
 
 	var Eventable = function (/*store*/ store) {
 		// summary:
-		//		The Eventable store wrapper takes	a store and adds advice	like methods
-		//		to the store's add, put and remove methods.  As a result, store's add,
+		//		The Eventable store wrapper takes a store and adds advice	like methods
+		//		to the store's add, put and remove methods.	As a result, store's add,
 		//		put	or remove operations will emit an event the user application can
 		//		subscribe to using either store.on() or dojo/on on().
 		//		The generated events have at least the following two properties:

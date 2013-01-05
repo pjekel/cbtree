@@ -89,7 +89,7 @@ define(["dojo/_base/declare",
 					throw new Error("Object already exists");
 				}
 				orgObj = this._data[at];
-				exist	 = true;
+				exist	= true;
 			}
 			id = this._writeObject(id, object, at, options);
 			if (exist) {

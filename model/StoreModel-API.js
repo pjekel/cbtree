@@ -61,8 +61,8 @@ define(["dojo/_base/lang",
 			//		private
 
 			var storeOnly = this.checkedStrict ? true : false,
-					matches	 = 0,
-					updates	 = 0;
+					matches   = 0,
+					updates   = 0;
 
 			this.fetchItemsWithChecked(query, function (storeItems) {
 				storeItems.forEach(function (storeItem) {
@@ -102,7 +102,7 @@ define(["dojo/_base/lang",
 			//		public
 
 			var idQuery = this._anyToQuery(args, null);
-			var scope	 = scope || this;
+			var scope   = scope || this;
 
 			if (idQuery && onComplete) {
 				when(this.store.query(idQuery), function (queryResult) {
@@ -142,9 +142,9 @@ define(["dojo/_base/lang",
 
 			var storeQuery = this._anyToQuery( query, null );
 			var storeItems = [];
-			var cacheOnly	= (storeOnly !== undefined) ? !!storeOnly : true;
-			var scope			= scope || this;
-			var self			 = this;
+			var cacheOnly  = (storeOnly !== undefined) ? !!storeOnly : true;
+			var scope      = scope || this;
+			var self       = this;
 
 			if (isObject(storeQuery)) {
 				when( this.store.query(storeQuery, {cacheOnly: cacheOnly}), function (items) {
@@ -325,7 +325,7 @@ define(["dojo/_base/lang",
 
 			if (identAttr) {
 				var objAttr = attribute || identAttr,
-						query	 = {};
+						query   = {};
 				if (typeof args == "string") {
 					query[identAttr] = args;
 					return query;

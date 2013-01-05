@@ -8,13 +8,14 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",		  // declare
+
+define(["dojo/_base/declare",			// declare
 				"dojo/_base/lang",				// lang.hitch()
 				"dojo/aspect",						// aspect.before()
 				"dojo/Deferred",
 				"dojo/promise/all",
-				"dojo/promise/Promise", 	// instanceof
-				"dojo/Stateful",        	// set() & get()
+				"dojo/promise/Promise",	 // instanceof
+				"dojo/Stateful",					// set() & get()
 				"dojo/when",							// when()
 				"./Parents",
 				"./Prologue",							// Store Prologue methods
@@ -80,7 +81,7 @@ define(["dojo/_base/declare",		  // declare
 
 		// store: cbtree/store
 		//		Underlying store. The store MUST implement, at a minimum, the dojo/store
-		//		API and preferably the cbtree/store API.  For the best functionality and
+		//		API and preferably the cbtree/store API.	For the best functionality and
 		//		performance it is highly recommended to use the cbtree/store/ObjectStore
 		store: null,
 
@@ -161,7 +162,7 @@ define(["dojo/_base/declare",		  // declare
 									this._evtHandles = store.on( "change, delete, new",
 																					lang.hitch(this, this._onStoreEvent));
 									this._observable = false;	// evented takes precedence
-									this._eventable  = true;
+									this._eventable	= true;
 								}
 								break;
 							case "hasChildren":
@@ -339,7 +340,7 @@ define(["dojo/_base/declare",		  // declare
 			// tags:
 			//		private
 			var deferred = new Deferred();
-			var parents	= [];
+			var parents  = [];
 
 			if (storeItem) {
 				// Leverage the store if is has a getParents() method.
@@ -579,7 +580,7 @@ define(["dojo/_base/declare",		  // declare
 
 			if (oldParentId != newParentId) {
 				var wasRoot = (oldParentItem == this.root);
-				var isRoot	= (newParentItem == this.root);
+				var isRoot  = (newParentItem == this.root);
 				if (!bCopy) {
 					updParents.push(oldParentItem);
 					parentIds.remove(oldParentId);
@@ -665,7 +666,7 @@ define(["dojo/_base/declare",		  // declare
 			//		The store item that was deleted.
 			// tag:
 			//		Private
-			var id	 = this.getIdentity(item);
+			var id   = this.getIdentity(item);
 			var self = this;
 
 			// Because observable does not provide definitive information if the item
@@ -724,7 +725,7 @@ define(["dojo/_base/declare",		  // declare
 			// tags:
 			//		extension
 			var parentProp = this.parentProperty;
-			var self			 = this;
+			var self       = this;
 
 			if (property === parentProp) {
 				var np = new Parents(newValue, parentProp);
@@ -869,7 +870,7 @@ define(["dojo/_base/declare",		  // declare
 			//		Parent Object.
 			// method:
 			//		Function to call if no children are found in the children cache for
-			//		the given parent.  The function is called in the scope of the model
+			//		the given parent.	The function is called in the scope of the model
 			//		as method(parent,id) and must return a Promise or an array or array
 			//		like object with the parent's children. If a Promise is returned it
 			//		MUST resolve to an array or array-like object.
@@ -880,7 +881,7 @@ define(["dojo/_base/declare",		  // declare
 			//		Callback function, called in case an error occurred.
 			// tags:
 			//		public
-			var id	 = this.getIdentity(parent);
+			var id   = this.getIdentity(parent);
 			var self = this;
 			var result;
 
@@ -959,18 +960,18 @@ define(["dojo/_base/declare",		  // declare
 			// value:
 			//		New value to be assigned.
 			// returns:
-			//		Promise, number or string.
+			//		value.
 			// tag:
 			//		Private
 			if (item[property] !== value) {
 				var orgItem = lang.mixin(null, item);
-				var result	= null;
-				var self		= this;
+				var result  = null;
+				var self    = this;
 
 				item[property] = value;
 				result = this.store.put( item, {overwrite: true});
 				if (!this._monitored) {
-					when( result, function () { self._onChange(item, orgItem);	});
+					when( result, function () { self._onChange(item, orgItem); });
 				}
 			}
 			return value;
