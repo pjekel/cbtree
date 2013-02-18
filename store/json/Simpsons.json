@@ -1,24 +1,24 @@
 [
 	{ "name":"Root", "parent":[] },
 
-	{ "name":"Lisa", "parent":["Homer","Marge"], "hair":"blond", "checked":true, "icon":"simpsonsIcons lisa" },
-	{ "name":"Bart", "parent":["Homer","Marge"], "hair":"blond", "checked":false, "icon":"simpsonsIcons bart" },
-	{ "name":"Maggie", "parent":["Homer","Marge"], "hair":"black", "checked":true },
+	{ "name":"Lisa", "age":10, "parent":["Homer","Marge"], "hair":"blond", "checked":true, "icon":"simpsonsIcons lisa" },
+	{ "name":"Bart", "age":9, "parent":["Homer","Marge"], "hair":"blond", "checked":false, "icon":"simpsonsIcons bart" },
+	{ "name":"Maggie", "age":2, "parent":["Homer","Marge"], "hair":"black", "checked":true },
 
-	{ "name":"Patty", "parent":["Jacqueline"], "hair":"blond", "checked":true },
-	{ "name":"Selma", "parent":["Jacqueline"], "hair":"blond", "checked":false },
+	{ "name":"Patty", "age":37, "parent":["Jacqueline"], "hair":"blond", "checked":true },
+	{ "name":"Selma", "age":38, "parent":["Jacqueline"], "hair":"blond", "checked":false },
 
-	{ "name":"Rod", "parent":["Ned"], "hair":"blond", "checked":true },
-	{ "name":"Todd", "parent":["Ned"], "hair":"blond", "checked":true },
+	{ "name":"Rod", "age":9, "parent":["Ned"], "hair":"blond", "checked":true },
+	{ "name":"Todd", "age":8, "parent":["Ned"], "hair":"blond", "checked":true },
 
-	{ "name":"Abe", "parent":["Root"], "hair":"none", "checked":true },
-	{ "name":"Mona", "parent":["Root"], "hair":"none", "checked":false },
-	{ "name":"Jacqueline", "parent":["Root"], "hair":"none", "checked":true },
-	{ "name":"Homer", "parent":["Abe","Mona"], "hair":"none", "checked":false, "icon":"simpsonsIcons homer", "enabled": false },
-	{ "name":"Marge", "parent":["Jacqueline"], "hair":"blond", "checked":true, "icon":"simpsonsIcons marge" },
-	{ "name":"Ned", "parent":["Root"], "hair":"none", "checked":true },
+	{ "name":"Abe", "age":65, "parent":["Root"], "hair":"none", "checked":true },
+	{ "name":"Mona", "age":65, "parent":["Root"], "hair":"none", "checked":false },
+	{ "name":"Jacqueline", "age":63, "parent":["Root"], "hair":"none", "checked":true },
+	{ "name":"Homer", "age":42, "parent":["Abe","Mona"], "hair":"none", "checked":false, "icon":"simpsonsIcons homer", "enabled": false },
+	{ "name":"Marge", "age":35, "parent":["Jacqueline"], "hair":"blond", "checked":true, "icon":"simpsonsIcons marge" },
+	{ "name":"Ned", "age":40, "parent":["Root"], "hair":"none", "checked":true },
 
-	{ "name":"Apu", "parent":["Root"], "hair":"black", "checked":true },
-	{ "name":"Manjula", "parent":["Apu"], "hair":"brown", "checked":false}
+	{ "name":"Apu", "age":40, "parent":["Root"], "hair":"black", "checked":true },
+	{ "name":"Manjula", "age":40, "parent":["Apu"], "hair":"brown", "checked":false}
 ]
 

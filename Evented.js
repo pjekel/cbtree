@@ -25,12 +25,19 @@ define(["dojo/aspect", "dojo/on"], function(aspect, on){
 
     this.on = function(type, listener) {
 
-      function onMethod( target, type) {
-        var method = "on" + type.replace(/^[a-z]/, function(m) { return m.toUpperCase() });
-        if (typeof target[method] == "function") {
-          return method;
-        }
-        return ("on" + type);
+      function onMethod( target, type ) {
+				var ctor  = target.constructor;
+				var onMap = ctor._onMap;
+				if(!onMap){
+					onMap = (ctor._onMap = {});
+					for(var attr in ctor.prototype){
+						if(/^on/.test(attr)){
+							onMap[attr.replace(/^on/, "").toLowerCase()] = attr;
+						}
+					}
+				}
+				var method = onMap[type.toLowerCase()] || "on" + type;
+				return method;
       }
 
       return on.parse(this, type, listener, function(target, type){

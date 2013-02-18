@@ -37,7 +37,7 @@ define(["dojo/_base/declare",	 // declare
 
 		// rootLabel: String
 		//		Label of the fabricate root item
-		rootLabel: "ForestRoot",
+		rootLabel: "ROOT",
 
 		// End Parameters to constructor
 		//==============================

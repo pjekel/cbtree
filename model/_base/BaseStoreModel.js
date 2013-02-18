@@ -137,7 +137,7 @@ define(["dojo/_base/declare",			// declare
 			declare.safeMixin(this, kwArgs);
 
 			var props = ["add", "put", "get", "load", "hasChildren", "getChildren", "getParents",
-									 "addParent", "removeParent", "queryEngine", "notify", "emit",
+									 "addParent", "query", "removeParent", "queryEngine", "notify", "emit",
 									 "isItem"
 									];
 			var store = this.store;
@@ -148,6 +148,12 @@ define(["dojo/_base/declare",			// declare
 			// additional methods, advice and/or properties.
 
 			if (store) {
+				// Exchange the "parentProperty".
+				if (store.parentProperty) {
+					this.parentProperty = store.parentProperty;
+				} else {
+					store.parentProperty = this.parentProperty;
+				}
 				props.forEach( function (prop) {
 					if (typeof store[prop] == "function") {
 						this._storeMethods[prop] = store[prop];
@@ -187,8 +193,13 @@ define(["dojo/_base/declare",			// declare
 						// required functionality.
 						switch (prop) {
 							case "getChildren":
-								var funcBody = "return this.query({"+this.parentProperty+": this.getIdentity(object)});"
-								store.getChildren = new Function("object", funcBody);
+								if (typeof store["query"] == "function") {
+									var funcBody = "return this.query({"+this.parentProperty+": this.getIdentity(object)});"
+									store.getChildren = new Function("object", funcBody);
+								} else {
+									throw new TypeError(moduleName+"::constructor(): store MUST support getChildren()" +
+																			" or query() method");
+								}
 								break;
 							case "isItem":
 								// NOTE: This will only work for synchronous stores...
@@ -201,7 +212,7 @@ define(["dojo/_base/declare",			// declare
 								break;
 							case "get":
 								// The store must at a minimum support get()
-								throw new TypeError(moduleName+"::constructor(): store MUST the get() methods");
+								throw new TypeError(moduleName+"::constructor(): store MUST support the get() method");
 							case "put":
 								this._writeEnabled = false;
 								break;
@@ -211,12 +222,6 @@ define(["dojo/_base/declare",			// declare
 
 				this._monitored = (this._eventable || this._observable);
 
-				// Exchange the "parentProperty".
-				if (store.parentProperty) {
-					this.parentProperty = store.parentProperty;
-				} else {
-					store.parentProperty = this.parentProperty;
-				}
 			} else {
 				throw new Error(moduleName+"::constructor(): Store parameter is required");
 			}
@@ -237,31 +242,6 @@ define(["dojo/_base/declare",			// declare
 			this._objectCache   = {};
 			this.store          = undef;
 
-		},
-
-		fetchItemByIdentity: function (/* object */ kwArgs) {
-			// summary:
-			//		Fetch a store item by identity.
-			// kwArgs:
-			//		A JavaScript key:value pairs object that defines the item to locate
-			//		and callbacks to invoke when the item has been located. The format of
-			//		the object is as follows:
-			// |	{
-			// |		identity: String|Number,
-			// |		onItem: Function,
-			// |		onError: Function,
-			// |		scope: object
-			// |	}
-			// NOTE:
-			//		This method is for backward compatability with dijit/tree/model only.
-			//		use store.get(identity) instead.
-			// tags:
-			//		public
-
-			when ( this.store.get(kwArgs.identity),
-				lang.hitch(kwArgs.scope, kwArgs.onItem),
-				lang.hitch(kwArgs.scope, kwArgs.onError)
-			);
 		},
 
 		getChildren: function (/*Object*/ parent, /*Function*/ onComplete, /*Function*/ onError) {
@@ -393,25 +373,29 @@ define(["dojo/_base/declare",			// declare
 				if (!this._loadRequested) {
 					this._loadStore();
 				}
-				when( this._storeLoaded, function () {
-					var result = self.store.query(self.query);
-					when(result, function (items) {
-						if (items.length != 1) {
-							throw new Error(moduleName + ": Root query returned " + items.length +
-																" items, but must return exactly one item");
-						}
-						self.root = items[0];
-						// Setup listener to detect if root item changes
-						if (result.observe) {
-							result.observe( function (obj, removedFrom, insertedInto) {
-								if (removedFrom == insertedInto) {
-									self._onChange( obj, null );
-								}
-							}, true);	// true to listen for updates to obj
-						}
-						onItem(self.root);
-					}, onError);
-				});
+				if (this._storeMethods.query) {
+					when( this._storeLoaded, function () {
+						var result = self.store.query(self.query);
+						when(result, function (items) {
+							if (items.length != 1) {
+								throw new Error(moduleName + ": Root query returned " + items.length +
+																	" items, but must return exactly one item");
+							}
+							self.root = items[0];
+							// Setup listener to detect if root item changes
+							if (result.observe) {
+								result.observe( function (obj, removedFrom, insertedInto) {
+									if (removedFrom == insertedInto) {
+										self._onChange( obj, null );
+									}
+								}, true);	// true to listen for updates to obj
+							}
+							onItem(self.root);
+						}, onError);
+					});
+				} else {
+					throw new Error(moduleName + "::getRoot(): store has no query() method" );
+				}
 			}
 		},
 
@@ -964,14 +948,18 @@ define(["dojo/_base/declare",			// declare
 			// tag:
 			//		Private
 			if (item[property] !== value) {
-				var orgItem = lang.mixin(null, item);
-				var result  = null;
-				var self    = this;
+				if (this._writeEnabled) {
+					var orgItem = lang.mixin(null, item);
+					var result  = null;
+					var self    = this;
 
-				item[property] = value;
-				result = this.store.put( item, {overwrite: true});
-				if (!this._monitored) {
-					when( result, function () { self._onChange(item, orgItem); });
+					item[property] = value;
+					result = this.store.put( item, {overwrite: true});
+					if (!this._monitored) {
+						when( result, function () { self._onChange(item, orgItem); });
+					}
+				} else {
+					throw new TypeError(moduleName+"::_setValue(): store is not writable.");
 				}
 			}
 			return value;

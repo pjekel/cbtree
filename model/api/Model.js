@@ -62,28 +62,6 @@ define(["dojo/_base/declare"], function (declare) {
 		// =======================================================================
 		// Inspecting items
 
-		fetchItemByIdentity: function(keywordArgs){
-			// summary:
-			//		Given the identity of an item, this method returns the item that has
-			//		that identity through the onItem callback.	Conforming implementations
-			//		should return null if there is no item with the given identity.
-			// kwArgs:
-			//		A JavaScript key:value pairs object that defines the item to locate
-			//		and callbacks to invoke when the item has been located. The format of
-			//		the object is as follows:
-			// |	{
-			// |		identity: String|Number,
-			// |		onItem: Function,
-			// |		onError: Function,
-			// |		scope: object
-			// |	}
-			// NOTE:
-			//		This method is for backward compatability with dijit/tree/model only.
-			//		use store.get(identity) instead.
-			// tags:
-			//		public. Optional
-		},
-
 		getEnabled: function (item) {
 			// summary:
 			//		Returns the current 'enabled' state of an item as a boolean. The state
