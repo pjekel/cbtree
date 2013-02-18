@@ -27,11 +27,11 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-        "dojo/data/ItemFileWriteStore",
         "dojo/parser",                    // dojo parser
+        "dojo/data/ItemFileWriteStore",
         "cbtree/Tree",                    // Checkbox tree
-        "cbtree/TreeStyling",             // Tree styling extensions
-        "cbtree/models/ForestStoreModel"  // ForestStoreModel
+        "cbtree/extensions/Styling",      // Tree styling extensions
+				"cbtree/models/ForestStoreModel"
       ]);
 
       function checkBoxClicked( item, nodeWidget, evt ) {

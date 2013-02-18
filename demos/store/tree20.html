@@ -30,7 +30,7 @@
       require([
         "dojo/ready",
         "cbtree/Tree",                  // Checkbox tree
-        "cbtree/TreeStyling",
+        "cbtree/extensions/Styling",
         "cbtree/model/FileStoreModel",
         "cbtree/store/FileStore"
         ], function (ready, Tree, TreeStyling, FileStoreModel, FileStore) {
@@ -57,7 +57,7 @@
 
           ready(function() {
             var tree = new Tree( { model: model,
-                                    id: "MenuTree", persist:false,
+                                    id: "MenuTree", persist:false
                                   }, "CheckboxTree" );
             tree.on( "click", onClick );
             tree.startup();
