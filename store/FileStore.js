@@ -17,8 +17,8 @@ define(["dojo/_base/declare",
 				"dojo/Stateful",
 				"dojo/store/util/QueryResults",
 				"dojo/when",
-				"./util/Mutex",
-				"./util/QueryEngine",
+				"../util/Mutex",
+				"../util/QueryEngine",
 				"../util/shim/Array"		// ECMA-262 Backward Compatibility Array shim
 			 ], function (declare, lang, Deferred, Evented, json, request, Stateful, QueryResults,
 										 when, Mutex, QueryEngine) {

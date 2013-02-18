@@ -11,7 +11,7 @@
 define(["dojo/_base/lang",
 				"dojo/Deferred",
 				"dojo/when",
-				"./util/Mutex",
+				"../util/Mutex",
 				"../Evented"
 			 ], function (lang, Deferred, when, Mutex, Evented) {
 

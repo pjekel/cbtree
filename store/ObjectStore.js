@@ -37,7 +37,7 @@ define(["dojo/_base/declare",
 		//		This store type is the preferred store when multiple models operate
 		//		on a single store.
 
-		// eventable: Boolean
+		// eventable: Boolean [read-only]
 		//		Indicates this store emits events when the content of the store changes.
 		//		This type of store is referred to as an "Eventable" store.
 		eventable: true,

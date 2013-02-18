@@ -78,8 +78,7 @@ define(["dojo/_base/declare",
 
 		constructor: function () {
 			// summary:
-			//		Store constructor, initialize the optional indexes.
-			this.hierarchical	= true;
+			//		Store constructor
 			this.indexChildren = this._indexStore ? this.indexChildren : false;
 		},
 
@@ -144,6 +143,30 @@ define(["dojo/_base/declare",
 				}, this);
 			}
 			return parentIds;
+		},
+
+		_loadData: function (data) {
+			// summary:
+			//		Load an array of data objects into the store and indexes it. If the
+			//		store property 'multiParented' is set to "auto" test if any object
+			//		has a parent property whose value is an array.
+			// data:
+			//		An array of objects.
+			// tag:
+			//		Private
+
+			// Reset indexes...
+			this._indexParent = {};
+			this._indexChild  = {};
+
+			if (data instanceof Array && this.multiParented == "auto") {
+				// Detect the multi parent mode.
+				this.multiParented = data.some( function (object) {
+					return (object[this.parentProperty] instanceof Array);
+				}, this);
+			}
+			// Load the store
+			this.inherited(arguments);
 		},
 
 		_parentIdsChanged: function (/*id[]*/ newIds, /*id[]*/ oldIds) {

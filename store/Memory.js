@@ -13,11 +13,12 @@ define(["dojo/_base/declare",
 				"dojo/_base/lang",
 				"dojo/Deferred",
 				"dojo/request",
+				"dojo/Stateful",
 				"dojo/request/handlers",
 				"dojo/store/util/QueryResults",
-				"./util/QueryEngine",
+				"../util/QueryEngine",
 				"../util/shim/Array"						 // ECMA-262 Array shim
-			 ], function (declare, lang, Deferred, request, handlers, QueryResults, QueryEngine) {
+			 ], function (declare, lang, Deferred, request, Stateful, handlers, QueryResults, QueryEngine) {
 
 	// module:
 	//		cbtree/store/Memory
@@ -27,7 +28,11 @@ define(["dojo/_base/declare",
 
 	var moduleName = "cbTree/store/Memory";
 
-	var Memory = declare([], {
+	function readOnly( property ) {
+		throw new Error( moduleName+"::set(): property ["+property+"] is READ-ONLY");
+	}	
+
+	var Memory = declare([Stateful], {
 		// summary:
 		//		This is a memory object store implementing the cbtree/store/api/Store
 		//		API. The store objects can be loaded	using either in-memory data or a
@@ -91,6 +96,12 @@ define(["dojo/_base/declare",
 		//		from the new store object.
 		defaultProperties: null,
 
+		// filter: Object | Function
+		//		Filter object or function applied to the store data prior to loading
+		//		the store. The filter property is used to load a subset of objects
+		//		in the store.
+		filter: null,
+		
 		// handleAs: String
 		//		If the handleAs property is omitted and the data property is specified
 		//		no action is taken on the data. Whenever the url property is specified
@@ -181,33 +192,6 @@ define(["dojo/_base/declare",
 					}
 				}
 			}
-			// We can only index the store if we have an id property.
-			this._indexStore = !!this.idProperty;
-			this.autoLoad    = !!this.autoLoad;
-
-			if (this.data) {
-				// If the 'handleAs' property is set run the data by the data handler first.
-				if (this.handleAs) {
-					var response = {data: this.data, options:{handleAs: this.handleAs}};
-					this.data = handlers( response );
-				}
-				this._isLoading = true;
-				this._loadData(store.data);
-			} else {
-				if (this.url) {
-					if (typeof this.url == "string") {
-						if (this.autoLoad) {
-							this.load();
-						}
-					} else {
-						throw new Error(moduleName+"::_urlSetter(): URL property must be of type string");
-					}
-				} else {
-					if (this.autoLoad) {
-						this._loadData();		// No data or URL specified.
-					}
-				}
-			}
 		},
 
 		destroy: function () {
@@ -219,6 +203,46 @@ define(["dojo/_base/declare",
 			this._destroyed = true;
 			this._indexId   = {};
 			this._data      = [];
+		},
+
+		//=========================================================================
+		// Getters & Setters (see Stateful.js)
+
+		_autoLoadSetter: function (autoLoad) {
+			this.autoLoad = !!autoLoad;
+		},
+		
+		_dataSetter: function ( data ) {
+			if (this.autoLoad) {
+				this.load({data:data});
+			} else {
+				this.data = data;
+			}
+		},
+
+		_eventableSetter: function () {
+			readOnly( "eventable" );
+		},
+		
+		_hierarchicalSetter: function () {
+			readOnly( "hierarchical" );
+		},
+
+		_idPropertySetter: function ( property ) {
+			this._indexStore = !!property;
+			this.idProperty  = property;
+		},
+
+		_urlSetter: function ( url ) {
+			if (typeof url == "string") {
+				if (this.autoLoad) {
+					this.load({url:url});
+				} else {
+					this.url = url;
+				}
+			} else {
+				throw new Error(moduleName+"::_urlSetter(): URL property must be of type string");
+			}
 		},
 
 		//=========================================================================
@@ -320,8 +344,9 @@ define(["dojo/_base/declare",
 			var object, id, i;
 			var self = this;
 
-			this._data = [];
-			this.data  = null;
+			this._indexId = {};
+			this._data    = [];
+			this.data     = null;
 
 			data = data || [];
 
@@ -376,6 +401,10 @@ define(["dojo/_base/declare",
 				this.total++;
 			}
 			return id;
+		},
+
+		_xhrGet: function (url, handleAs) {
+			return request(this.url, {method:"GET", handleAs: handleAs, preventCache: true});
 		},
 
 		//=========================================================================
@@ -445,7 +474,7 @@ define(["dojo/_base/declare",
 
 		load: function (options) {
 			// summary:
-			//		Implements a simple load to load data using a URL.
+			//		Implements a simple store loader to load data.
 			// options:
 			//		cbtree/store/api/Store.LoadDirectives
 			// returns:
@@ -453,19 +482,38 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public
 			if (!this._isLoading && !this._storeLoaded.isFulfilled()) {
-				if (options && options.url) {
-					this.url = options.url;
+				this._isLoading = true;
+				if (options) {
+					if (options.data) {
+						this.data = options.data;
+					} else if (options.url) {
+						this.url = options.url;
+					}
+					if (options.filter && options.all != true) {
+						//Filter data to be loaded...
+						this.filter = options.filter;
+					}
 				}
-				if (!this.handleAs) {
-					this.handleAs = "json";
-				}
-				if (this.url) {
-					var result, self = this;
-					this._isLoading = true;
-					result = request(this.url, {method:"GET", handleAs: this.handleAs, preventCache: true});
-					result.then( function (data) { self._loadData(data);	}, this._storeLoaded.reject	);
+
+				if (this.data || this.url) {
+					var queryFunc = this.filter ? QueryEngine(this.filter): function(data) {return data;};
+					if (this.data) {
+						if (this.handleAs)  {
+							var response = {data: this.data, options:{handleAs: this.handleAs}};
+							this.data = handlers( response ).data;
+						}
+						this._loadData( queryFunc(this.data) );
+						this.url = null;
+					} else {
+						var result, header, self = this;
+						if (!this.handleAs) {
+							this.handleAs = "json";
+						}
+						result = this._xhrGet( this.url, this.handleAs, null );
+						result.then( function (data){self._loadData( queryFunc(data) );}, this._storeLoaded.reject	);
+					}
 				} else {
-					throw new Error(moduleName+"::load(): No URL specified for the store");
+					this._loadData( null );		// Empty store
 				}
 			}
 			return this._storeLoaded.promise;
