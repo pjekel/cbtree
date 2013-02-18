@@ -13,6 +13,8 @@ stores.
 * tree08.html - Use ToggleButton widget instead of the cbtree Multi State CheckBox
 * tree10.html - cbtree/store ObjectStore with a custom data handler for CSV data.
 * tree11.html - Same as tree10.html but with a different handler registration method.
+* tree15.html - ArcGIS geocoder example
+* tree15.html - ArcGIS geocoder and geocoder data handler.
 
 ***NOTE:*** The following examples require PHP support on your server.
 
