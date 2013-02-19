@@ -816,14 +816,25 @@ define(["dojo/_base/declare",			// declare
 			//		Store object or an array of store objects.
 			// tag:
 			//		Private
-			var self = this;
+			var parentId, self = this;
 
 			parents = parents instanceof Array ? parents : [parents];
 			if (parents && parents.length) {
 				parents.forEach(function (parent) {
-					self._deleteCacheEntry(self.getIdentity(parent));
-					self.getChildren(parent, function (children) {
-						self._onChildrenChange(parent, children.slice(0) );
+					parentId = self.getIdentity(parent);
+					self._deleteCacheEntry(parentId);
+
+					// Make sure we use a valid store instance of the parent and not one
+					// obtained from the local cache just in case the store implements
+					// a stringent isItem() method.
+					
+					when( self.store.get(parentId), function( rec ) {
+						self.getChildren(rec, function (children) {
+							self._onChildrenChange(rec, children.slice(0) );
+						}, 
+						function (err) {
+							console.error(err);		// At least log the error condition
+						});
 					});
 				});
 			}
@@ -869,49 +880,55 @@ define(["dojo/_base/declare",			// declare
 			var self = this;
 			var result;
 
-			if (this._childrenCache[id]) {
-				when(this._childrenCache[id], onComplete, onError);
-				return;
-			}
-			// Call user specified method to fetch the children
-			this._childrenCache[id] = result = method.call(this, parent, id);
+			if (parent && id) {
+				if (this._childrenCache[id]) {
+					when(this._childrenCache[id], onComplete, onError);
+					return;
+				}
+				// Call user specified method to fetch the children
+				this._childrenCache[id] = result = method.call(this, parent, id);
 
-			if (!this._objectCache[id]) {
-				this._objectCache[id] = lang.clone(parent);
-			}
+				if (!this._objectCache[id]) {
+					this._objectCache[id] = lang.mixin(null, parent);
+				}
 
-			// Normalize the children cache. If a store returns a Promise instead of a
-			// store.QueryResults, wait for it to resolve so the children cache entries
-			// are always of type store.QueryResults.
-			when( result, function (queryResult) {
-				queryResult.forEach( function (child) {
-					self._objectCache[self.getIdentity(child)] = lang.mixin(null, child);
+				// Normalize the children cache. If a store returns a Promise instead of a
+				// store.QueryResults, wait for it to resolve so the children cache entries
+				// are always of type store.QueryResults.
+				when( result, function (queryResult) {
+					queryResult.forEach( function (child) {
+						self._objectCache[self.getIdentity(child)] = lang.mixin(null, child);
+					});
+					self._childrenCache[id] = queryResult;
 				});
-				self._childrenCache[id] = queryResult;
-			});
 
-			// Setup listener in case the list of children changes, or the item(s) in
-			// the children list are updated in some way. (Only applies to observable
-			// stores).
+				// Setup listener in case the list of children changes, or the item(s) in
+				// the children list are updated in some way. (Only applies to observable
+				// stores).
 
-			if (this._observable && result.observe) {
-				var handle = result.observe( function (obj, removedFrom, insertedInto) {
-					if (insertedInto == -1) {
-						when( result, lang.hitch(self, "_onDeleteItem", obj ));
-					} else if (removedFrom == -1) {
-						when( result, lang.hitch(self, "_onNewItem", obj ));
-					} else if (removedFrom == insertedInto) {
-						when( result, lang.hitch(self, "_onChange", obj, null));
-					} else {
-						// insertedInto != removedFrom, this condition indicates the item
-						// moved within the tree.
-						when(result, function (children) {
-							children = Array.prototype.slice.call(children);
-							self._onChildrenChange(parent, children);
-						});
-					}
-				}, true);	// true means to notify on item changes
-				result.handle = handle; // Save the observer handle with the result.
+				if (this._observable && result.observe) {
+					var handle = result.observe( function (obj, removedFrom, insertedInto) {
+						if (insertedInto == -1) {
+							when( result, lang.hitch(self, "_onDeleteItem", obj ));
+						} else if (removedFrom == -1) {
+							when( result, lang.hitch(self, "_onNewItem", obj ));
+						} else if (removedFrom == insertedInto) {
+							when( result, lang.hitch(self, "_onChange", obj, null));
+						} else {
+							// insertedInto != removedFrom, this condition indicates the item
+							// moved within the tree.
+							when(result, function (children) {
+								children = Array.prototype.slice.call(children);
+								self._onChildrenChange(parent, children);
+							});
+						}
+					}, true);	// true means to notify on item changes
+					result.handle = handle; // Save the observer handle with the result.
+				}
+			} else {
+				// No parent or id.
+				result = new Deferred();
+				result.reject( new TypeError(moduleName+"::_getChildren(): No parent object or Id") );
 			}
 			// Call User callback AFTER registering any listeners.
 			when(result, onComplete, onError);

@@ -60,7 +60,7 @@ define(["dojo/_base/declare", 	// declare
 			// tags:
 			//		public
 
-			this._getChildren( parent, function (parent) {
+			this._getChildren( parent, function (parent, id) {
 				return this.store.getChildren(parent);
 			}, onComplete, onError );
 		},
