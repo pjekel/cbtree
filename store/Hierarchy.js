@@ -8,12 +8,14 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",
+define(["module", 
+				"dojo/_base/declare",
 				"dojo/_base/lang",
 				"dojo/store/util/QueryResults",
 				"./Natural",
+				"../errors/createError!../errors/CBTErrors.json",
 				"../util/shim/Array"						 // ECMA-262 Array shim
-			 ], function (declare, lang, QueryResults, Natural) {
+			 ], function (module, declare, lang, QueryResults, Natural, createError) {
 
 	// module:
 	//		cbtree/store/Hierarchy
@@ -21,7 +23,7 @@ define(["dojo/_base/declare",
 	//		This store implements the cbtree/store/api/Store API which is an extension
 	//		to the dojo/store/api/Store API.
 
-	var moduleName = "cbTree/store/Hierarchy";
+	var CBTError = createError( module.id );
 	var undef;
 
 	var Hierarchy = declare([Natural], {
@@ -131,14 +133,14 @@ define(["dojo/_base/declare",
 						case "string":
 						case "number":
 							if (parent) {
-								// Make sure we don't parent ourself.....
+								// Make sure we don't parent ourself or return duplicates.
 								if (parent != objectId && parentIds.indexOf(parent) == -1) {
 									parentIds.push(parent);
 								}
 							}
 							break;
 						default:
-							throw new TypeError( moduleName+"::_getParentId(): Invalid identifier type");
+							throw new CBTError("InvalidType", "_getParentId");
 					}
 				}, this);
 			}
@@ -209,7 +211,7 @@ define(["dojo/_base/declare",
 			return parentId;
 		},
 
-		_updateHierarchy: function (/*Object*/ object, /*Object*/ before) {
+		_updateHierarchy: function (/*Object*/ object, /*Object*/ before, /*Number?*/ index) {
 			// summay:
 			//		Update the store hierarchy. Whenever the parents of object have changed
 			//		or the object needs to be located at a specific predefined location the
@@ -219,6 +221,7 @@ define(["dojo/_base/declare",
 			// before:
 			//		If specified, determines the location at which a new object is inserted
 			//		or, if the object already exists, to where the object is relocated.
+			// index:
 			// tag:
 			//		Private
 			if (!this.indexChildren) {
@@ -329,51 +332,22 @@ define(["dojo/_base/declare",
 			// returns: Boolean
 			//		true if parent id was successfully added otherwise false.
 
-			if (this.isItem(child)) {
-				var childId = this.getIdentity(child);
-				var newIds  = this._getParentIds(childId, parents);
-				if (newIds.length) {
-					// Clone the store object so evented stores can clearly distinguish
-					// between an old and a new object.
-					var updObj	= lang.clone(child);
-					var currIds = this._getParentArray(updObj);
-					newIds.forEach( function (id) {
-						if (currIds.indexOf(id) == -1) {
-							currIds.unshift(id);
-						}
-					});
-					updObj[this.parentProperty] = this._setParentType(currIds);
-					// Call put() making the event observable..
-					this.put(updObj);
-					return true;
-				}
-				return false;
-			} else {
-				throw new TypeError(moduleName+"::addParent(): child is not a store object");
-			}
-		},
-
-		hasChildren: function(/*Object*/ parent) {
-			// summary:
-			//		Test if a parent object has known children.	Whenever the store has a
-			//		childrens index use it otherwise search the store for the first object
-			//		that has a parent reference to parent.
-			// parent: Object
-			// returns: Boolean
-			//		 true if the parent object has known children otherwise false.
-
-			if (this.isItem(parent)) {
-				var parentId = this.getIdentity(parent);
-				if (this.indexChildren) {
-					var children = this._indexChild[parentId] || [];
-					return !!children.length;
-				} else {
-					// Note: search the store, we only need one child...
-					return this._data.some( function (object) {
-						var parentIds = this._getParentArray(object);
-						return (parentIds.indexOf(parentId) != -1);
-					}, this);
-				}
+			var childId = this.getIdentity(child);
+			var newIds  = this._getParentIds(childId, parents);
+			if (newIds.length) {
+				// Clone the store object so evented stores can clearly distinguish
+				// between an old and a new object.
+				var updObj	= lang.clone(child);
+				var currIds = this._getParentArray(updObj);
+				newIds.forEach( function (id) {
+					if (currIds.indexOf(id) == -1) {
+						currIds.unshift(id);
+					}
+				});
+				updObj[this.parentProperty] = this._setParentType(currIds);
+				// Call put() making the event observable..
+				this.put(updObj);
+				return true;
 			}
 			return false;
 		},
@@ -391,24 +365,19 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public
 
-			if (this.isItem(parent)) {
-				var parentId = this.getIdentity(parent);
-				var query    = {};
-				var dataSet;
+			var parentId = this.getIdentity(parent);
+			var query    = {};
+			var dataSet;
 
-				// If a childrens index is available use it instead of querying all store
-				// objects.
-				if (this.indexChildren) {
-					var children = this._indexChild[parentId] || [];
-					var dataSet	= children.slice(0);
-				}
-				// Call the query() method so the result can be made observable.
-				query[this.parentProperty] = parentId;
-				return this.query( query, options, dataSet );
-			} else {
-				// Without a valid parent and Id we can't locate any children...
-				return QueryResults([]);
+			// If a childrens index is available use it instead of querying all store
+			// objects.
+			if (this.indexChildren) {
+				var children = this._indexChild[parentId] || [];
+				var dataSet	= children.slice(0);
 			}
+			// Call the query() method so the result can be made observable.
+			query[this.parentProperty] = parentId;
+			return this.query( query, options, dataSet );
 		},
 
 		getParents: function (/*Object*/ child) {
@@ -421,18 +390,111 @@ define(["dojo/_base/declare",
 			// tag:
 			//		Public
 
-			if (this.isItem(child)) {
-				var parentIds = this._getParentArray(child);
-				var parents   = [];
+			var parentIds = this._getParentArray(child);
+			var parents   = [];
 
-				parentIds.forEach( function (parentId) {
-					var parent = this.get(parentId);
-					if (parent) {
-						parents.push(parent);
-					}
+			parentIds.forEach( function (parentId) {
+				var parent = this.get(parentId);
+				if (parent) {
+					parents.push(parent);
+				}
+			}, this);
+			return parents;
+		},
+
+		hasChildren: function(/*Object*/ parent) {
+			// summary:
+			//		Test if a parent object has known children.	Whenever the store has a
+			//		childrens index use it otherwise search the store for the first object
+			//		that has a parent reference to parent.
+			// parent: Object
+			// returns: Boolean
+			//		 true if the parent object has known children otherwise false.
+
+			var parentId = this.getIdentity(parent);
+			if (this.indexChildren) {
+				var children = this._indexChild[parentId] || [];
+				return !!children.length;
+			} else {
+				// Note: search the store, we only need one child...
+				return this._data.some( function (object) {
+					var parentIds = this._getParentArray(object);
+					return (parentIds.indexOf(parentId) != -1);
 				}, this);
-				return parents;
 			}
+			return false;
+		},
+
+		isAncestorOf: function (/*Object|Id*/ ancestor, /*Object|Id*/ item) {
+			// summary:
+			//		Returns true if the object identified by argument 'ancestor' is an
+			//		ancestor of the object identified by argument 'item'.
+			// ancestor:
+			//		A valid store object or object id.
+			// item:
+			//		A valid store object or object id.
+			// returns:
+			//		Boolean true or false.
+			// tag:
+			//		Public
+			var ancestor = this._anyToObject(ancestor);
+			var item     = this._anyToObject(item);
+
+			if (item && ancestor) {
+				var gps = this.getParents(item);
+				if (gps.indexOf(ancestor) == -1) {
+					return gps.some( function( gp ) {
+						return this.isAncestorOf(ancestor, gp);
+					}, this);
+				}
+				return true;
+			}
+			return false;
+		},
+		
+		isChildOf: function (/*Object|Id*/ item, /*Object|Id*/ parent) {
+			// summary:
+			//		Validate if an item is a child of a given parent.
+			// item:
+			//		A valid store object or object id.
+			// parent:
+			//		A valid store object or object id.
+			// returns:
+			//		Boolean true or false.
+			// tag:
+			//		Public
+			var parent = this._anyToObject(parent);
+			var item   = this._anyToObject(item);
+
+			if (parent && item) {
+				var parentIds = this._getParentArray(item);
+				var parentId  = this.getIdentity(parent);
+				return (parentIds.indexOf(parentId) != -1);
+			}
+			return false;
+		},
+
+		isDescendantOf: function (/*Object|Id*/ item, /*Object|Id*/ ancestor) {
+			// summary:
+			//		Validate if an item is a descendant of a given ancestor.
+			// item:
+			//		A valid store object or object id.
+			// ancestor:
+			//		A valid store object or object id.
+			// returns:
+			//		Boolean true or false.
+			// tag:
+			//		Public
+			var ancestor = this._anyToObject(ancestor);
+			var item     = this._anyToObject(item);
+
+			if (!this.isChildOf(item, ancestor)) {
+				var children = this.getChildren(ancestor);
+				return children.some( function (child) {
+					return this.isDescendantOf(item, child);
+				}, this);
+			}
+			return true;
 		},
 
 		query: function (/*Object*/ query,/*QueryOptions?*/ options /*Object[]? _dataSet */) {
@@ -495,24 +557,20 @@ define(["dojo/_base/declare",
 			// returns: Boolean
 			//		true if the parent id was successfully removed otherwise false.
 
-			if (this.isItem(child)) {
-				var childId = this.getIdentity(child);
-				var remIds  = this._getParentIds(childId, parents);
-				if (remIds.length) {
-					var updObj	= lang.clone(child);
-					var currIds = this._getParentArray(updObj);
-					currIds = currIds.filter( function (id) {
-						return (remIds.indexOf(id) == -1);
-					});
-					updObj[this.parentProperty] = this._setParentType(currIds);
-					// Call put() making the event observable..
-					this.put(updObj);
-					return true;
-				}
-				return false;
-			} else {
-				throw new TypeError(moduleName+"::addParent(): child is not a store object");
+			var childId = this.getIdentity(child);
+			var remIds  = this._getParentIds(childId, parents);
+			if (remIds.length) {
+				var updObj	= lang.clone(child);
+				var currIds = this._getParentArray(updObj);
+				currIds = currIds.filter( function (id) {
+					return (remIds.indexOf(id) == -1);
+				});
+				updObj[this.parentProperty] = this._setParentType(currIds);
+				// Call put() making the event observable..
+				this.put(updObj);
+				return true;
 			}
+			return false;
 		},
 
 		toString: function () {

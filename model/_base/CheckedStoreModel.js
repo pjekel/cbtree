@@ -9,12 +9,14 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 
-define(["dojo/_base/declare",      // declare
+define(["module",                  // module.id
+				"dojo/_base/declare",      // declare()
 				"dojo/_base/lang",         // lang.hitch()
 				"dojo/when",               // when()
 				"./BaseStoreModel",
+				"../../errors/createError!../../errors/CBTErrors.json",
 				"../../util/shim/Array"    // ECMA-262 Array shim
-			 ], function (declare, lang, when, BaseStoreModel) {
+			 ], function (module, declare, lang, when, BaseStoreModel, createError) {
 		// module:
 		//		cbtree/model/_base/CheckedStoreModel
 		// summary:
@@ -23,7 +25,8 @@ define(["dojo/_base/declare",      // declare
 		//		This capability is required when you want to create a tree with, for
 		//		example: CheckBoxes.
 
-	var moduleName = "cbTree/model/_base/CheckedStoreModel";
+	var CBTError = createError( module.id)		// Create the CBTError type
+	
 	var undef;
 
 	var CheckedStoreModel = declare([BaseStoreModel], {
@@ -117,7 +120,7 @@ define(["dojo/_base/declare",      // declare
 			//		private
 
 			if (!this._writeEnabled) {
-				throw new Error(moduleName+"::constructor(): Store must be write enabled, no put() supported");
+				throw new CBTError( "MethodMissing", "constructor", "Store must be write enabled, no put() supported");
 			}
 		},
 
@@ -164,7 +167,7 @@ define(["dojo/_base/declare",      // declare
 					value = false;
 					break;
 				default:
-					throw new TypeError(moduleName+"::set(): invalid checkedStrict value");
+					throw new CBTError( "InvalidType", "set", "invalid checkedStrict value");
 			}
 			this.checkedStrict = value;
 			if (this.checkedStrict) {
@@ -184,10 +187,10 @@ define(["dojo/_base/declare",      // declare
 
 			if (typeof value === "string") {
 				if (this.enabledAttr !== value) {
-					throw new Error(moduleName+"::set(): enabledAttr property is read-only");
+					throw new CBTError( "ReadOnly", "set", "property enabledAttr is read-only");
 				}
 			} else {
-				throw new Error(moduleName+"::set(): enabledAttr value must be a string");
+				throw new CBTError( "InvalidType", "set", "enabledAttr value must be a string");
 			}
 			return this.enabledAttr;
 		},

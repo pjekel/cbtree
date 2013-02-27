@@ -8,18 +8,20 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare", 	// declare
+define(["module",               // module.id
+				"dojo/_base/declare", 	// declare()
 				"dojo/when",						// when()
 				"./_base/CheckedStoreModel",
 				"./_base/Parents",
+				"../errors/createError!../errors/CBTErrors.json",
 				"../util/shim/Array"		// ECMA-262 Array shim
-			 ], function (declare, when, CheckedStoreModel, Parents){
+			 ], function (module, declare, when, CheckedStoreModel, Parents, createError){
 	"use strict";
 
 		// module:
 		//		cbtree/model/FileStoreModel
 
-	var moduleName = "cbTree/model/FileStoreModel";
+	var CBTError = createError( module.id );		// Create the CBTError type.
 
 	var FileStoreModel = declare([CheckedStoreModel], {
 		// summary:
@@ -85,7 +87,7 @@ define(["dojo/_base/declare", 	// declare
 			// summary:
 			// tag:
 			//		Private
-			throw new Error(moduleName+"::newItem(): Operation not allowed on a FileObjectStore.");
+			throw new CBTError( "InvalidAccess", "newItem", "Operation not allowed on a FileObjectStore");
 		},
 
 		pasteItem: function(/*Item*/ childItem, /*Item*/ oldParentItem, /*Item*/ newParentItem) {

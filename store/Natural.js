@@ -14,7 +14,7 @@ define(["dojo/_base/declare",
 			 ], function (declare, Memory) {
 
 	// module:
-	//		cbtree/store/Hierarchy
+	//		cbtree/store/Natural
 	// summary:
 	//		This store implements the cbtree/store/api/Store API which is an extension
 	//		to the dojo/store/api/Store API.
@@ -91,6 +91,31 @@ define(["dojo/_base/declare",
 				return id;
 			}
 			return this.inherited(arguments);
+		},
+
+		//=========================================================================
+		// Public methods
+
+		isBefore: function (/*Object|Id*/ itemA, /*Object|Id*/ itemB) {
+			// summary:
+			//		Evaluate if an item appears before another item in the natural
+			//		order of store objects.
+			// itemA:
+			// itemB:
+			// returns:
+			//		Boolean true if itemA appears before itemB otherwise false.
+			// tag:
+			//		Public
+			var objA = this._anyToObject(itemA);
+			var objB = this._anyToObject(itemB);
+
+			if (objA && objB) {
+				var indexA = this._data.indexOf( objA );
+				var indexB = this._data.indexOf( objB );
+
+				return (indexA < indexB);
+			}
+			return false;
 		},
 
 		toString: function () {

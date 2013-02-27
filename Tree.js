@@ -8,29 +8,30 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",
+define(["module",
+				"require",
+				"dojo/_base/declare",
 				"dojo/_base/event",
 				"dojo/_base/lang",
 				"dojo/aspect",
-				"dojo/DeferredList",
 				"dojo/dom-construct",
 				"dojo/keys",
 				"dojo/topic",
 				"dojo/text!./templates/cbtreeNode.html",
-				"dijit/_Container",
-				"dijit/registry",
 				"dijit/Tree",
 				"./CheckBox",
-				"./models/_dndSelector",	// Fixed dijit tree issue... (remove with dojo 1.9)
-				"require",
+				"./errors/createError!./errors/CBTErrors.json",
 				"./util/shim/Array"						// ECMA-262 Array shim
-			 ], function (declare, event, lang, aspect, DeferredList, domConstruct, keys, topic, NodeTemplate,
-										_Container, registry, Tree, CheckBox, _dndSelector, require) {
+			 ], function (module, require, declare, event, lang, aspect, domConstruct,
+										 keys, topic, NodeTemplate,	Tree, CheckBox,
+										 createError) {
 
 	// module:
 	//		cbtree/Tree
 	// note:
 	//		This implementation is compatible with dojo 1.8
+
+	var CBTError = createError( module.id );		// Create the CBTError type.
 
 	var TreeNode = declare([Tree._TreeNode], {
 		// templateString: String
@@ -261,152 +262,11 @@ define(["dojo/_base/declare",
 			// Just in case one is available, set the tooltip.
 			this.set("tooltip", this.title);
 			this.inherited(arguments);
-		},
-
-		setChildItems: function(/* Object[] */ items){
-			// summary:
-			//		Sets the child items of this node, removing/adding nodes
-			//		from current children to match specified items[] array.
-			//		Also, if this.persist == true, expands any children that were previously
-			//		opened.
-			// returns:
-			//		Deferred object that fires after all previously opened children
-			//		have been expanded again (or fires instantly if there are no such children).
-
-			var tree = this.tree,
-				model = tree.model,
-				defs = [];	// list of deferreds that need to fire before I am complete
-
-			// Orphan all my existing children.
-			// If items contains some of the same items as before then we will reattach them.
-			// Don't call this.removeChild() because that will collapse the tree etc.
-			var oldChildren = this.getChildren();
-			oldChildren.forEach(function(child){
-				_Container.prototype.removeChild.call(this, child);
-			}, this);
-
-			// All the old children of this TreeNode are subject for destruction if
-			//		1) they aren't listed in the new children array (items)
-			//		2) they aren't immediately adopted by another node (DnD)
-			this.defer(function(){
-				oldChildren.forEach(function(node){
-					if(!node._destroyed && !node.getParent()){
-						// If node is in selection then remove it.
-						tree.dndController.removeTreeNode(node);
-
-						// Deregister mapping from item id --> this node
-						var id = model.getIdentity(node.item),
-							ary = tree._itemNodesMap[id];
-						if(ary.length == 1){
-							delete tree._itemNodesMap[id];
-						}else{
-							var index = ary.indexOf(node);
-							if(index != -1){
-								ary.splice(index, 1);
-							}
-						}
-						// And finally we can destroy the node
-						node.destroyRecursive();
-					}
-				});
-			});
-
-			this.state = "LOADED";
-
-			if(items && items.length > 0){
-				this.isExpandable = true;
-				// Create _TreeNode widget for each specified tree node, unless one already
-				// exists and isn't being used (presumably it's from a DnD move and was recently
-				// released
-				items.forEach(function(item){	// MARKER: REUSE NODE
-					var id = model.getIdentity(item),
-						existingNodes = tree._itemNodesMap[id],
-						node;
-					if(existingNodes){
-						for(var i=0;i<existingNodes.length;i++){
-							// FIX 1 - Don't re-used destroyed nodes, instead clean them up.
-							if (!existingNodes[i] || existingNodes[i]._beingDestroyed) {
-								existingNodes.splice(i,1);
-								if (existingNodes.length == 0) {
-									delete tree._itemNodesMap[id];
-								}
-							} else {
-								if(!existingNodes[i].getParent()) {
-									node = existingNodes[i];
-									node.set('indent', this.indent+1);
-									break;
-								}
-							}
-						}
-					}
-					if(!node){
-						node = this.tree._createTreeNode({
-							item: item,
-							tree: tree,
-							isExpandable: model.mayHaveChildren(item),
-							label: tree.getLabel(item),
-							tooltip: tree.getTooltip(item),
-							ownerDocument: tree.ownerDocument,
-							dir: tree.dir,
-							lang: tree.lang,
-							textDir: tree.textDir,
-							indent: this.indent + 1
-						});
-						if(existingNodes){
-							existingNodes.push(node);
-						}else{
-							tree._itemNodesMap[id] = [node];
-						}
-					}
-					this.addChild(node);
-
-					// If node was previously opened then open it again now (this may trigger
-					// more data store accesses, recursively)
-					if(this.tree.autoExpand || this.tree._state(node)){
-						defs.push(tree._expandNode(node));
-					}
-				}, this);
-
-				// note that updateLayout() needs to be called on each child after
-				// _all_ the children exist
-				this.getChildren().forEach(function(child){
-					child._updateLayout();
-				});
-			}else{
-				// FIX 2 - If no children, delete _expandNodeDeferred if any...
-				tree._collapseNode(this);
-				this.isExpandable=false;
-			}
-
-			if(this._setExpando){
-				// change expando to/from dot or + icon, as appropriate
-				this._setExpando(false);
-			}
-
-			// Set leaf icon or folder icon, as appropriate
-			this._updateItemClasses(this.item);
-
-			// On initial tree show, make the selected TreeNode as either the root node of the tree,
-			// or the first child, if the root node is hidden
-			if(this == tree.rootNode){
-				var fc = this.tree.showRoot ? this : this.getChildren()[0];
-				if(fc){
-					fc.setFocusable(true);
-					tree.lastFocused = fc;
-				}else{
-					// fallback: no nodes in tree so focus on Tree <div> itself
-					tree.domNode.setAttribute("tabIndex", "0");
-				}
-			}
-
-			var def =	new DeferredList(defs);
-			this.tree._startPaint(def);		// to reset TreeNode widths after an item is added/removed from the Tree
-			return def;		// dojo/_base/Deferred
 		}
 
 	});	/* end declare() _TreeNode*/
 
-	return declare([Tree], {
+	var CBTree = declare([Tree], {
 
 		//==============================
 		// Parameters to constructor
@@ -436,10 +296,6 @@ define(["dojo/_base/declare",
 		// nodeIcons: Boolean
 		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
 		nodeIcons: true,
-
-		// FIX: 3 - Force tree to use the modified _dndSelector (see ./models/_dndSelector)
-		// 					Remove with dojo 1.9
-		dndController: _dndSelector,
 
 		// End Parameters to constructor
 		//==============================
@@ -499,11 +355,11 @@ define(["dojo/_base/declare",
 						dojoMax = (this._dojoRequired.max.major * 10) + this._dojoRequired.max.minor;
 					}
 					if (dojoVer < dojoMin || dojoVer > dojoMax) {
-						throw new Error(this.moduleName+"::_assertVersion(): invalid dojo version.");
+						throw new CBTError("InvalidVersion", "_assertVersion");
 					}
 				}
 			} else {
-				throw new Error(this.moduleNmae+"::_assertVersion(): unable to determine dojo version.");
+				throw new CBTError("UnknownVersion", "_assertVersion");
 			}
 		},
 
@@ -685,13 +541,14 @@ define(["dojo/_base/declare",
 								self._setWidgetAttr( widget );
 							});
 							return;
+					} else {
+						message = "argument is not a valid module id";
 					}
-					message = "argument is not a valid module id";
 				}
 			} else {
 				message = "Object is missing required 'type' property";
 			}
-			throw new Error(this.moduleName+"::_setWidgetAttr(): " + message);
+			throw new CBTError("InvalidWidget", "_setWidgetAttr", message);
 		},
 
 		create: function() {
@@ -815,7 +672,7 @@ define(["dojo/_base/declare",
 			}
 			else // The CheckBox Tree requires a model.
 			{
-				throw new Error(this.moduleName+"::postCreate(): no model was specified.");
+				throw new CBTError("PropMissing", "postCreate", "no model was specified");
 			}
 		},
 
@@ -868,6 +725,9 @@ define(["dojo/_base/declare",
 			return false;
 		}
 
-	});	/* end declare() Tree */
+	});	/* end declare() CBTree */
+
+	CBTree._TreeNode = TreeNode;
+	return CBTree;
 
 });	/* end define() */

@@ -17,8 +17,6 @@ define(["dojo/_base/declare",		// declare
 		// module:
 		//		cbtree/model/TreeStoreModel
 
-	var moduleName = "cbTree/model/TreeStoreModel";
-
 	var TreeStoreModel = declare([CheckedStoreModel], {
 		// summary:
 		//		Implements the cbtree/model/Model API connecting to a dojo/store or

@@ -8,11 +8,13 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",
+define(["module",
+				"dojo/_base/declare",
 				"dojo/store/util/QueryResults",
 				"./Hierarchy",
-				"../Evented"
-			 ], function (declare, QueryResults, Hierarchy, Evented) {
+				"../Evented",
+				"../errors/createError!../errors/CBTErrors.json"
+			 ], function (module, declare, QueryResults, Hierarchy, Evented, createError) {
 	"use strict";
 
 	// module:
@@ -21,7 +23,7 @@ define(["dojo/_base/declare",
 	//		This store implements the cbtree/store/api/Store API which is an extension
 	//		to the dojo/store/api/Store API.
 
-	var moduleName = "cbTree/store/ObjectStore";
+	var CBTError = createError( module.id );		// Create the CBTError type.
 
 	var ObjectStore = declare([Hierarchy, Evented], {
 		// summary:
@@ -61,7 +63,7 @@ define(["dojo/_base/declare",
 			var at = this._indexId[id];
 
 			if (at >= 0) {
-				throw new Error("Object already exists");
+				throw new CBTError("ItemExist", "add");
 			}
 			id = this._writeObject(id, object, at, options);
 			this.emit("new", {type:"new", item: object});
@@ -86,7 +88,7 @@ define(["dojo/_base/declare",
 
 			if (at >= 0) {
 				if (options && options.overwrite === false) {
-					throw new Error("Object already exists");
+					throw new CBTError("ItemExist", "put");
 				}
 				orgObj = this._data[at];
 				exist	= true;

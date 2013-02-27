@@ -8,7 +8,8 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",
+define(["module",
+				"dojo/_base/declare",
 				"dojo/_base/lang",
 				"dojo/Deferred",
 				"dojo/Evented",
@@ -17,15 +18,16 @@ define(["dojo/_base/declare",
 				"dojo/Stateful",
 				"dojo/store/util/QueryResults",
 				"dojo/when",
+				"../errors/createError!../errors/CBTErrors.json",
 				"../util/Mutex",
 				"../util/QueryEngine",
 				"../util/shim/Array"		// ECMA-262 Backward Compatibility Array shim
-			 ], function (declare, lang, Deferred, Evented, json, request, Stateful, QueryResults,
-										 when, Mutex, QueryEngine) {
+			 ], function (module, declare, lang, Deferred, Evented, json, request, Stateful,
+										QueryResults, when, createError, Mutex, QueryEngine) {
 	"use strict";
 
 	// module:
-	//		cbtree/stores/FileObjectStore
+	//		cbtree/store/FileObjectStore
 	// summary:
 	//		The FileStore implements the dojo/store/api/Store API. The store retrieves
 	//		file and directory information from a back-end server which is cached as
@@ -53,6 +55,7 @@ define(["dojo/_base/declare",
 	//			Please refer to the File Store documentation for details on the Server Side
 	//			Application. (cbtree/documentation/FileObjectStore.md)
 
+	var CBTError = createError( module.id );		// Create the CBTError type.
 	var	moduleName = "cbTree/store/FileStore";
 
 	var C_ITEM_EXPANDED = "_EX";			// Property indicating if a directory item is fully expanded.
@@ -237,12 +240,12 @@ define(["dojo/_base/declare",
 				baseSegm.unshift(".");
 				this.basePath = baseSegm.join("/");
 			} else {
-				throw new Error(moduleName + "::_basePathSetter(): basePath property must be a string");
+				throw new CBTError("InvalidType", "basePathSetter", "basePath property must be a string");
 			}
 		},
 
 		_dataSetter: function () {
-			throw new Error(moduleName + "::_dataSetter(): data property not is not allowed");
+			throw new CBTError("InvalidAccess", "_dataSetter", "data property is not allowed");
 		},
 
 		_defaultPropertiesSetter: function (/*Object*/ value) {
@@ -256,12 +259,12 @@ define(["dojo/_base/declare",
 			if (value && lang.isObject(value)) {
 				for (var prop in value) {
 					if (this._reservedProp.indexOf(prop) != -1) {
-						throw new Error(moduleName + "::_defaultPropertiesSetter(): No default allowed for property '"
-																						 + prop + "'" );
+						throw new CBTError("InvalidAccess", "_defaultPropertiesSetter", "No default allowed for property '"
+																 + prop + "'" );
 					}
 				}
 			} else {
-				throw new Error(moduleName + "::_defaultPropertiesSetter(): defaultProperties must be an object");
+				throw new CBTError("InvalidType", "_defaultPropertiesSetter", "defaultProperties must be an object");
 			}
 		},
 
@@ -278,10 +281,10 @@ define(["dojo/_base/declare",
 			value.forEach( function (sortObj) {
 				if (lang.isObject(sortObj)) {
 					if (!("attribute" in sortObj)) {
-						throw new Error(moduleName + "::_sortSetter(): 'attribute' property missing in sort object");
+						throw new CBTError("PropMissing", "_sortSetter", "[attribute] property missing in sort object");
 					}
 				} else {
-					throw new Error(moduleName + "::_sortSetter(): sort property must be an Array of objects");
+					throw new CBTError("InvalidType", "_sortSetter", "sort property must be an Array of objects");
 				}
 			});
 			this.sort = value;
@@ -303,8 +306,8 @@ define(["dojo/_base/declare",
 			//		private
 			if (!(value instanceof Array)) {
 				if (typeof value !== "string") {
-					throw new Error(moduleName + "::_optionSetter(): Options must be a keyword string"
-																						+ " or an array of keywords.");
+					throw new CBTError("InvalidType", "_optionSetter", "Options must be a keyword string"
+															+ " or an array of keywords.");
 				} else {
 					value = value.split(",");
 				}
@@ -336,7 +339,7 @@ define(["dojo/_base/declare",
 				}
 				return this._url;
 			} else {
-				throw new Error(moduleName+"::_urlSetter(): URL must be of type string");
+				throw new CBTError("InvalidType", "_urlSetter", "URL must be of type string");
 			}
 		},
 
@@ -635,7 +638,7 @@ define(["dojo/_base/declare",
 					this._mutex.release(files);
 				}, this );
 			}
-			throw new Error(moduleName+"::_updateFileStore(): Empty or malformed server response.");
+			throw new CBTError("InvalidResponse", "_updateFileStore");
 		},
 
 		_xhrRequest: function (/*String*/ method,/*String*/ url,/*Object*/ options ) {
@@ -690,7 +693,7 @@ define(["dojo/_base/declare",
 		add: function (object, options) {
 			// summary:
 			//		Not allowed.
-			throw new Error(moduleName + "::add() not allowed, use get() and put() instead");
+			throw new CBTError("InvalidAccess", "add", "operation not allowed, use get() and put() instead");
 		},
 
 		get: function (/*String|number*/ id, /*Boolean?*/ storeOnly) {
@@ -719,7 +722,7 @@ define(["dojo/_base/declare",
 				// If the object is just a place holder return 'undefined'.
 				// (See _updateFileStore.updateFile() for additonal info.)
 				if (object && object._placeHolder) {
-					return new Deferred().reject( new Error("Object not found") );
+					return new Deferred().reject( new CBTError("NotFound", "get") );
 				}
 			}
 			return new Deferred().resolve(object);
@@ -851,12 +854,12 @@ define(["dojo/_base/declare",
 					if (options && options._server === true) {
 						index[id] = data.push(object) - 1;
 					} else {
-						throw new Error("Object does not exists");
+						throw new CBTError("NotFound", "put");
 					}
 				}
 				return id;
 			}
-			throw new Error("Invalid object");
+			throw new CBTError("InvalidObject", "put");
 		},
 
 		query: function (/*Object*/ query, /*Object?*/ options, /*Object[]?*/ _dataSet) {
@@ -985,7 +988,7 @@ define(["dojo/_base/declare",
 									case 404:
 									case 410:
 										self._resyncStore(item);
-										deferred.reject(new Error("Object nolonger exist"));
+										deferred.reject(new CBTError("NotFound", "rename", "Object nolonger exist"));
 										break;
 									default:
 										deferred.reject(err);
@@ -998,7 +1001,7 @@ define(["dojo/_base/declare",
 				); /* end then() */
 				return deferred.promise;
 			}
-			return deferred.reject( new Error("Invalid path") );
+			return deferred.reject( new CBTError("InvalidPath", "rename") );
 		}
 
 	});	/* end declare() */

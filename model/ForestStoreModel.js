@@ -8,16 +8,18 @@
 //	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
-define(["dojo/_base/declare",	 // declare
+define(["module",               // module.id
+				"dojo/_base/declare",   // declare()
 				"dojo/_base/lang",			// lang.mixin()
 				"dojo/Deferred",
 				"dojo/when",						// when()
-				"./_base/CheckedStoreModel"
-			 ], function (declare, lang, Deferred, when, CheckedStoreModel) {
+				"./_base/CheckedStoreModel",
+				"../errors/createError!../errors/CBTErrors.json"
+			 ], function (module, declare, lang, Deferred, when, CheckedStoreModel, createError) {
 		// module:
 		//		cbtree/model/ForestStoreModel
 
-	var	moduleName = "cbTree/model/ForestStoreModel";
+	var CBTError = createError( module.id );		// Create the CBTError type.
 
 	var ForestStoreModel = declare([CheckedStoreModel], {
 		// summary:
@@ -64,7 +66,7 @@ define(["dojo/_base/declare",	 // declare
 			if (this._storeMethods.queryEngine) {
 				this._rootQuery = store.queryEngine( this.query );
 			} else {
-				throw new Error(moduleName+"::_createForestRoot(): store has no query engine");
+				throw new CBTError( "MethodMissing", "_createForestRoot", "store has no query engine");
 			}
 			this._forest = true;
 			this.root		= root;
@@ -110,7 +112,7 @@ define(["dojo/_base/declare",	 // declare
 				var self	 = this;
 
 				return result.then( function (parents) {
-					if (self.isChildOf(self.root, storeItem)) {
+					if (self.isChildOf(storeItem, self.root)) {
 						parents.push(self.root);
 					}
 					return parents;
@@ -119,6 +121,25 @@ define(["dojo/_base/declare",	 // declare
 				var deferred = new Deferred();
 				return deferred.resolve([]);
 			}
+		},
+
+		mayHaveChildren: function (/*Object*/ item) {
+			// summary:
+			//		Tells if an item has or may have children. Implementing logic here
+			//		avoids showing +/- expando icon for nodes that we know don't have
+			//		children.
+			// item:
+			//		Object.
+			// returns:
+			//		Boolean
+			// tags:
+			//		public
+
+			if (item && item == this.root) {
+				var itemId = this.getIdentity(item);
+				return !!this._childrenCache[itemId];
+			}
+			return this.inherited(arguments);
 		},
 
 		// =======================================================================
@@ -130,13 +151,13 @@ define(["dojo/_base/declare",	 // declare
 			return (item == this.root ? this.root.id : this.store.getIdentity(item));
 		},
 
-		isChildOf: function (/*Object*/ parent, /*Object*/ item) {
+		isChildOf: function (/*Object*/ item, /*Object*/ parent ) {
 			// summary:
 			//		Test if an item if a child of a given parent.
+			// item:
+			//		Child object.
 			// parent:
 			//		The parent object.
-			// child:
-			//		Child object.
 			// returns:
 			//		Boolean true or false
 			// tag:
@@ -194,7 +215,7 @@ define(["dojo/_base/declare",	 // declare
 
 				when( this._childrenCache[this.root.id], function (children) {
 					var childIndex	 = children ? children.indexOf(storeItem) : -1;
-					var isRootChild	= self.isChildOf(self.root, storeItem);
+					var isRootChild	= self.isChildOf(storeItem, self.root);
 					var wasRootChild = (childIndex > -1);
 
 					// If the children of the tree root changed update the childrens cache

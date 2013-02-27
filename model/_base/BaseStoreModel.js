@@ -9,20 +9,22 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 
-define(["dojo/_base/declare",			// declare
+define(["module",                 // module.id
+				"dojo/_base/declare",			// declare()
 				"dojo/_base/lang",				// lang.hitch()
 				"dojo/aspect",						// aspect.before()
 				"dojo/Deferred",
 				"dojo/promise/all",
-				"dojo/promise/Promise",	 // instanceof
+				"dojo/promise/Promise",	  // instanceof()
 				"dojo/Stateful",					// set() & get()
 				"dojo/when",							// when()
 				"./Parents",
 				"./Prologue",							// Store Prologue methods
 				"../../Evented",					// on()
+				"../../errors/createError!../../errors/CBTErrors.json",
 				"../../util/shim/Array"		// ECMA-262 Array shim
-			 ], function (declare, lang, aspect, Deferred, all, Promise, Stateful,
-										 when, Parents, Prologue, Evented) {
+			 ], function (module, declare, lang, aspect, Deferred, all, Promise, Stateful,
+										 when, Parents, Prologue, Evented, createError) {
 	"use strict";
 		// module:
 		//		cbtree/model/_base/BaseStoreModel
@@ -34,12 +36,13 @@ define(["dojo/_base/declare",			// declare
 		//
 		//		The BaseStoreModel is a base class providing all the functionality
 		//		required to create a cbtree or dijit tree model with the following
-		//		limitations:
+		//		restrictions:
 		//
 		//		1 - Each model derived from BaseStoreModel MUST implement their own
 		//				getChildren() method.
 
-	var moduleName = "cbTree/model/_base/BaseStoreModel";
+	var CBTError = createError( module.id );		// Create the CBTError type.
+
 	var undef;
 
 	function returnTrue () {
@@ -197,7 +200,7 @@ define(["dojo/_base/declare",			// declare
 									var funcBody = "return this.query({"+this.parentProperty+": this.getIdentity(object)});"
 									store.getChildren = new Function("object", funcBody);
 								} else {
-									throw new TypeError(moduleName+"::constructor(): store MUST support getChildren()" +
+									throw new CBTError( "MethodMissing", "constructor", "store MUST support getChildren()" +
 																			" or query() method");
 								}
 								break;
@@ -212,7 +215,7 @@ define(["dojo/_base/declare",			// declare
 								break;
 							case "get":
 								// The store must at a minimum support get()
-								throw new TypeError(moduleName+"::constructor(): store MUST support the get() method");
+								throw new CBTError( "MethodMissing", "constructor", "store MUST support the get() method");
 							case "put":
 								this._writeEnabled = false;
 								break;
@@ -223,7 +226,7 @@ define(["dojo/_base/declare",			// declare
 				this._monitored = (this._eventable || this._observable);
 
 			} else {
-				throw new Error(moduleName+"::constructor(): Store parameter is required");
+				throw new CBTError( "ParamMissing", "constructor", "Store parameter is required");
 			}
 		},
 
@@ -273,7 +276,7 @@ define(["dojo/_base/declare",			// declare
 			// tags:
 			//		public
 
-			throw new Error( "Abstract Only - requires implementation" );
+			throw new CBTError( "AbstractOnly", "getChildren" );
 		},
 
 		getIcon: function (/*Object*/ item) {
@@ -378,8 +381,9 @@ define(["dojo/_base/declare",			// declare
 						var result = self.store.query(self.query);
 						when(result, function (items) {
 							if (items.length != 1) {
-								throw new Error(moduleName + ": Root query returned " + items.length +
-																	" items, but must return exactly one item");
+								throw new CBTError( "InvalidResponse", "getRoot", 
+																		 "Root query returned %{0} items, but must return exactly one item",
+																		 items.length );
 							}
 							self.root = items[0];
 							// Setup listener to detect if root item changes
@@ -394,7 +398,7 @@ define(["dojo/_base/declare",			// declare
 						}, onError);
 					});
 				} else {
-					throw new Error(moduleName + "::getRoot(): store has no query() method" );
+					throw new CBTError( "MethodMissing", "getRoot", "store has no query() method" );
 				}
 			}
 		},
@@ -436,13 +440,13 @@ define(["dojo/_base/declare",			// declare
 		// =======================================================================
 		// cbtree/model/Model API extensions
 
-		isChildOf: function (/*Object*/ parent, /*Object*/ item) {
+		isChildOf: function (/*Object*/ item, /*Object*/ parent ) {
 			// summary:
 			//		Test if an item if a child of a given parent.
+			// item:
+			//		Child object.
 			// parent:
 			//		The parent object.
-			// child:
-			//		Child object.
 			// returns:
 			//		Boolean true or false
 			// tag:
@@ -670,7 +674,7 @@ define(["dojo/_base/declare",			// declare
 			self.onDelete(item);
 
 			this.getParents(item).then( function (parents) {
-				if (self.isChildOf(self.root, item)) {
+				if (self.isChildOf(item, self.root)) {
 					self.onRootChange(item, "delete");
 				}
 				self._childrenChanged( parents );
@@ -687,7 +691,7 @@ define(["dojo/_base/declare",			// declare
 			var self = this;
 
 			this.getParents(item).then( function (parents) {
-				if (self.isChildOf(self.root, item)) {
+				if (self.isChildOf(item, self.root)) {
 					self.onRootChange(item, "new");
 				}
 				self._childrenChanged( parents );
@@ -822,19 +826,12 @@ define(["dojo/_base/declare",			// declare
 			if (parents && parents.length) {
 				parents.forEach(function (parent) {
 					parentId = self.getIdentity(parent);
-					self._deleteCacheEntry(parentId);
-
-					// Make sure we use a valid store instance of the parent and not one
-					// obtained from the local cache just in case the store implements
-					// a stringent isItem() method.
-					
-					when( self.store.get(parentId), function( rec ) {
-						self.getChildren(rec, function (children) {
-							self._onChildrenChange(rec, children.slice(0) );
-						}, 
-						function (err) {
-							console.error(err);		// At least log the error condition
-						});
+					self._deleteCacheEntry(parentId);					
+					self.getChildren(parent, function (children) {
+						self._onChildrenChange(parent, children.slice(0) );
+					}, 
+					function (err) {
+						console.error(err);		// At least log the error condition
 					});
 				});
 			}
@@ -891,7 +888,6 @@ define(["dojo/_base/declare",			// declare
 				if (!this._objectCache[id]) {
 					this._objectCache[id] = lang.mixin(null, parent);
 				}
-
 				// Normalize the children cache. If a store returns a Promise instead of a
 				// store.QueryResults, wait for it to resolve so the children cache entries
 				// are always of type store.QueryResults.
@@ -919,7 +915,6 @@ define(["dojo/_base/declare",			// declare
 							// moved within the tree.
 							when(result, function (children) {
 								children = Array.prototype.slice.call(children);
-								self._onChildrenChange(parent, children);
 							});
 						}
 					}, true);	// true means to notify on item changes
@@ -928,7 +923,7 @@ define(["dojo/_base/declare",			// declare
 			} else {
 				// No parent or id.
 				result = new Deferred();
-				result.reject( new TypeError(moduleName+"::_getChildren(): No parent object or Id") );
+				result.reject( new CBTError("ParamMissing", "_getChildren", "No parent object or Id") );
 			}
 			// Call User callback AFTER registering any listeners.
 			when(result, onComplete, onError);
@@ -976,7 +971,7 @@ define(["dojo/_base/declare",			// declare
 						when( result, function () { self._onChange(item, orgItem); });
 					}
 				} else {
-					throw new TypeError(moduleName+"::_setValue(): store is not writable.");
+					throw new CBTError("AccessError", "_setValue", "store is not writable.");
 				}
 			}
 			return value;

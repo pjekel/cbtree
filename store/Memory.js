@@ -9,16 +9,19 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 
-define(["dojo/_base/declare",
+define(["module",
+				"dojo/_base/declare",
 				"dojo/_base/lang",
 				"dojo/Deferred",
 				"dojo/request",
 				"dojo/Stateful",
 				"dojo/request/handlers",
 				"dojo/store/util/QueryResults",
+				"../errors/createError!../errors/CBTErrors.json",
 				"../util/QueryEngine",
 				"../util/shim/Array"						 // ECMA-262 Array shim
-			 ], function (declare, lang, Deferred, request, Stateful, handlers, QueryResults, QueryEngine) {
+			 ], function (module, declare, lang, Deferred, request, Stateful, handlers,
+										 QueryResults, createError, QueryEngine) {
 
 	// module:
 	//		cbtree/store/Memory
@@ -26,10 +29,10 @@ define(["dojo/_base/declare",
 	//		This store implements the cbtree/store/api/Store API which is an extension
 	//		to the dojo/store/api/Store API.
 
-	var moduleName = "cbTree/store/Memory";
-
+	var CBTError = createError( module.id );		// Create the CBTError type.
+	
 	function readOnly( property ) {
-		throw new Error( moduleName+"::set(): property ["+property+"] is READ-ONLY");
+		throw new CBTError( "ReadOnly", "set", "property ["+property+"] is READ-ONLY");
 	}	
 
 	var Memory = declare([Stateful], {
@@ -182,7 +185,7 @@ define(["dojo/_base/declare",
 						setter  = scope.set;
 						break;
 					default:
-						throw new Error(moduleName+"::constructor(): handler must be a function");
+						throw new CBTError( "InvalidType", "constructor", "handler must be a function");
 				}
 				if (handler) {
 					// Register the new or override an existing data handler.
@@ -241,30 +244,41 @@ define(["dojo/_base/declare",
 					this.url = url;
 				}
 			} else {
-				throw new Error(moduleName+"::_urlSetter(): URL property must be of type string");
+				throw new CBTError("InvalidType", "_urlSetter","URL property must be of type string");
 			}
 		},
 
 		//=========================================================================
 		// Private methods
 
-		_anyToObject: function (/*any*/ something) {
+		_anyToObject: function (/*any*/ something, /*Boolean?*/ strict) {
 			// summary:
 			//		Returns the store object associated with "something".
 			// something:
 			//		Object, string or number
+			// strict:
+			//		Boolean, if true and 'something' is an object it must qualify
+			//		as a valid store object.
 			// returns:
 			//		Object | undefined
 			//tag:
 			//		Private
 			if (something) {
+				var strict = strict || false;
 				var objId;
+
 				switch (typeof something) {
 					case "string":
 					case "number":
 						objId = something;
 						break;
 					case "object":
+						if (strict) {
+							if (!this.isItem(something)) {
+								throw new CBTError("InvalidObject", "_anyToObject");
+							}
+							return something;
+						}
 						objId = this.getIdentity(something);
 						break;
 					default:
@@ -343,7 +357,8 @@ define(["dojo/_base/declare",
 			//		Private
 			var object, id, i;
 			var self = this;
-
+			var at;
+			
 			this._indexId = {};
 			this._data    = [];
 			this.data     = null;
@@ -355,7 +370,14 @@ define(["dojo/_base/declare",
 					for (i=0; i<data.length; i++) {
 						object = data[i];
 						id = this._getObjectId(object);
-						this._writeObject(id, object);
+						at = this._indexId[id] || -1;
+						if (at >= 0) {
+							// Different record, same id. Don't overwrite the existing record
+							// as it will mess up the store hierarchy and childrens index.
+							console.warn( new CBTError("ItemExist", "_loadData", "Object with ID: ["+id+"] already exist") );
+						} else {
+							this._writeObject(id, object, at);
+						}
 					}
 					this._indexData();
 					this._storeLoaded.resolve(true);
@@ -363,7 +385,7 @@ define(["dojo/_base/declare",
 					this._storeLoaded.reject(err);
 				}
 			} else {
-				var err = new Error(moduleName+"::_loadData(): data must be an array of objects");
+				var err = new CBTError("InvalidData", "_loadData");
 				this._storeLoaded.reject(err);
 			}
 			delete this._isLoading;
@@ -426,7 +448,7 @@ define(["dojo/_base/declare",
 			var at = this._indexId[id];
 
 			if (at >= 0) {
-				throw new Error(moduleName+"::add(): Object already exists");
+				throw new CBTError("ItemExist", "add");
 			}
 			return this._writeObject(id, object, at, options);
 		},
@@ -535,7 +557,7 @@ define(["dojo/_base/declare",
 
 			if (at >= 0) {
 				if (options && options.overwrite === false) {
-					throw new Error(moduleName+"::put(): Object already exists");
+					throw new CBTError("ItemExist", "put");
 				}
 			}
 			return this._writeObject(id, object, at, options);
