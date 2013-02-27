@@ -29,12 +29,11 @@
     <script type="text/javascript">
       require([
         "dojo/ready",
-        "dojo/store/Memory",
         "dojo/store/Observable",
         "cbtree/Tree",                       // Checkbox tree
         "cbtree/model/TreeStoreModel",       // ObjectStoreModel
         "cbtree/store/Hierarchy"             // Object Store with hierarchy
-        ], function( ready, Memory, Observable, Tree, ObjectStoreModel, ObjectStore) {
+        ], function( ready, Observable, Tree, ObjectStoreModel, ObjectStore) {
 
 					// Declare our multi-parented store objects. Notice: the parent property
 					// of each store item is an array...
