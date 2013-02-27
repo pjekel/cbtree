@@ -21,7 +21,7 @@ requires DOJOX to be installed.
 
 ***IMPORTANT***
 The use of the dojo/data/ItemFileReadStore, dojo/data/ItemFileWriteStore and the associated
-models in the cbtree/models directory has been deprecated.
+models in the cbtree/models directory has been <strong>deprecated</strong>.
 Support for dojo/data and cbtree/data stores and cbtree/models models will be removed with
 the release of dojo 2.0
 

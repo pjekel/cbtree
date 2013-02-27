@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-		<meta charset="utf-8">
+    <meta charset="utf-8">
     <title>The CheckBox Tree with custom Icons</title>
      <style type="text/css">
       @import "../../../dijit/themes/claro/claro.css";
@@ -30,32 +30,32 @@
     <script type="text/javascript">
       require([
         "dojo/data/ItemFileWriteStore",
-				"dojo/ready",
+        "dojo/ready",
         "cbtree/Tree",                    // Checkbox Tree
-        "cbtree/extensions/Styling",      // Tree styling extensions
+        "cbtree/extensions/TreeStyling",  // Tree styling extensions
         "cbtree/models/ForestStoreModel"  // Forest Store Model
         ], function( ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel ) {
 
-					var store = new ItemFileWriteStore( { url: "../../data/json/Network.json" });
-					var model = new ForestStoreModel( {
-									store: store,
-									query: {type: 'computer'},
-									rootLabel: 'The Network',
-									checkedAll:  true,
-									checkedRoot: true
-									});
+          var store = new ItemFileWriteStore( { url: "../../data/json/Network.json" });
+          var model = new ForestStoreModel( {
+                  store: store,
+                  query: {type: 'computer'},
+                  rootLabel: 'The Network',
+                  checkedAll:  true,
+                  checkedRoot: true
+                  });
 
-					ready(function() {
-						var tree = new Tree( {
-										model: model,
-										id: "MenuTree",
-										checkboxMultiState: true,
-										icon: { iconClass: "networkIcon", indent: true },
-										branchIcons: true,
-										nodeIcons: true
-										}, "CheckboxTree" );
-						tree.startup();
-					});
+          ready(function() {
+            var tree = new Tree( {
+                    model: model,
+                    id: "MenuTree",
+                    checkboxMultiState: true,
+                    icon: { iconClass: "networkIcon", indent: true },
+                    branchIcons: true,
+                    nodeIcons: true
+                    }, "CheckboxTree" );
+            tree.startup();
+          });
         });
     </script>
   </head>
@@ -63,7 +63,7 @@
   <body class="claro">
     <h1 class="DemoTitle">The CheckBox Tree with Custom Icons</h1>
     <p>
-			Demonstrate the tree styling API with custom icons.
+      Demonstrate the tree styling API with custom icons.
     </p>
     <div id="CheckboxTree">
     </div>

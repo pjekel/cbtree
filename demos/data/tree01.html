@@ -27,11 +27,11 @@
     <script type="text/javascript" src="../../../dojo/dojo.js"></script>
     <script type="text/javascript">
       require([
-				"dojo/_base/lang",
+        "dojo/_base/lang",
         "dojo/data/ItemFileWriteStore",
         "dojo/ready",
         "cbtree/Tree",                    // Checkbox tree
-        "cbtree/extensions/Styling",      // Tree styling extensions
+        "cbtree/extensions/TreeStyling",  // Tree styling extensions
         "cbtree/models/ForestStoreModel"  // ForestStoreModel
         ], function( lang, ItemFileWriteStore, ready, Tree, TreeStyling, ForestStoreModel) {
 
@@ -80,8 +80,8 @@
   <body class="claro">
     <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
     <p>
-			A basic CheckBox Tree using demonstrating some of the tree styling API capabilities.<br/>
-		</p>
+      A basic CheckBox Tree using demonstrating some of the tree styling API capabilities.<br/>
+    </p>
     <div id="CheckboxTree">
     </div>
     <h2>Click a checkbox</h2>
