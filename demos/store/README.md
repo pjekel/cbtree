@@ -11,10 +11,11 @@ stores.
 * tree06.html - Demonstrate Drag-n-Drop.
 * tree07.html - Demonstrate the cbtree/store ObjectStore and the cbtree/model ForestStoreModel.
 * tree08.html - Use ToggleButton widget instead of the cbtree Multi State CheckBox
+* tree09.html - Demonstrate the Hierarchy store using the custom 'ItemFileReadStore' data handler.
 * tree10.html - cbtree/store ObjectStore with a custom data handler for CSV data.
 * tree11.html - Same as tree10.html but with a different handler registration method.
 * tree15.html - ArcGIS geocoder example
-* tree15.html - ArcGIS geocoder and geocoder data handler.
+* tree16.html - ArcGIS geocoder and geocoder data handler.
 
 ***NOTE:*** The following examples require PHP support on your server.
 

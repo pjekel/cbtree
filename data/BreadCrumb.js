@@ -25,7 +25,7 @@ define(["dojo/_base/array",
 	//		cbtree/data/BreadCrumb
 	// summary:
 	// 		A simple implementation of a breadcrumb trail for a cbtree/data/FileStore.
-	//		It is provided as a sample and is utilized by some of the cbtree demos.
+	//		It is provided as a sample and is utilized by some of the cbtree/data demos.
 
 	var DirectoryItem = declare([MenuItem], {
 		iconClass:"dijitEditorIcon dijitEditorIconTabIndent",

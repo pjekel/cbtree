@@ -11,13 +11,13 @@
 //
 //	In case of doubt, the BSD 2-Clause license takes precedence.
 //
-define([
-	'dijit/form/CheckBox',
-	'dojo/_base/declare',
-	'dojo/_base/event',
-	'dojo/dom-attr'
-], function ( CheckBox, declare, event, domAttr ) {
-
+define(["dijit/form/CheckBox",
+				"dojo/_base/declare",
+				"dojo/_base/event",
+				"dojo/dom-attr"
+			 ], function ( CheckBox, declare, event, domAttr ) {
+	"use strict";
+	
 	return declare( [CheckBox], {
 		// baseClass: [protected] String
 		//		Root CSS class of the widget (ex: twcCheckBox), used to add CSS

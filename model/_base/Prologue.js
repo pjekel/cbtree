@@ -15,7 +15,6 @@ define(["dojo/_base/lang"], function (lang) {
 		//		cbtree/model/_base/Prologue
 		// summary:
 
-	var	moduleName = "cbTree/model/_base/Prologue";
 	var undef;
 
 	function Prologue (/*Object*/ object,/*Store.PutDirectives*/ options) {

@@ -51,7 +51,7 @@ define(["dojo/_base/lang",
 		//	|		console.log( "Item: "+id+" was modified.");
 		//	|	}
 		//	|
-		//	|	on( store, "change", lang.hitch( this, modified) );
+		//	|	store.on( "change", modified );
 
 		var orgMethods = {};
 		var mutex	= new Mutex();
