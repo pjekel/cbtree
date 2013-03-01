@@ -31,6 +31,25 @@ define(["module",
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
 	
+	function correctException( error ) {
+		// summary:
+		//		Work-around for a dojo 1.8.x XHR bug. Whenever a XHR requests fails the
+		//		server response is still processed by the handleAs handler resulting in
+		//		in an incorrect error name (SyntaxError) and message.
+		// Note:
+		//		Bug filed as: http://bugs.dojotoolkit.org/ticket/16223
+		// tag:
+		//		Private
+		if (error.response) {
+			switch (error.response.status) {
+				case 404:
+					error.message = error.response.url.match(/[^?#]*/)[0];
+					error.name    = "NotFoundError";
+			}
+		}
+		return error;
+	}
+
 	function readOnly( property ) {
 		throw new CBTError( "ReadOnly", "set", "property ["+property+"] is READ-ONLY");
 	}	
@@ -532,7 +551,13 @@ define(["module",
 							this.handleAs = "json";
 						}
 						result = this._xhrGet( this.url, this.handleAs, null );
-						result.then( function (data){self._loadData( queryFunc(data) );}, this._storeLoaded.reject	);
+						result.then( 
+							function (data){
+								self._loadData( queryFunc(data) );
+							}, 
+							function (err) {
+								self._storeLoaded.reject( new CBTError( correctException(err), "load"));
+							});
 					}
 				} else {
 					this._loadData( null );		// Empty store
