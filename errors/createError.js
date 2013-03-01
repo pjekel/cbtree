@@ -10,7 +10,7 @@
 //
 define(["dojo/_base/lang", 
         "dojo/request",
-				"../util/shim/Array"						// ECMA-262 Array shim
+        "../util/shim/Array"      // ECMA-262 Array shim
        ], function(lang, request){
 	"use strict";
 
@@ -18,9 +18,9 @@ define(["dojo/_base/lang",
 	//		cbtree/errors/createError
 	// summary:
 	//		The createError module returns a function which enables the definition
-	//		of a custom Error type.  This module is implementaed as a dojo plugin
-	//		to allow for loading error message definitions using external resource
-	//		files.
+	//		of a custom Error type that uses pre-defined 'named' error messages.
+	//		This module is implementaed as a dojo plugin to allow for loading error
+	//		message definitions using external resource files.
 	// example:
 	//		The first example define the 'myError' type using a locally defined set
 	//		of error messages whereas the second example load the error messages
@@ -29,10 +29,12 @@ define(["dojo/_base/lang",
 	//	|	require(["module", 
 	//	|          "cbtree/errors/createError"
 	//	|         ], function (module, createError) {
+	//	|
 	//	|	  var errDefs = [
 	//	|	    {"NotFoundError":{text:"Object not found here", code:18}},
 	//	|	                        ...
 	//	|	  ];
+	//	|
 	//	|	  var myError = createError( module.id, errDefs );
 	//	|
 	//	|	  function someFunction ( ... ) {
@@ -43,7 +45,8 @@ define(["dojo/_base/lang",
 	//	|	require(["module", 
 	//	|          "cbtree/errors/createError!cbtree/errors/DOMErrors.json"
 	//	|         ], function (module, createError) {
-	//	|	  var myError = createError( module.id, errDefs );
+	//	|
+	//	|	  var myError = createError( module.id );
 	//	|
 	//	|	  function someFunction ( ... ) {
 	//	|	    throw new myError("NotFoundError", "someFunction");
@@ -61,7 +64,19 @@ define(["dojo/_base/lang",
 	// errorNames: Object
 	//		A JavaScript key:value pairs object. Each key represents an error name
 	//		and the value is an JavaScript object with at least a 'text' property:
-	//		Example: { "AbortError": { text: "Operation is aborted" } }
+	//
+	//	|		{ "AbortError": { text: "Operation is aborted" } }
+	//
+	//		If the message value contains a 'type' property it, instead of the key,
+	//		will be used as the name of the error. For example, the next definition:
+	//
+	//	|		{ "AbortError", {text: "Operation is aborted", type: "WentFishing" } }
+	//
+	//		when thrown as 'throw myError("AbortError");' will display a message
+	//		like:
+	//
+	//				"WentFishing: Operation is aborted"
+	//
 	var errorNames = {};
 
 	function addMessage(/*Object*/ messages ) {
@@ -69,21 +84,23 @@ define(["dojo/_base/lang",
 		//		Add message defintions to the internal message table. Each message
 		//		is defined by a key (e.g. the message type) and a value. The value
 		//		is an object with the following properties: 'text' and optionally
-		//		'code'. Please note that the code property has been deprected in the
-		//		DOM specification and is provided for backward compatability only.
+		//		'code' and 'type'. If the type property is specified it is used
+		//		as the alias for message type.
+		//		Please note that the code property has been deprecated in the DOM
+		//		specification and is provided for backward compatability only.
 		// messages:
 		//		A single JavaScript key:value pairs object where each key:value pair
 		//		defines a message. Alternatively an array of key:value pair objects
 		//		where each object defines a message. The following is an example of
 		//		a JSON encoded message object:
 		//
-		//		{"NotFoundError":{"text":"The object can not be found here","code":8}}
+		//		{"NotFoundError":{"text":"The object can not be found here","code":18}}
 		// tag:
 		//		Private
 		function validMsg( msgObj ) {
 			var key, value;
 			for(key in msgObj) {
-				if (/\W/.test(key) || !msgObj[key]["text"]) {
+				if (/\W/.test(key) || !(value = msgObj[key]) || !value.text) {
 					return false;
 				}
 			}
@@ -111,7 +128,9 @@ define(["dojo/_base/lang",
 		//		'NotFoundError' or 'NotFound', both types are equivalent and are 
 		//		referred to as the long and abbreviated version. Please note that
 		//		The message object returned will always have the long version as
-		//		the value of the type property, that is 'NotFoundError'
+		//		the value of the type property unless the pre-defined message has
+		//		a 'type' property in which case the message type property is used
+		//		instead.
 		// text:
 		//		Optional message text. If specified overrides the text associated
 		//		with the message type. 
@@ -123,11 +142,12 @@ define(["dojo/_base/lang",
 		//		Private
 		var abbr = (type || "").replace(/Error$/, "");
 		var base = abbr + "Error";
-		var msg  = {type: base, text: text, code: 0};
+		var msg  = {type: base, text: "", code: 0};
 		
-		if (abbr && !text) {
+		if (abbr) {
 			msg = lang.mixin( msg, (errorNames[base] || errorNames[abbr] || C_UNKNOWN))
 		}
+		msg.text = text || msg.text;
 		return msg;
 	}
 
@@ -192,7 +212,7 @@ define(["dojo/_base/lang",
 			this.name    = msgObj.type;
 		}
 
-		var prefix = module ? "->" : "";
+		var prefix = module ? "::" : "";
 		var module = module || "";
 
 		addMessage( errors || {});

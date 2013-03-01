@@ -17,6 +17,7 @@
 	{"ParamMissingError":			{"text":"required parameter is missing"} },
 	{"PropmMissingError":			{"text":"required property is missing"} },
 	{"ReadOnlyError": 				{"text":"property is READ-ONLY"} },
+	{"RequestError": 					{"text":"XHR request failed"} },
 	{"UnknownVersionError":		{"text":"Unknown dojo or dijit version"} }
 ]
 

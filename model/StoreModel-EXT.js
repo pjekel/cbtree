@@ -32,7 +32,7 @@ define(["module",
 		return (Object.prototype.toString.call(object) == "[object Object]");
 	}
 
-	lang.extend( BaseStoreModel, {
+	var ModelExtension = {
 
 		// =======================================================================
 		// Private Methods related to checked states
@@ -347,6 +347,9 @@ define(["module",
 			return null;
 		}
 
-	});	/* end lang.extend() */
+	};	/* end ModelExtension {} */
 
+	BaseStoreModel.extend( ModelExtension );
+	return true;
+	
 });	/* end define() */
