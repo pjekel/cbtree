@@ -10,8 +10,9 @@
 //
 define(["./_Path",
         "./_PathList",
+        "../Natural",
         "../Hierarchy"
-        ], function (Path, PathList, Hierarchy) {
+        ], function (Path, PathList, Natural, Hierarchy) {
 	"use strict";
 	
 	// module:
@@ -152,17 +153,18 @@ define(["./_Path",
 				if (parents.length) {
 					parents.forEach( function (parent) {
 						var currPath = self.getIdentity(parent) + sepr + path;
-						_addPath(parent, currPath, list);
+						list = _addPath(parent, currPath, list);
 					});
 				} else {
 					// If no more parents, add current path.
+					list = list || new PathList();
 					list.push( new Path(path, sepr) );
 				}
+				return list;
 			}
 			
 			if (item) {
-				var pathList = new PathList();
-				_addPath(item, this.getIdentity(item), pathList );
+				var pathList = _addPath(item, this.getIdentity(item), null );
 				return pathList;
 			}
 		},
@@ -175,6 +177,9 @@ define(["./_Path",
 			// idOnly:
 			//		If set to true only the sibling ids are returned.
 			// returns:
+			//		If the item exists, an array of store object or ids otherwise
+			//		undefined. If an empty array is returned (length=0) it indicates
+			//		that item has no siblings.
 			// tag:
 			//		Public
 			var item = this._anyToObject(item);
@@ -267,8 +272,12 @@ define(["./_Path",
 		
 		isSiblingOf: function (/*Object|Id*/ item,/*Object|Id*/ sibling) {
 			// summary:
+			//		Returns true if the object identified by argument 'item' is the
+			//		sibling of the object identified by argument 'sibling'.
 			// item:
+			//		A valid store object or object id.
 			// returns:
+			//		Boolean true or false.
 			// tag:
 			//		Public
 			var sibling = this._anyToObject(sibling);
@@ -284,7 +293,32 @@ define(["./_Path",
 		
 	};	/* end Ancestry {} */
 
+	var Order = {
+		isBefore: function (/*Object|Id*/ itemA, /*Object|Id*/ itemB) {
+			// summary:
+			//		Evaluate if an item appears before another item in the natural
+			//		order of store objects.
+			// itemA:
+			// itemB:
+			// returns:
+			//		Boolean true if itemA appears before itemB otherwise false.
+			// tag:
+			//		Public
+			var objA = this._anyToObject(itemA);
+			var objB = this._anyToObject(itemB);
+
+			if (objA && objB) {
+				var indexA = this._data.indexOf( objA );
+				var indexB = this._data.indexOf( objB );
+
+				return (indexA < indexB);
+			}
+			return false;
+		}
+	};	/* end Order {} */
+
 	Hierarchy.extend( Ancestry );
+	Natural.extend( Order );
 
 	return true;
 
