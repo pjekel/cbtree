@@ -29,7 +29,7 @@ define(["module",
 	// module:
 	//		cbtree/Tree
 	// note:
-	//		This implementation is compatible with dojo 1.8
+	//		This implementation is compatible with dojo 1.8 & 1.9
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
 
@@ -465,19 +465,35 @@ define(["module",
 			}
 		},
 
-		_onKeyDown: function (/*TreeNode*/ nodeWidget, /*Event*/ evt){
+		_onEnterKey: function (/*message || evt, node*/) {
 			// summary:
 			//		Toggle the checkbox state when the user pressed the spacebar.
 			//		The spacebar is only processed if the widget that has focus is
 			//		a tree node and has a checkbox.
+			// NOTE:
+			//		To support both dojo 1.8 and 1.9 we must test the arguments list
+			//		The dojo 1.8 signature is:
+			//			_onEnterKey( message );
+			//		whereas the dojo 1.9 signature is:
+			//			_onEnterKey( evt, node );
 			// tags:
 			//		private
-			if (nodeWidget && nodeWidget._checkBox) {
+			var msg, evt, node;
+
+			msg = evt = arguments[0];
+			if (arguments.length == 1) {  // dojo 1.8
+				node = msg.node;
+				evt  = msg.evt;				
+			} else {                      // dojo 1.9
+				node = arguments[1];
+			}
+
+			if (node && node._checkBox) {
 				if (!evt.altKey && evt.keyCode == keys.SPACE) {
-					this._onCheckBoxClick(nodeWidget, nodeWidget._toggleCheckBox(), evt);
+					this._onCheckBoxClick(node, node._toggleCheckBox(), evt);
 				}
 			}
-			this.inherited(arguments);	/* Pass it on to the parent tree... */
+			this.inherited(arguments);
 		},
 
 		_onLabelChange: function (/*String*/ oldValue, /*String*/ newValue) {
