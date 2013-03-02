@@ -16,7 +16,8 @@ stores.
 * tree11.html - Same as tree10.html but with a different handler registration method.
 * tree15.html - ArcGIS geocoder example
 * tree16.html - ArcGIS geocoder and geocoder data handler.
+* tree20.html - Store hierary and Ancestry extension example.
 
 ***NOTE:*** The following examples require PHP support on your server.
 
-* tree20.html - A CheckBox Tree using the cbtree/store File Store and Fancy Icons.
+* tree40.html - A CheckBox Tree using the cbtree/store File Store and Fancy Icons.
