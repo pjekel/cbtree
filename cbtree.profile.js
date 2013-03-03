@@ -87,7 +87,8 @@ var profile = {
 				"cbtree/store/Memory",
 				"cbtree/store/Natural",
 				"cbtree/store/ObjectStore",
-				"cbtree/store/_CORS",
+				"cbtree/store/extensions/Ancestry",
+				"cbtree/store/extensions/CORS",
 				// cbtree/store/handlers
 				"cbtree/store/handlers/arcGisHandler",
 				"cbtree/store/handlers/csvHandler",
@@ -100,7 +101,7 @@ var profile = {
 				// util
 				"cbtree/util/QueryEngine",
 				// misc
-				"cbtree/errors/createError",
+				"cbtree/errors/createError"
 			]
 		}
 	},
