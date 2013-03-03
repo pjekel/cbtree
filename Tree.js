@@ -471,11 +471,12 @@ define(["module",
 			//		The spacebar is only processed if the widget that has focus is
 			//		a tree node and has a checkbox.
 			// NOTE:
-			//		To support both dojo 1.8 and 1.9 we must test the arguments list
-			//		The dojo 1.8 signature is:
-			//			_onEnterKey( message );
-			//		whereas the dojo 1.9 signature is:
-			//			_onEnterKey( evt, node );
+			//		Dojo 1.8 and 1.9 _onEnterKey have different signatures because
+			//		of the introdution of _KeyNavMixin() in 1.9
+			//
+			//				Dojo 1.9 signature:	_onEnterKey( evt, node );
+			//				Dojo 1.8 signature:	_onEnterKey( message );
+			//
 			// tags:
 			//		private
 			var msg, evt, node;
@@ -503,6 +504,7 @@ define(["module",
 			// tags:
 			//		private
 
+			// Remove with 2.0
 			this.mapEventToAttr(oldValue, newValue, "label");
 		},
 
@@ -679,6 +681,7 @@ define(["module",
 				// Monitor any changes to the models label attribute and add the current
 				// 'label' and 'enabled' attribute to the mapping table.
 
+				// Remove with 2.0
 				aspect.after(model, "onLabelChange", lang.hitch(this, "_onLabelChange"), true);
 
 				this.mapEventToAttr(null, model.get("enabledAttr"), "_enabled_");
