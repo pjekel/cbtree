@@ -13,8 +13,7 @@ define(["module",
 				"dojo/when",
 				"./_base/BaseStoreModel",
 				"./_base/Parents",
-				"../errors/createError!../errors/CBTErrors.json",
-				"../util/shim/Array"
+				"../errors/createError!../errors/CBTErrors.json"
 			 ], function (module, lang, when, BaseStoreModel, Parents, createError) {
 
 	// module:

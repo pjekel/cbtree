@@ -13,8 +13,7 @@ define(["module",
 				"dojo/_base/lang",
 				"dojo/store/util/QueryResults",
 				"./Natural",
-				"../errors/createError!../errors/CBTErrors.json",
-				"../util/shim/Array"						 // ECMA-262 Array shim
+				"../errors/createError!../errors/CBTErrors.json"
 			 ], function (module, declare, lang, QueryResults, Natural, createError) {
 
 	// module:

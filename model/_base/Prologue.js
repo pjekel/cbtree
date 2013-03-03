@@ -9,7 +9,7 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 
-define(["dojo/_base/lang"], function (lang) {
+define([], function () {
 	"use strict";
 		// module:
 		//		cbtree/model/_base/Prologue

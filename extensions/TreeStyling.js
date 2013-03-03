@@ -14,11 +14,9 @@ define(["module",
 				"dojo/dom-class",
 				"dojo/dom-prop",
 				"dojo/dom-style",
-				"dojo/has",
 				"dijit/Tree",
-				"../errors/createError!../errors/CBTErrors.json",
-				"../util/shim/Array"				// ECMA-262 Array shim
-			], function (module, lang, aspect, domClass, domProp, domStyle, has, Tree, createError) {
+				"../errors/createError!../errors/CBTErrors.json"
+			], function (module, lang, aspect, domClass, domProp, domStyle, Tree, createError) {
 	// summary:
 	//		Tree Styling extensions to customize the look and feel of a dijit tree.
 	// description:
@@ -27,9 +25,6 @@ define(["module",
 	//		The styling functionality has been implemented as an extension to the
 	//		tree and tree node and can be loaded seperately from either the cbtree
 	//		or default dijit/Tree tree.
-
-	// Add cbTree TreeStyling API to the available features list
-	has.add("cbtree-treeStyling-API", true);
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
 	
@@ -50,7 +45,7 @@ define(["module",
 		return (any && Object.prototype.toString.call(any) == "[object Object]");
 	}
 
-	lang.extend(Tree._TreeNode, {
+	Tree._TreeNode.extend( {
 
 		_applyClassAndStyle: function (/*data.item*/ item, /*String*/ attribute) {
 			// summary:
@@ -164,7 +159,7 @@ define(["module",
 
 	});
 
-	lang.extend(Tree, {
+	Tree.extend( {
 
 		//==============================
 		// Parameters to constructor
@@ -1123,7 +1118,7 @@ define(["module",
 				}
 			}
 		}
-
+		
 	}); /* end lang.extend() */
 
 }); /* end define() */

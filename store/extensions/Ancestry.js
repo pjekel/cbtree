@@ -43,6 +43,17 @@ define(["./_Path",
 		return children;
 	}
 
+	function isEmpty(o) {
+		// summary:
+		//		Return true if object is empty otherwise false.
+		for(var prop in o) {
+			if(o.hasOwnProperty(prop)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	var Ancestry = {
 		// summary:
 		//		The Ancestry object is a collection of functions used to extend the
@@ -58,6 +69,45 @@ define(["./_Path",
 		//	|					 ], function( Hierarchy, Ancestry ) {
 		//	|		var myStore = new Hierarchy( ... );
 		//	|	});
+
+		analyze: function (/*Number*/ maxCount ) {
+			// summary:
+			//		Analyze the store hierarchy and report any broken links.
+			// maxCount:
+			//		The maximum number of missing object deteced before the store
+			//		analysis is aborted.
+			// returns:
+			//		A key:value pairs JavaScript object. Each key represents the
+			//		identifier of a missing object.   The value is the array of
+			//		identifiers referencing the missing object. If no object is
+			//		missing null is returned.
+			// tag:
+			//		Public
+			var maxms = maxCount > 0 ? maxCount : 0;
+			var data  = this._data || [];
+			var count = 0;
+			var miss  = {};
+			
+			data.some( function (item) {
+				var parentIds = this._getParentArray(item);		
+				var oops = parentIds.filter( function(parentId) {
+					return !this.get(parentId);
+				}, this);
+				
+				oops.forEach( function (parentId) {
+					var ref, itemId = this.getIdentity(item);
+					if (ref = miss[parentId]) {
+						ref.push(itemId);
+					} else {
+						ref = [itemId];
+						count++;
+					}
+					miss[parentId] = ref;
+				}, this);
+				return (maxms && maxms <= count);
+			}, this);
+			return !isEmpty(miss) ? miss : null;
+		},
 
 		getAncestors: function (/*Object|Id*/ item, /*Boolean?*/ idOnly) {
 			// summary:

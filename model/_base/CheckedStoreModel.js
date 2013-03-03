@@ -14,8 +14,7 @@ define(["module",                  // module.id
 				"dojo/_base/lang",         // lang.hitch()
 				"dojo/when",               // when()
 				"./BaseStoreModel",
-				"../../errors/createError!../../errors/CBTErrors.json",
-				"../../util/shim/Array"    // ECMA-262 Array shim
+				"../../errors/createError!../../errors/CBTErrors.json"
 			 ], function (module, declare, lang, when, BaseStoreModel, createError) {
 		// module:
 		//		cbtree/model/_base/CheckedStoreModel

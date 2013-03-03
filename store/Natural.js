@@ -9,8 +9,7 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/declare",
-				"./Memory",
-				"../util/shim/Array"						 // ECMA-262 Array shim
+				"./Memory"
 			 ], function (declare, Memory) {
 
 	// module:
@@ -18,9 +17,6 @@ define(["dojo/_base/declare",
 	// summary:
 	//		This store implements the cbtree/store/api/Store API which is an extension
 	//		to the dojo/store/api/Store API.
-
-	var moduleName = "cbTree/store/Natural";
-	var undef;
 
 	var Natural = declare([Memory], {
 		// summary:

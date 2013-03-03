@@ -1,6 +1,11 @@
-define ([], function () {
+define (["module",
+				 "../../errors/createError!../../errors/CBTErrors"
+				], function (module, createError) {
 	"use strict";
 
+	var CBTError = createError( module.id );		// Create the CBTError 
+
+	// Define a function if JavaScript 1.8.5 is not supported.
 	var defineProperty = Object.defineProperty || function (obj, property, options) {
 		if (obj[property] == undefined) {
 			obj[property] = options.value;
@@ -50,7 +55,7 @@ define ([], function () {
 			if (path instanceof Path) {
 				return intersect( this, path, inclusive);
 			} else {
-				throw new TypeError("invalid argument");
+				throw new CBTError("InvalidType", "intersect");
 			}
 		};
 

@@ -13,8 +13,7 @@ define(["module",               // module.id
 				"dojo/when",						// when()
 				"./_base/CheckedStoreModel",
 				"./_base/Parents",
-				"../errors/createError!../errors/CBTErrors.json",
-				"../util/shim/Array"		// ECMA-262 Array shim
+				"../errors/createError!../errors/CBTErrors.json"
 			 ], function (module, declare, when, CheckedStoreModel, Parents, createError){
 	"use strict";
 

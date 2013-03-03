@@ -9,13 +9,16 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 
-define(["./shim/Array"], function() {
+define(["module",
+				"../errors/createError!../errors/CBTErrors.json",
+				"./shim/Array"
+			 ], function(module, createError) {
 		"use strict";
 	// module:
 	//		cbtree/util/QueryEngine
 
-	var moduleName = "cbtree/util/QueryEngine";
-
+	var CBTError = createError( module.id );		// Create the CBTError type.
+	
 	function contains(/*any[]*/ valueA, /*any|any[]*/ valueB, /*Boolean?*/ ignoreCase) {
 		// summary:
 		//		Test if an array contains specific value(s) or if array valueA valueB
@@ -212,7 +215,7 @@ define(["./shim/Array"], function() {
 			case "string":
 				// named query
 				if (!this[query] || typeof this[query] != "function") {
-					throw new Error("No filter function " + query + " was found in store");
+					throw new CBTError( "MethodMissing", "QueryEngine", "No filter function " + query + " was found in store");
 				}
 				queryFunc = this[query];
 				break;
@@ -220,7 +223,7 @@ define(["./shim/Array"], function() {
 				queryFunc = query;
 				break;
 			default:
-				throw new TypeError("Can not query with a " + typeof query);
+				throw new CBTError("InvalidType", "QueryEngine", "Can not query with a " + typeof query);
 		} /*end switch() */
 
 		function execute(/*Object[]*/ objects, /*Boolean*/ noFilter) {

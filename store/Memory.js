@@ -33,9 +33,9 @@ define(["module",
 	
 	function correctException( error ) {
 		// summary:
-		//		Work-around for a dojo 1.8.x XHR bug. Whenever a XHR requests fails the
-		//		server response is still processed by the handleAs handler resulting in
-		//		in an incorrect error name (SyntaxError) and message.
+		//		Work-around for a dojo 1.8/1.9 XHR bug. Whenever a XHR requests fails
+		//		the server response is still processed by the 'handleAs' data handler
+		//		resulting in an incorrect error name (SyntaxError) and message.
 		// Note:
 		//		Bug filed as: http://bugs.dojotoolkit.org/ticket/16223
 		// tag:
@@ -632,15 +632,21 @@ define(["module",
 			}
 		},
 
-		ready: function (callback, errback) {
+		ready: function (callback, errback, scope) {
 			// summary:
 			//		Execute the callback when the store data has been loaded. If an error
 			//		is detected during the loading process errback is called instead.
+			// callback:
+			// errback:
+			// scope:
 			// returns:
 			//		dojo/promise/Promise
 			// tag:
 			//		Public
-			return this._storeLoaded.then(callback, errback);
+			return this._storeLoaded.then(
+				lang.hitch( (scope || this),callback), 
+				lang.hitch( (scope || this),errback)
+			);
 		},
 
 		remove: function (/*String|Number*/ id) {
