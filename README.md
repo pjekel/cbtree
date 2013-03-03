@@ -154,10 +154,3 @@ section:
 
 
 <h2 id="basics">CheckBox Tree Migration</h2>
-The new CheckBox Tree implementation is a complete rewrite of the previous
-[*Dijit Tree with Multi State Checkboxes*](http://thejekels.com/dojo/Dijit_Tree_MultiState_Chkbox.html), adding new
-features, properties and API's. If you plan on migrating from the old tree to
-this new implementation it is important you read all the documentation provided
-as properties have been added, renamed and some properties have moved from the tree to
-the model and vice versa.
-
