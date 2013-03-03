@@ -58,8 +58,7 @@
 					}
 
           ready( function () {
-            var tree = new Tree( { model: model, id: "FamilyTree" }, "CheckboxTree" );
-						// Establish event listeneres.
+            var tree = new Tree( { model: model, id: "tree07" }, "CheckboxTree" );
 						tree.on("checkBoxClick", checkBoxClicked);
 						model.on("rootChange", rootChange);
             // Start the tree.

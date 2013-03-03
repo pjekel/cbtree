@@ -41,9 +41,8 @@
                "cbtree/Tree",
 							 "cbtree/store/ObjectStore", 
                "cbtree/model/ForestStoreModel",
-               "cbtree/util/QueryEngine",
-               "cbtree/extensions/TreeStyling"
-              ], function (ready, when, domStyle, Tree, ObjectStore, StoreModel, QueryEngine, Styling) {
+               "cbtree/util/QueryEngine"
+              ], function (ready, when, domStyle, Tree, ObjectStore, StoreModel, QueryEngine) {
 
 				var popup, map, geocoder, layer, template, symbol;
 				var store, model, tree, filter;
@@ -81,7 +80,7 @@
 					// Create store, model and checkbox tree...
 					store  = new ObjectStore();
 					model  = new StoreModel({ store:store, query:{type:"parent"} });
-					tree   = new Tree( {model:model, showRoot:false}, "tree" );
+					tree   = new Tree( {model:model, showRoot:false, persist:false}, "tree" );
 					tree.startup();
 
 					// Create geocoder results filter. (only exact matches)

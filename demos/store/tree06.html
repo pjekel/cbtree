@@ -90,7 +90,7 @@
 
 				ready(function() {
 					// Allow items to be dropped on the earth tree but only if the source is another tree.
-					earthTree = new Tree({model: parentMod, checkItemAcceptance: acceptItem,
+					earthTree = new Tree({id:"tree06_0", model: parentMod, checkItemAcceptance: acceptItem,
 																itemCreator: domNodeToItem,
 																dndController: dndSource,
 																betweenThreshold:5,
@@ -99,7 +99,7 @@
 																} });
 					earthTree.placeAt("divEarth");
 					// No items can be dropped on the 'continents' tree.
-					contTree  = new Tree({model: childMod, dndController: dndSource,
+					contTree  = new Tree({id:"tree06_1", model: childMod, dndController: dndSource,
 																checkAcceptance: function() { return false; }
 															 });
 					contTree.placeAt("divContinents");

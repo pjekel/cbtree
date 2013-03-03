@@ -54,8 +54,13 @@
             }
           }
 
-          ready(function(){
-            var tree = new Tree( { model: model, id: "FamilyTree" }, "CheckboxTree" );
+          store.ready( function () {
+            // Analyze the store hierarchy
+            var broken = this.analyze();
+          });
+
+          ready (function () {
+            var tree = new Tree( { model: model, id:"tree20" }, "CheckboxTree" );
             tree.on( "checkBoxClick", checkBoxClicked);
             tree.startup();
           });

@@ -101,7 +101,7 @@
 																				  } 
 																			});
 						var model = new StoreModel({ store:store, query:{type:"parent"} });
-						var tree  = new Tree( {model:model, showRoot:false});
+						var tree  = new Tree( {model:model, showRoot:false, persist:false});
 						tree.placeAt("location");
 						tree.startup();
 
