@@ -29,8 +29,8 @@
 		<!-- Note: Not all ArcGIS 3.3 modules are AMD compliant... -->
     <script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/3.3"></script>
     <script type="text/javascript">
+			// Load non-AMD modules
 			dojo.require("esri.map");
-			dojo.require("esri.dijit.Popup");
 			dojo.require("esri.dijit.Geocoder");
     </script>
 
@@ -38,18 +38,19 @@
       require(["dojo/ready",
 							 "dojo/when",
 							 "dojo/dom-style",
+							 "esri/dijit/Popup",
                "cbtree/Tree",
 							 "cbtree/store/ObjectStore", 
                "cbtree/model/ForestStoreModel",
                "cbtree/util/QueryEngine"
-              ], function (ready, when, domStyle, Tree, ObjectStore, StoreModel, QueryEngine) {
+              ], function (ready, when, domStyle, Popup, Tree, ObjectStore, StoreModel, QueryEngine) {
 
 				var popup, map, geocoder, layer, template, symbol;
 				var store, model, tree, filter;
 				
 				ready(function() {
 					// create the map
-					popup = new esri.dijit.Popup(null, dojo.create("div"));
+					popup = new Popup(null, dojo.create("div"));
 					map = new esri.Map("map",{
 						basemap: "topo",
 						center: [ -100, 37 ], // long, lat
