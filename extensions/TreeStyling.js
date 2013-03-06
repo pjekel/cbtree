@@ -28,6 +28,7 @@ define(["module",
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
 	
+	var C_WILDCARD = "*";
 	var _DSID = "__DEFAULT";			// Item ID of default styling object.
 	
 	function isEmpty(o) {
@@ -785,19 +786,23 @@ define(["module",
 						// Loop thru the property values.
 						if (!isEmpty(table)) {
 							for (value in table) {
-								table[value] = this._icon2Object( (table[value] ? table[value] : value) );
+								if (table[value] == C_WILDCARD) {
+									table[value] = null;		// Value is null or wildcard (*)
+								}
 							}
 						} else {
-							map[prop] = "*";
+							table[C_WILDCARD] = null;
+							map[prop] = table;
 						}
 					} else if (map[prop] instanceof Array) {
 						if (map[prop].length) {
 							map[prop].forEach( function(value) {
-								table[value] = this._icon2Object(value);
+								table[value] = value;
 							}, this);
 							map[prop] = table;
 						} else {
-							map[prop] = "*";
+							table[C_WILDCARD] = null;
+							map[prop] = table;
 						}
 					} else if (map[prop] != "*") {
 						throw new CBTError("InvalidType", "_setValueToIconMap", "invalid property value type");
@@ -829,27 +834,53 @@ define(["module",
 			return newIcon;
 		},
 
-		//====================================================================
-		// Public methods replacing the default dijit tree methods.
-
 		_valueToIcon: function (item) {
 			// summary:
 			//		Map property value to an icon.
-
+			// item:
+			//		The object whose property value is to be mapped to an icon class.
+			// returns:
+			//		Icon object or null
+			// tag:
+			//		Private
 			if (item && this._valueToIconMap) {
-				var prop, table, val;
+				var prop, table, val, icon;
 				for( prop in this._valueToIconMap) {
 					table = this._valueToIconMap[prop];
 					if( (val = lang.getObject( prop, false, item )) ) {
-						if (table == "*") {
-							return this._icon2Object(val);
+						if (val in table) {
+							icon = table[val] || val;
 						} else {
-							return table[val];
+							if (C_WILDCARD in table) {
+								icon = table[C_WILDCARD] || val;
+							}
+						}
+						if (icon) {
+							switch (typeof icon) {
+								case "string":
+									icon = icon.replace( /\*/g, val );
+									icon = this._icon2Object(icon);
+									break;
+								case "function":
+									icon = icon(item, prop, val );
+									if (icon && typeof icon != "string") {
+										throw new CBTError( "InvalidResponse", "_valueToIcon" );
+									}
+									break;
+								default:
+									icon = null;
+							}
+							if (icon) {
+								return icon;
+							}
 						}
 					}
 				}
 			}
 		},
+
+		//====================================================================
+		// Public methods replacing the default dijit tree methods.
 
 		getIconClass: function (/*data.item*/ item, /*Boolean*/ opened, /*_TreeNode?*/ nodeWidget) {
 			// summary:
@@ -1061,7 +1092,7 @@ define(["module",
 							return newIcon;
 						}
 					}
-					throw new CBTError("ParamMissing", "_icon2Object", "required property 'iconClass' is missing or empty");
+					throw new CBTError("ParameterMissing", "_icon2Object", "required property 'iconClass' is missing or empty");
 				}
 			}
 			return null;
