@@ -14,8 +14,8 @@
 	{"InvalidWidgetError":		{"text":"invalid widget"} },
 	{"MethodMissingError":		{"text":"a required function is missing"} },
 	{"NotFoundError": 				{"text":"The object can not be found here."} },
-	{"ParamMissingError":			{"text":"required parameter is missing"} },
-	{"PropmMissingError":			{"text":"required property is missing"} },
+	{"ParameterMissingError":	{"text":"required parameter is missing"} },
+	{"PropertyMissingError":	{"text":"required property is missing"} },
 	{"ReadOnlyError": 				{"text":"property is READ-ONLY"} },
 	{"RequestError": 					{"text":"XHR request failed"} },
 	{"UnknownVersionError":		{"text":"Unknown dojo or dijit version"} }

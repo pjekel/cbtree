@@ -281,7 +281,7 @@ define(["module",
 			value.forEach( function (sortObj) {
 				if (lang.isObject(sortObj)) {
 					if (!("attribute" in sortObj)) {
-						throw new CBTError("PropMissing", "_sortSetter", "[attribute] property missing in sort object");
+						throw new CBTError("PropertyMissing", "_sortSetter", "[attribute] property missing in sort object");
 					}
 				} else {
 					throw new CBTError("InvalidType", "_sortSetter", "sort property must be an Array of objects");

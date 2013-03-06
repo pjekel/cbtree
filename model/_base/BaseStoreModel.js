@@ -226,7 +226,7 @@ define(["module",                 // module.id
 				this._monitored = (this._eventable || this._observable);
 
 			} else {
-				throw new CBTError( "ParamMissing", "constructor", "Store parameter is required");
+				throw new CBTError( "ParameterMissing", "constructor", "Store parameter is required");
 			}
 		},
 
@@ -585,11 +585,13 @@ define(["module",                 // module.id
 			// directive 'before'.
 			childItem[this.parentProperty] = parentIds.toValue();
 			var itemId = this.store.put( childItem, {before: before});
-			if (!this._monitored) {
+
+			if (!this._monitored || (this._eventable && before)) {
 				when( itemId, function () {
 					self._childrenChanged( updParents );
 				});
 			}
+			this.onPasteItem( childItem, insertIndex, before );
 		},
 
 		// =======================================================================
@@ -791,6 +793,16 @@ define(["module",                 // module.id
 			//		callback
 		},
 
+		onPasteItem: function(/*Object*/ storeItem,/*Number*/ insertIndex,/*Object*/ before ) {
+			// summary:
+			//		Callback when an item has moved.
+			// storeItem:
+			// insertIndex:
+			// before:
+			// tags:
+			//		callback
+		},
+
 		onRootChange: function (/*Object*/ storeItem, /*String*/ action) {
 			// summary:
 			//		Handler for any changes to the tree root children.
@@ -923,7 +935,7 @@ define(["module",                 // module.id
 			} else {
 				// No parent or id.
 				result = new Deferred();
-				result.reject( new CBTError("ParamMissing", "_getChildren", "No parent object or Id") );
+				result.reject( new CBTError("ParameterMissing", "_getChildren", "No parent object or Id") );
 			}
 			// Call User callback AFTER registering any listeners.
 			when(result, onComplete, onError);

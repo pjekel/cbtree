@@ -15,7 +15,6 @@ define(["module",
 				"../Evented",
 				"../errors/createError!../errors/CBTErrors.json"
 			 ], function (module, declare, QueryResults, Hierarchy, Evented, createError) {
-	"use strict";
 
 	// module:
 	//		cbtree/store/ObjectStore
@@ -59,14 +58,10 @@ define(["module",
 			//		String or Number
 			// tag:
 			//		Public
-			var id = this._getObjectId(object, options);
-			var at = this._indexId[id];
-
-			if (at >= 0) {
-				throw new CBTError("ItemExist", "add");
+			var id = this.inherited(arguments);
+			if (id) {
+				this.emit("new", {type:"new", item: object});
 			}
-			id = this._writeObject(id, object, at, options);
-			this.emit("new", {type:"new", item: object});
 			return id;
 		},
 
@@ -109,18 +104,11 @@ define(["module",
 			//		The identity to use to delete the object
 			// returns:
 			//		Returns true if an object was removed otherwise false.
-			var at = this._indexId[id];
-			if (at >= 0) {
-				var object = this._data[at];
-				object[this.parentProperty] = undef;
-				this._updateHierarchy(object);
-				this._data.splice(at, 1);
-				// now we have to reindex
-				this._indexData();
+			var result = this.inherited(arguments);
+			if (result) {
 				this.emit("delete", {type:"delete", item: object});
-				return true;
 			}
-			return false;
+			return result;
 		}
 
 	});	/* end declare() */

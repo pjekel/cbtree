@@ -691,7 +691,7 @@ define(["module",
 			}
 			else // The CheckBox Tree requires a model.
 			{
-				throw new CBTError("PropMissing", "postCreate", "no model was specified");
+				throw new CBTError("PropertyMissing", "postCreate", "no model was specified");
 			}
 		},
 
