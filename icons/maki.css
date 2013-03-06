@@ -1,0 +1,41 @@
+/*
+ *  Sample cbtree custom node icon CSS
+ *
+ *  Usage:  See https://github.com/pjekel/cbtree/wiki/Tree-Styling
+ *
+ *	The file maki.png is using a small subset of the MAKI ICONS. The full
+ *	set can be downloaded at: http://mapbox.com/maki/
+ */
+
+.maki {
+	background-image: url('images/maki.png'); /* Node icons sprite image */
+	background-repeat: no-repeat;
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	padding: 0;
+}
+.maki.Layers {
+	background-position: -0px;
+}
+
+.maki.Cities {
+	background-position: -18px;
+}
+
+.maki.Highways {
+	background-position: -36px;
+}
+
+.maki.States {
+	background-position: -54px;
+}
+
+.maki.Counties {
+	background-position: -72px;
+}
+
+.maki.Lakes {
+	background-position: -90px;
+}
+
