@@ -28,16 +28,15 @@ define(["dojo/_base/lang",
 	//		consumption by the cbtree/store Object Stores or dojo/store.
 	//
 	// example:
-	//	| require(["dojo/on",
-	//	|          "cbtree/store/Hierarchy",
+	//	| require(["cbtree/store/Hierarchy",
 	//	|					 "cbtree/store/handlers/arcGisHandler"
-	//	|				 ], function (on, Hierarchy, arcGisHandler) {
+	//	|				 ], function (Hierarchy, arcGisHandler) {
 	//	|
 	//	|  var geocoder = new esri.dijit.Geocoder({ ... });
 	//	|  var symbol   = new esri.symbol.PictureMarkerSymbol({ .. });
 	//	|  var template = new esri.InfoTemplate("${name}", "${*}");
 	//	|
-	//	|  on( geocoder, "findResult", function( response ) {
+	//	|  geocoder.on( "findResult", function( response ) {
 	//	|	   var store = new Hierarchy(
 	//	|									  { data: response,
 	//	|										  handleAs:"geocoder",
@@ -55,12 +54,11 @@ define(["dojo/_base/lang",
 	//		To register the ArcGIS handler directly with dojo/request/handlers use
 	//		the following code sample.
 	//
-	//	| require(["dojo/on",
-	//	|          "dojo/request",
+	//	| require(["dojo/request",
 	//	|			 		 "dojo/request/handlers",
 	//	|					 "cbtree/store/Hierarchy",
 	//	|					 "cbtree/store/handlers/arcGisHandler"
-	//	|				  ], function (on, request, handlers, Hierarchy, arcGisHandler) {
+	//	|				  ], function (request, handlers, Hierarchy, arcGisHandler) {
 	//	|
 	//	|  var geocoder = new esri.dijit.Geocoder({ ... });
 	//	|  var symbol   = new esri.symbol.PictureMarkerSymbol({ .. });
@@ -70,7 +68,7 @@ define(["dojo/_base/lang",
 	//	|	 var myHandler = new arcGisHandler( {symbol: symbol, template: template} );
 	//	|	 handlers.register("geocoder", myHandler.handler);
 	//  |
-	//	|  on( geocoder, "findResult", function( response ) {
+	//	|  geocoder.on( "findResult", function( response ) {
 	//	|	   var store = new ObjectStore( {data: response, handleAs:"geocoder" } );
 	//	|   });
 	//	| });

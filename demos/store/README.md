@@ -16,6 +16,7 @@ stores.
 * tree11.html - Same as tree10.html but with a different handler registration method.
 * tree15.html - ArcGIS geocoder example
 * tree16.html - ArcGIS geocoder and geocoder data handler.
+* tree17.html - ArcGIS map layers in a Table Of Content (TOC).
 * tree20.html - Store hierary and Ancestry extension example.
 
 ***NOTE:*** The following examples require PHP support on your server.
