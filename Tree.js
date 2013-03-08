@@ -287,15 +287,15 @@ define(["module",
 		//		 checkboxes will be created regardless of the model configuration.
 		checkBoxes: true,
 
+		// leafIcons: Boolean
+		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
+		leafIcons: true,
+
 		// leafReadOnly: Boolean
 		//		Determines if leaf checkboxes are read only. If true, the user can only
 		//		check/uncheck branch checkboxes and thus overwriting the per store item
 		//		'enabled' features for any store item associated with a tree leaf.
 		leafReadOnly: false,
-
-		// nodeIcons: Boolean
-		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
-		nodeIcons: true,
 
 		// End Parameters to constructor
 		//==============================
@@ -596,7 +596,7 @@ define(["module",
 					style["display"] = "none";
 				}
 			} else {
-				if (!this.nodeIcons) {
+				if (!this.leafIcons) {
 					style["display"] = "none";
 				}
 			}
