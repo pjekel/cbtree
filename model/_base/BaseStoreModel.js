@@ -231,6 +231,27 @@ define(["module",                 // module.id
 		},
 
 		// =======================================================================
+		// Model getters and setters (See dojo/Stateful)
+
+		_parentPropertySetter: function (name) {
+			// summary:
+			//		Set the parentProperty property. The property name must be a string
+			//		and can't be a dot separated property name.
+			// value:
+			//		New parentProperty value.
+			// tags:
+			//		private
+			if (typeof name == "string") {
+				if ( /\./.test(name) ) {
+					throw new CBTError( "InvalidType", "set", "parentProperty can not be a dot separated string");
+				}
+			} else {
+				throw new CBTError( "InvalidType", "set", "parentProperty value must be a string");
+			}
+			return this.checkedAttr;
+		},
+		
+		// =======================================================================
 		// cbtree/model/Model API methods
 
 		destroy: function () {
@@ -287,7 +308,7 @@ define(["module",                 // module.id
 			//		A valid dojo.store item.
 
 			if (this.iconAttr) {
-				return item[this.iconAttr];
+				return this._getProp( this.iconAttr, item );
 			}
 		},
 
@@ -307,7 +328,7 @@ define(["module",                 // module.id
 			if (item === this.root && this.rootLabel) {
 				return this.rootLabel;
 			}
-			return item[this.labelAttr];	// String
+			return this._getProp( this.labelAttr, item );
 		},
 
 		getParents: function (/*Object*/ storeItem) {
@@ -493,7 +514,7 @@ define(["module",                 // module.id
 
 			parent = (this._forest && parent == this.root) ? undef : parent;
 
-			if (itemId) {
+			if (itemId != undef) {
 				result = when( this.store.get(itemId), function (item) {
 					if (item) {
 						// An item in the store with the same identification already exists.
@@ -793,9 +814,9 @@ define(["module",                 // module.id
 			//		callback
 		},
 
-		onPasteItem: function(/*Object*/ storeItem,/*Number*/ insertIndex,/*Object*/ before ) {
+		onPasteItem: function (/*Object*/ storeItem,/*Number*/ insertIndex,/*Object*/ before) {
 			// summary:
-			//		Callback when an item has moved.
+			//		Callback when an item was pasted onto the tree.
 			// storeItem:
 			// insertIndex:
 			// before:
@@ -889,7 +910,7 @@ define(["module",                 // module.id
 			var self = this;
 			var result;
 
-			if (parent && id) {
+			if (parent && id != undef) {
 				if (this._childrenCache[id]) {
 					when(this._childrenCache[id], onComplete, onError);
 					return;
@@ -941,6 +962,24 @@ define(["module",                 // module.id
 			when(result, onComplete, onError);
 		},
 
+		_getProp: function (/*String*/ propPath,/*Object*/ item ) {
+			// summary:
+			//		Return property value identified by a dot-separated property propPath
+			// propPath:
+			//		A dot (.) separated property name like: feature.attribute.type
+			// item:
+			//		JavaScript item
+			// tag:
+			//		Private
+			var segm = propPath.split(".");
+			var p, i = 0;
+
+			while(item && (p = segm[i++])) {
+				item = (p in item ? item[p] : undefined);
+			}
+			return item;
+		},
+
 		_loadStore: function (/*Object?*/ options) {
 			// summary:
 			//		Issue a store load request. If the underlying store supports the
@@ -955,6 +994,29 @@ define(["module",                 // module.id
 			return when( this._storeLoader.call(this.store, options),
 										this._storeLoaded.resolve,
 										this._storeLoaded.reject );
+		},
+
+		_setProp: function (/*String*/ propPath,/*Object*/ item,/*any*/ value ) {
+			// summary:
+			//		Set the property value
+			// propPath:
+			//		A dot (.) separated property name like: feature.attribute.type
+			// item:
+			// value:
+			// tag:
+			//		Private
+			var segm = propPath.split(".");
+			var prop = segm.pop();
+
+			if (segm.length) {
+				var p, i = 0;
+
+				while(item && (p = segm[i++])) {
+					item = (p in item) ? item[p] : item[p] = {};
+				}
+			}
+			item[prop] = value;
+			return value;
 		},
 
 		_setValue: function (/*Object*/ item, /*String*/ property, /*any*/ value) {
@@ -977,7 +1039,7 @@ define(["module",                 // module.id
 					var result  = null;
 					var self    = this;
 
-					item[property] = value;
+					this._setProp( property, item, value );
 					result = this.store.put( item, {overwrite: true});
 					if (!this._monitored) {
 						when( result, function () { self._onChange(item, orgItem); });

@@ -38,26 +38,6 @@ define(["module",                  // module.id
 		//		less if the 'checked' property is specified in the dojo.store
 		checkedAll: true,
 
-		// checkedState: Boolean
-		//		The default state applied to every store item unless otherwise specified
-		//		in the dojo.store (see also: checkedAttr)
-		checkedState: false,
-
-		// checkedRoot: Boolean
-		//		If true, the root node will receive a checked state. This property is
-		//		independent of	the showRoot property of the tree itself. If the tree
-		//		property showRoot is set to false the checked state for the root will
-		//		not show either.
-		checkedRoot: false,
-
-		// checkedStrict: Boolean
-		//		If true, a strict parent-child relation is maintained.	 For example,
-		//		if all children are checked the parent will automatically recieve the
-		//		same checked state or if any of the children are unchecked the parent
-		//		will, depending if multi state is enabled, recieve either a mixed or
-		//		unchecked state.
-		checkedStrict: true,
-
 		// checkedAttr: String
 		//		The property name of a store object that holds the 'checked' state. On
 		//		load it specifies the store items initial checked state.	For example:
@@ -66,6 +46,26 @@ define(["module",                  // module.id
 		//		the model property checkedAll if one will be created automatically and
 		//		if so, its initial state will be set as specified by 'checkedState'.
 		checkedAttr: "checked",
+
+		// checkedRoot: Boolean
+		//		If true, the root node will receive a checked state. This property is
+		//		independent of	the showRoot property of the tree itself. If the tree
+		//		property showRoot is set to false the checked state for the root will
+		//		not show either.
+		checkedRoot: false,
+
+		// checkedState: Boolean
+		//		The default state applied to every store item unless otherwise specified
+		//		in the dojo.store (see also: checkedAttr)
+		checkedState: false,
+
+		// checkedStrict: Boolean
+		//		If true, a strict parent-child relation is maintained.	 For example,
+		//		if all children are checked the parent will automatically recieve the
+		//		same checked state or if any of the children are unchecked the parent
+		//		will, depending if multi state is enabled, recieve either a mixed or
+		//		unchecked state.
+		checkedStrict: true,
 
 		// enabledAttr: String
 		//		The property name of a store object that holds the 'enabled' state of
@@ -143,6 +143,24 @@ define(["module",                  // module.id
 		// =======================================================================
 		// Model getters and setters (See dojo/Stateful)
 
+		_checkedAttrSetter: function (name) {
+			// summary:
+			//		Set the checkedAttr property. The property name must be a string and
+			//		can't be a dot separated property name.
+			// value:
+			//		New checkedAttr value.
+			// tags:
+			//		private
+			if (typeof name == "string") {
+				if ( /\./.test(name) ) {
+					throw new CBTError( "InvalidType", "set", "checkedAttr can not be a dot separated string");
+				}
+			} else {
+				throw new CBTError( "InvalidType", "set", "checkedAttr value must be a string");
+			}
+			return this.checkedAttr;
+		},
+		
 		_checkedStrictSetter: function (value) {
 			// summary:
 			//		Hook for the set("checkedStrict",value) calls. See also constructor().

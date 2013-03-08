@@ -11,7 +11,7 @@
 
 define(["../../util/shim/Array"], function () {
 
-	function Parents (/*Object|String|String[]*/ childItem, /*String?*/ attribute) {
+	function Parents (/*Object|Id|Id[]*/ childItem, /*String?*/ attribute) {
 		// summary:
 		//		Helper class which hides the fact if we are dealing with a single or multi
 		//		parent dojo/store.	The default dojo/store only provide support for single
@@ -35,7 +35,8 @@ define(["../../util/shim/Array"], function () {
 		//		Private
 
 		var attribute = attribute || "parent";
-
+		var undef;
+		
 		this.multiple = true;
 		this.length   = 0;
 		this.input    = null;
@@ -56,7 +57,7 @@ define(["../../util/shim/Array"], function () {
 
 		this.add = function (id, multiple) {
 			// Don't accept duplicates
-			if (id) {
+			if (id != undef) {
 				if (!this.contains(id)) {
 					if (multiple || this.multiple) {
 						this[this.length++] = id;
@@ -97,10 +98,10 @@ define(["../../util/shim/Array"], function () {
 		};
 
 		this.toValue = function() {
-			return (this.multiple ? Array.prototype.slice.call(this) : (this[0] || undefined));
+			return (this.multiple ? Array.prototype.slice.call(this) : this[0]);
 		};
 
-		if (childItem) {
+		if (childItem != undef) {
 			if (childItem instanceof Array) {
 				this.input = childItem;
 			} else if (typeof childItem === "object") {
@@ -113,7 +114,7 @@ define(["../../util/shim/Array"], function () {
 			} else {
 				this.input = childItem;
 			}
-			if (this.input) {
+			if (this.input != undef) {
 				assign.call(this, this.input);
 			} else {
 				this.multiple = false;

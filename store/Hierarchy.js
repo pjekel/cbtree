@@ -105,7 +105,7 @@ define(["module",
 			// tag:
 			//		Private
 			var parentIds = object[this.parentProperty];
-			return (parentIds ? (this.multiParented ? parentIds : [parentIds]) : []);
+			return (parentIds != undef ? (this.multiParented ? parentIds : [parentIds]) : []);
 		},
 
 		_getParentIds: function (/*String|Number*/ objectId,/*any*/ parents) {
@@ -131,7 +131,7 @@ define(["module",
 							/* NO BREAK HERE */
 						case "string":
 						case "number":
-							if (parent) {
+							if (parent != undef) {
 								// Make sure we don't parent ourself or return duplicates.
 								if (parent != objectId && parentIds.indexOf(parent) == -1) {
 									parentIds.push(parent);

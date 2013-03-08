@@ -23,7 +23,8 @@ define(["module",
 	//		to the dojo/store/api/Store API.
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
-
+	var undef;
+	
 	var ObjectStore = declare([Hierarchy, Evented], {
 		// summary:
 		//		This in-memory store implements the full cbtree/store/api/Store API.
@@ -59,7 +60,7 @@ define(["module",
 			// tag:
 			//		Public
 			var id = this.inherited(arguments);
-			if (id) {
+			if (id != undef) {
 				this.emit("new", {type:"new", item: object});
 			}
 			return id;

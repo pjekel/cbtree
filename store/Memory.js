@@ -30,6 +30,7 @@ define(["module",
 	//		to the dojo/store/api/Store API.
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
+	var undef;
 	
 	function correctException( error ) {
 		// summary:
@@ -345,7 +346,10 @@ define(["module",
 			} else {
 				id = this.getIdentity(object);
 			}
-			return (id || Math.random());
+			if (id === undef) {
+				id = Math.random();
+			}
+			return id;
 		},
 
 		_indexData: function () {
