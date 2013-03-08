@@ -240,6 +240,7 @@ define(["module",
 			//		An array of objects matching the query.
 			// tag:
 			//		Private
+			var objects  = objects || [];  // Make sure we always return something
 			var sortSet  = options && options.sort;
 			var results  = noFilter ? objects : objects.filter(queryFunc);
 			var sortFunc = sortSet;
