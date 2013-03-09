@@ -58,7 +58,7 @@ define(["module",
 	var Memory = declare([Stateful], {
 		// summary:
 		//		This is a memory object store implementing the cbtree/store/api/Store
-		//		API. The store objects can be loaded	using either in-memory data or a
+		//		API. The store objects can be loaded using either in-memory data or a
 		//		URL. The data is pre-processed using the default dojo/request handlers
 		//		or the user can register a custom handler to pre-process, for example,
 		//		Comma Separated Values (CSV).
