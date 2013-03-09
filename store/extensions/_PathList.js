@@ -71,7 +71,7 @@ define (["module",
 
 	function PathList () {
 		// summary:
-		//		The PathList is an array 'like' object shows content is a set of objects
+		//		The PathList is an array 'like' object whose content is a set of objects
 		//		of type Path.
 		// methods:
 		//		contains  - Returns true is any path contains a given segment.
