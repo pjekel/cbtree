@@ -1,5 +1,5 @@
 define (["module",
-				 "../../errors/createError!../../errors/CBTErrors"
+				 "../../errors/createError!../../errors/CBTErrors.json"
 				], function (module, createError) {
 	"use strict";
 
