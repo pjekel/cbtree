@@ -389,16 +389,18 @@ define(["module",
 			// tag:
 			//		Public
 
-			var parentIds = this._getParentArray(child);
-			var parents   = [];
+			if (child) {
+				var parentIds = this._getParentArray(child);
+				var parents   = [];
 
-			parentIds.forEach( function (parentId) {
-				var parent = this.get(parentId);
-				if (parent) {
-					parents.push(parent);
-				}
-			}, this);
-			return parents;
+				parentIds.forEach( function (parentId) {
+					var parent = this.get(parentId);
+					if (parent) {
+						parents.push(parent);
+					}
+				}, this);
+				return parents;
+			}
 		},
 
 		hasChildren: function(/*Object*/ parent) {
@@ -421,7 +423,6 @@ define(["module",
 					return (parentIds.indexOf(parentId) != -1);
 				}, this);
 			}
-			return false;
 		},
 
 		query: function (/*Object*/ query,/*QueryOptions?*/ options /*Object[]? _dataSet */) {
