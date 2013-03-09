@@ -68,10 +68,8 @@ define([
 				// Fire off an event..
 				this.onSet( parentItem, attribute, oldValue, parentItem[attribute] );
 				return true;
-			} else {
-				throw new Error( "ItemWriteStoreEX::addReference(): parent and reference items are identical" );
 			}
-			return false;
+			throw new Error( "ItemWriteStoreEX::addReference(): parent and reference items are identical" );
 		},
 		 
 		attachToRoot: function (/*dojo.data.item*/ item) {

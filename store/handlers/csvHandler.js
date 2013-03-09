@@ -220,10 +220,10 @@ define([], function() {
 		//		Public
 		var self = this;
 
-		this.delimiter = ",";
-		this.newline   = "\r\n";
-		this.trim      = false;
-		this.fieldNames;
+		this.delimiter  = ",";
+		this.newline    = "\r\n";
+		this.trim       = false;
+		this.fieldNames = null;
 
 		this.handler = function (/*Object*/ response) {
 			// summary:

@@ -232,7 +232,6 @@ define(["dojo/_base/array",
 				// NOTE: An undefined attribute is treated as an attribute with value 'false'.
 				return (value === false || value === undefined)
 			}
-			return false;
 		},
 
 		_deleteFromServer: function (/*Object*/ keywordArgs) {
