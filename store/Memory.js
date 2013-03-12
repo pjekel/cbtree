@@ -346,7 +346,7 @@ define(["module",
 			} else {
 				id = this.getIdentity(object);
 			}
-			if (id === undef) {
+			if (id === null || id === undef) {
 				id = Math.random();
 			}
 			return id;
