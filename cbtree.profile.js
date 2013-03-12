@@ -100,6 +100,7 @@ var profile = {
 				"cbtree/extensions/TreeStyling",
 				// util
 				"cbtree/util/QueryEngine",
+				"cbtree/util/TOC",
 				// misc
 				"cbtree/errors/createError"
 			]
