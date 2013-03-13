@@ -76,7 +76,7 @@
       }
 
       function buildTOC (location) {
-        var index = [  { id:"layers", tocName:"Layers", type:"TOC" }  ];
+        var index = [  { id:"layers", tocName:"Layers", icon:"layers", type:"TOC" }  ];
 
         store = new ObjectStore({data: index});
         model = new ForestStoreModel( { store: store, 
@@ -88,7 +88,7 @@
         tree  = new Tree( { model: model, 
                             dndController: dndSource,
                             betweenThreshold: 5,
-                            valueToIconMap: { "tocName": {"*":"* maki"} },
+                            valueToIconMap: { "icon": {"*":"* maki"} },
                             autoExpand: true,
                             showRoot:false
                            },
@@ -118,6 +118,7 @@
         dynLayerInfos.forEach( function (layerInfo) {
           if (!store.get(layerInfo.id)) {
             layerInfo.tocName = layerInfo.name.split(".").pop();
+						layerInfo.icon    = layerInfo.tocName.toLowerCase();
             layerInfo.type    = "layerInfo";
             
             store.put( layerInfo, { parent: "layers"} );
