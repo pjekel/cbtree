@@ -15,13 +15,14 @@ define(["module",
         "dijit/registry",
         "dijit/tree/dndSource",
         "../Tree",
+        "../extensions/TreeStyling",
         "../model/TreeStoreModel",
         "../store/ObjectStore",
         "../store/extensions/Ancestry",
         "../errors/createError!../errors/CBTErrors.json",
         "./QueryEngine",
         "./shim/Array"             // ECMA-262 Array shim
-       ], function ( module, declare, lang, registry, dndSource, Tree, TreeStoreModel,
+       ], function ( module, declare, lang, registry, dndSource, Tree, TreeStyling, TreeStoreModel,
                      ObjectStore, Ancestry, createError, QueryEngine) {
 
   // module:
@@ -60,7 +61,10 @@ define(["module",
   var TOC = declare( null, {
 
     checked: false,
+    model: null,
     name: "Table Of Content",
+    store: null,
+    tree: null,
     
     //=========================================================================
     // Constructor
@@ -72,13 +76,13 @@ define(["module",
       declare.safeMixin( this, kwArgs );
 
       var root = { id:"ROOT", name:this.name, type:"ROOT", ref:null };
-      this._store = new ObjectStore( {data: [ root ]} );
-      this._model = new TreeStoreModel({ store: this._store, 
+      this.store = new ObjectStore( {data: [ root ]} );
+      this.model = new TreeStoreModel({ store: this.store, 
                                           enabledAttr:"enabled",
                                           query:{type:"ROOT"},
                                           checkedAll: false
                                          });
-      this._tree  = new Tree( { model: this._model, 
+      this.tree  = new Tree( { model: this.model, 
                                 checkItemAcceptance: this._acceptEntry,
                                 dndController: dndSource,
                                 betweenThreshold: 5,
@@ -94,9 +98,9 @@ define(["module",
     destroy: function () {
       // summary:
       //    Release all memory and mark store as destroyed.
-      this._store.destroy();
-      this._model.destroy();
-      this._tree.destroy();
+      this.store.destroy();
+      this.model.destroy();
+      this.tree.destroy();
     },
 
     //=========================================================================
@@ -128,7 +132,7 @@ define(["module",
 
     _getIdentity: function (something) {
       if ( {}.toString.call(something) == "[object Object]") {
-        return this._store.getIdentity(something);
+        return this.store.getIdentity(something);
       } else if (typeof something == "string" || typeof something == "number") {
         return something;
       }
@@ -141,7 +145,7 @@ define(["module",
         }
         var checkbox = (options && options.checkbox) || true;
         var readOnly = (options && options.readOnly) || false;
-        var parent   = this._store.get(options.parent);
+        var parent   = this.store.get(options.parent);
         if (parent) {
           if (checkbox) {
             object.checked = this.checked;
@@ -163,9 +167,9 @@ define(["module",
         var parentId = this._getIdentity(options && options.parent) || "ROOT";
         options = lang.mixin( options, {parent:parentId});
         header      = this._makeEntry( header, options );
-        header.type = "HEADER-" + this._store.getAncestors(options.parent).length;
+        header.type = "HEADER-" + this.store.getAncestors(options.parent).length;
         // Add header to store and return the object.
-        headerId = this._store.add( header, {parent:options.parent} );
+        headerId = this.store.add( header, {parent:options.parent} );
         return this.get(headerId);
       }
       throw new CBTError( "PropertyMissing", "addHeader" );
@@ -177,21 +181,21 @@ define(["module",
         options = lang.mixin( options, {parent:parentId});
         entry   = this._makeEntry( entry, options );
 
-        var entryId = this._store.add( entry, {parent:options.parent} );
+        var entryId = this.store.add( entry, {parent:options.parent} );
         return this.get(entryId);
       }
     },
 
     get: function (id) {
-      return this._store.get(id);
+      return this.store.get(id);
     },
 
     getChecked: function (entry) {
-      return this._model.getChecked( entry );
+      return this.model.getChecked( entry );
     },
 
     getDescendants: function (item, query) {
-      var result = this._store.getDescendants(item);
+      var result = this.store.getDescendants(item);
       if (result && query) {
         result = QueryEngine(query)(result);
       }
@@ -203,22 +207,22 @@ define(["module",
         case "checkboxclick":
         case "click":
         case "dblclick":
-          return this._tree.on( type, func );
+          return this.tree.on( type, func );
         case "pasteitem":
-          return this._model.on( type, func );
+          return this.model.on( type, func );
       }
     },
 
     query: function (query, options) {
-      return this._store.query(query, options);
+      return this.store.query(query, options);
     },
 
     setChecked: function (entry, state) {
-      return this._model.setChecked( entry, !!state );
+      return this.model.setChecked( entry, !!state );
     },
 
     startup: function () {
-      this._tree.startup();
+      this.tree.startup();
     },
     
     toString: function () {
