@@ -26,24 +26,18 @@
 			};
 		</script>
 
-		<!-- Note: Not all ArcGIS 3.3 modules are AMD compliant... -->
     <script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/3.3"></script>
     <script type="text/javascript">
-			// Load non-AMD modules
-			dojo.require("esri.map");
-			dojo.require("esri.dijit.Geocoder");
-    </script>
-
-    <script type="text/javascript">
       require(["dojo/ready",
-							 "dojo/when",
 							 "dojo/dom-style",
 							 "esri/dijit/Popup",
                "cbtree/Tree",
 							 "cbtree/store/ObjectStore", 
                "cbtree/model/ForestStoreModel",
-               "cbtree/util/QueryEngine"
-              ], function (ready, when, domStyle, Popup, Tree, ObjectStore, StoreModel, QueryEngine) {
+               "cbtree/util/QueryEngine",
+               "esri/dijit/Geocoder",
+               "esri/map"
+              ], function (ready, domStyle, Popup, Tree, ObjectStore, StoreModel, QueryEngine) {
 
 				var popup, map, geocoder, layer, template, symbol;
 				var store, model, tree, filter;
@@ -135,9 +129,7 @@
 								}
 							}
 						}
-						when( store.getChildren(item), function (children) {
-							children.forEach( setFeatures );
-						});
+						store.getChildren(item).forEach( setFeatures );
 						setFeatures(item);
 					});
 				});
