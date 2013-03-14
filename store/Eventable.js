@@ -131,7 +131,7 @@ define(["dojo/_base/lang",
 			var args = arguments;
 			return mutex.aquire( function() {
 				when( store.get(id), function (storeItem) {
-					var orgItem = storeItem ? lang.mixin(null, storeItem) : null;
+					var orgItem = storeItem ? lang.mixin({},storeItem) : null;
 					var result	= orgMethods["remove"].apply(store, args);
 					when( result, function(removed) {
 						mutex.release(removed);

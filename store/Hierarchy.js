@@ -462,13 +462,17 @@ define(["module",
 			//		Returns true if an object was removed otherwise false.
 			var at = this._indexId[id];
 			if (at >= 0) {
-				var object = this._data[at];
+				var object  = this._data[at];
+				var parents = object[this.parentProperty];	// Save current parents
 				// Clear its list of parents.
 				object[this.parentProperty] = undef;
 				this._updateHierarchy(object, null);
 				this._data.splice(at, 1);
 				// now we have to reindex
 				this._indexData();
+				// Restore the parent property so any external entity that relies on
+				// presence of this property will have it available.
+				object[this.parentProperty] = parents;
 				return true;
 			}
 			return false;

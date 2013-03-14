@@ -10,11 +10,12 @@
 //
 define(["module",
 				"dojo/_base/declare",
+				"dojo/_base/lang",
 				"dojo/store/util/QueryResults",
 				"./Hierarchy",
 				"../Evented",
 				"../errors/createError!../errors/CBTErrors.json"
-			 ], function (module, declare, QueryResults, Hierarchy, Evented, createError) {
+			 ], function (module, declare, lang, QueryResults, Hierarchy, Evented, createError) {
 
 	// module:
 	//		cbtree/store/ObjectStore
@@ -105,11 +106,15 @@ define(["module",
 			//		The identity to use to delete the object
 			// returns:
 			//		Returns true if an object was removed otherwise false.
-			var result = this.inherited(arguments);
-			if (result) {
-				this.emit("delete", {type:"delete", item: object});
+			var object = this.get(id);
+			if (object) {
+				var result = this.inherited(arguments);
+				if (result) {
+					this.emit("delete", {type:"delete", item: object});
+				}
+				return result;
 			}
-			return result;
+			return false;
 		}
 
 	});	/* end declare() */
