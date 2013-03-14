@@ -225,17 +225,6 @@ define(["dojo/_base/declare"], function (declare) {
 			//		callback
 		},
 
-		onDelete: function (item) {
-			// summary:
-			//		Callback when an item has been deleted.
-			// description:
-			//		Note that there will also be an onChildrenChange() callback for the parent
-			//		of this item.
-			// item: Item
-			// tags:
-			//		callback
-		},
-
 		onLabelChange: function (oldValue, newValue) {
 			// summary:
 			//		Callback when label attribute changed.
