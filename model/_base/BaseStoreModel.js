@@ -42,7 +42,6 @@ define(["module",                 // module.id
 		//				getChildren() method.
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
-
 	var undef;
 
 	function returnTrue () {
@@ -403,7 +402,7 @@ define(["module",                 // module.id
 						when(result, function (items) {
 							if (items.length != 1) {
 								throw new CBTError( "InvalidResponse", "getRoot", 
-																		 "Root query returned %{0} items, but must return exactly one item",
+																		 "Root query returned %{0} items, but must return exactly one",
 																		 items.length );
 							}
 							self.root = items[0];
@@ -477,6 +476,29 @@ define(["module",                 // module.id
 				return parents.contains(this.getIdentity(parent));
 			}
 			return false;
+		},
+
+		deleteItem: function (items) {
+			// summary:
+			//		Delete an item from the store. This method is called by the cbtree
+			//		when the user selected a node and pressed CTRL+DELETE. Although a
+			//		public method, applications should use the store.remove() method
+			//		instead.
+			// items:
+			//		The item, or array of items, to be removed from the store.
+			// tag:
+			//		Public
+			var items = items instanceof Array ? items : [items];
+			var self  = this;
+
+			items.forEach( function (item) {
+				var result = this.store.remove( this.getIdentity(item) );
+				if (!this._monitored) {
+					when( result, function () {
+						self._onDeleteItem(item);
+					});
+				}
+			}, this );
 		},
 
 		// =======================================================================
@@ -693,9 +715,9 @@ define(["module",                 // module.id
 					delete self._objectCache[id];
 				}
 			);
-			self._deleteCacheEntry(id);
-			self.onDelete(item);
-
+			this._deleteCacheEntry(id);
+			this.onRemoveItem(item);
+			
 			this.getParents(item).then( function (parents) {
 				if (self.isChildOf(item, self.root)) {
 					self.onRootChange(item, "delete");
@@ -804,16 +826,6 @@ define(["module",                 // module.id
 			//		callback
 		},
 
-		onDelete: function (/*Object*/ storeItem) {
-			// summary:
-			//		Callback when an item has been deleted.
-			// description:
-			//		Note that there will also be an onChildrenChange() callback for the parent
-			//		of this item.
-			// tags:
-			//		callback
-		},
-
 		onPasteItem: function (/*Object*/ storeItem,/*Number*/ insertIndex,/*Object*/ before) {
 			// summary:
 			//		Callback when an item was pasted onto the tree.
@@ -823,6 +835,15 @@ define(["module",                 // module.id
 			// tags:
 			//		callback
 		},
+
+		onRemoveItem: function (/*Object*/ storeItem) {
+			// summary:
+			//		Callback when an item is removed.
+			// storeItem:
+			// tags:
+			//		callback
+		},
+
 
 		onRootChange: function (/*Object*/ storeItem, /*String*/ action) {
 			// summary:
@@ -1038,7 +1059,6 @@ define(["module",                 // module.id
 					var orgItem = lang.mixin(null, item);
 					var result  = null;
 					var self    = this;
-
 					this._setProp( property, item, value );
 					result = this.store.put( item, {overwrite: true});
 					if (!this._monitored) {

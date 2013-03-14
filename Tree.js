@@ -10,6 +10,7 @@
 //
 define(["module",
 				"require",
+				"dojo/_base/connect",
 				"dojo/_base/declare",
 				"dojo/_base/event",
 				"dojo/_base/lang",
@@ -22,7 +23,7 @@ define(["module",
 				"./CheckBox",
 				"./errors/createError!./errors/CBTErrors.json",
 				"./util/shim/Array"						// ECMA-262 Array shim
-			 ], function (module, require, declare, event, lang, aspect, domConstruct,
+			 ], function (module, require, connect, declare, event, lang, aspect, domConstruct,
 										 keys, topic, NodeTemplate,	Tree, CheckBox,
 										 createError) {
 
@@ -32,7 +33,8 @@ define(["module",
 	//		This implementation is compatible with dojo 1.8 & 1.9
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
-
+	var dojoVers = 0;
+	
 	var TreeNode = declare([Tree._TreeNode], {
 		// templateString: String
 		//		Specifies the HTML template to be used.
@@ -287,6 +289,13 @@ define(["module",
 		//		 checkboxes will be created regardless of the model configuration.
 		checkBoxes: true,
 
+		// enableDelete: Boolean
+		//		Determines if deleting tree nodes using the keyboard is allowed. By
+		//		default items can only be deleted using the store interface. If set
+		//		to true the user can also delete tree items by selecting the desired
+		//		tree node(s) and pressing the CTRL+DELETE keys.
+		enableDelete: false,
+
 		// leafIcons: Boolean
 		//		Determines if the Leaf icon, or its custom equivalent, is displayed.
 		leafIcons: true,
@@ -343,10 +352,9 @@ define(["module",
 			// tag:
 			//		Private
 			if (dojo.version) {
-				var dojoVer = (dojo.version.major * 10) + dojo.version.minor,
-						dojoMax = 999,
-						dojoMin = 0;
+				var dojoMax = 999, dojoMin = 0;
 
+				dojoVers = (dojo.version.major * 10) + dojo.version.minor;
 				if (this._dojoRequired) {
 					if (this._dojoRequired.min !== undefined) {
 						dojoMin = (this._dojoRequired.min.major * 10) + this._dojoRequired.min.minor;
@@ -354,7 +362,7 @@ define(["module",
 					if (this._dojoRequired.max !== undefined) {
 						dojoMax = (this._dojoRequired.max.major * 10) + this._dojoRequired.max.minor;
 					}
-					if (dojoVer < dojoMin || dojoVer > dojoMax) {
+					if (dojoVers < dojoMin || dojoVers > dojoMax) {
 						throw new CBTError("InvalidVersion", "_assertVersion");
 					}
 				}
@@ -465,6 +473,32 @@ define(["module",
 			}
 		},
 
+		_onDeleteKey: function (/*message || evt, node*/) {
+			// summary:
+			//		Delete key pressed. Delete selected items if delete is enabled AND
+			//		the model supports the deleteItem() method. 
+			// evt:
+			//		Keyboard event.
+			// node:
+			//		The tree node that has focus. (not used).
+			// tag:
+			//		Private
+			var evt = arguments[0];
+			if (dojoVers < 19) {
+				evt = evt.evt;
+			}
+			if( connect.isCopyKey(evt)) {
+				if (this.enableDelete && typeof this.model.deleteItem == "function") {
+					var items = this.paths.map( function(path) {
+						return path[path.length-1];
+					});
+					if (items.length) {
+						this.model.deleteItem(items);
+					}
+				}
+			}
+		},
+
 		_onEnterKey: function (/*message || evt, node*/) {
 			// summary:
 			//		Toggle the checkbox state when the user pressed the spacebar.
@@ -482,7 +516,7 @@ define(["module",
 			var msg, evt, node;
 
 			msg = evt = arguments[0];
-			if (arguments.length == 1) {  // dojo 1.8
+			if (dojoVers < 19) {
 				node = msg.node;
 				evt  = msg.evt;				
 			} else {                      // dojo 1.9
@@ -688,6 +722,15 @@ define(["module",
 				this.mapEventToAttr(null, model.get("labelAttr"), "label");
 
 				this.inherited(arguments);
+
+				// Enable CTRL + DELETE support
+				if (dojoVers >= 19) {
+					this._keyNavCodes[keys.DELETE] = lang.hitch(this, "_onDeleteKey");
+				} else {                 // dojo 1.8
+					// Force the creation of the _keyHandlerMap property.
+					this._onKeyDown( null, {} );
+					this._keyHandlerMap[keys.DELETE] = "_onDeleteKey";
+				}
 			}
 			else // The CheckBox Tree requires a model.
 			{

@@ -573,23 +573,34 @@ define(["module",                  // module.id
 			//		Array of children objects.
 			//
 			// NOTE:
-			//		Because observable.js uses 'inMethod' to determine if a store method
-			//		is called from within another store method we MUST schedule the update
-			//		of the parent item as a separate task otherwise observable.js will not
-			//		fire any events associated with the parent update.
+			//		Because dojo/store/observable uses 'inMethod' to determine if a store
+			//		method is called from within another store method we MUST schedule the
+			//		update of the parent item as a separate task otherwise observable will
+			//		not fire any events associated with the parent update.
 			//
 			// tags:
 			//		callback
-			var first = newChildrenList[0];
+			var first = newChildrenList[0] || null;
 			var self  = this;
 
 			if (this.checkedStrict) {
-				if (this._observable) {
-					setTimeout( function () {
+				if (first) {
+					if (this._observable) {
+						setTimeout( function () {
+							self._updateCheckedParent(first, true);
+						}, 0);
+					} else {
 						self._updateCheckedParent(first, true);
-					}, 0);
+					}
 				} else {
-					self._updateCheckedParent(first, true);
+					// If no more children, normalize the parent state.
+					if (this._observable) {
+						setTimeout( function () {
+							self._setChecked( parent, parent[self.checkedAttr]);
+						}, 0);
+					} else {
+						this._setChecked( parent, parent[this.checkedAttr]);
+					}
 				}
 			}
 			this.onChildrenChange(parent, newChildrenList);
