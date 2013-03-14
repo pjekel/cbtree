@@ -89,6 +89,7 @@ define(["module",
                                 openOnDblClick: this.openOnDblClick || false,
                                 openOnClick: this.openOnClick || false,
                                 valueToIconMap: this.valueToIconMap || null,
+                                enableDelete: this.enableDelete || false,
                                 persist: false,
                                 showRoot:true
                                },
@@ -209,6 +210,7 @@ define(["module",
         case "dblclick":
           return this.tree.on( type, func );
         case "pasteitem":
+        case "removeitem":
           return this.model.on( type, func );
       }
     },
