@@ -252,8 +252,8 @@ define(["module",
 
 						for(i=0; sort = sortSet[i]; i++) {
 							prop = sort.property || sort.attribute;
-							valA = a[prop];
-							valB = b[prop];
+							valA = getProp(prop,a);
+							valB = getProp(prop,b);
 
 							if (sort.ignoreCase) {
 								valA = (valA && valA.toLowerCase) ? valA.toLowerCase() : valA;
