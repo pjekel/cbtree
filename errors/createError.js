@@ -203,7 +203,7 @@ define(["dojo/_base/lang",
 			if (arguments.length > 2) {
 				var args = Array.prototype.slice.call(arguments, 3);
 				msgObj.text = msgObj.text.replace( /\%\{(\d+)\}/g, function ( token, argIdx ) {
-					return args[argIdx] || token;
+					return (args[argIdx] != undefined ? args[argIdx] : token);
 				});
 			}
 
