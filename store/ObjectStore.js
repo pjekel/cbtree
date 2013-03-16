@@ -67,6 +67,23 @@ define(["module",
 			return id;
 		},
 
+		close: function (/*Boolean?*/ clear) {
+			// summary:
+			//		Closes the store and optionally clear it. Note: this method has no
+			//		effect if the store isn't cleared.
+			// clear:
+			//		If true, the store is reset. If not specified the store property
+			//		'clearOnClose' is used instead.
+			// tag:
+			//		Public
+
+			var clearStore = clear || this.clearOnClose;
+
+			this.inherited(arguments);
+			this.emit("close", {type:"close", count: this.total, cleared: clearStore});
+		},
+
+
 		put: function (/*Object*/ object,/*PutDirectives?*/ options) {
 			// summary:
 			//		Stores an object

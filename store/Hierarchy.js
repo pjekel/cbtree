@@ -351,6 +351,24 @@ define(["module",
 			return false;
 		},
 
+		close: function (/*Boolean?*/ clear) {
+			// summary:
+			//		Closes the store and optionally clears it.
+			// clear:
+			//		If true, the store is reset. If not specified the store property
+			//		'clearOnClose' is used instead.
+			// tag:
+			//		Public
+
+			var clearStore = clear || this.clearOnClose;
+			if (!!clearStore) {
+				this._indexParent = {};
+				this._indexChild  = {};
+			}
+			this.inherited(arguments);
+		},
+
+
 		getChildren: function (/*Object*/ parent, /*Store.QueryOptions?*/ options) {
 			// summary:
 			//		Retrieves the children of an object.

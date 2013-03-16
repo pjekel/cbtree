@@ -81,6 +81,9 @@ define(["module",
 		//		method.
 		autoLoad: true,
 
+		// clearOnClose: Boolean
+		clearOnClose: false,
+		
 		// data: Array
 		//		The array of all raw objects to be loaded in the memory store. This
 		//		property is only used during store construction.
@@ -177,7 +180,7 @@ define(["module",
 			//			}
 			var store = this;
 
-			this._storeLoaded = new Deferred();
+			this._storeLoaded = new Deferred( this._loadCanceled );
 			this._isLoading   = false;
 			this._data        = [];
 			this._indexId     = {};
@@ -369,6 +372,18 @@ define(["module",
 			}
 		},
 
+		_loadCanceled: function (reason) {
+			// summary:
+			//		Called when the load request is canceled.
+			// reason:
+			//		The reason why the request was  canceled. This is typically an instance
+			//		of Error.
+			// tag:
+			//		Private
+
+			// currently no special action is taken.
+		},
+
 		_loadData: function (/*Object[]?*/ data) {
 			// summary:
 			//		Load an array of data objects into the store and indexes it.	This
@@ -443,7 +458,7 @@ define(["module",
 				} else {
 					this._data.push(object);
 				}
-				this.total++;
+				this.total = this._data.length;
 			}
 			return id;
 		},
@@ -474,6 +489,32 @@ define(["module",
 				throw new CBTError("ItemExist", "add");
 			}
 			return this._writeObject(id, object, at, options);
+		},
+
+		close: function (/*Boolean?*/ clear) {
+			// summary:
+			//		Closes the store and optionally clear it. Note: this method has no
+			//		effect if the store isn't cleared.
+			// clear:
+			//		If true, the store is reset. If not specified the store property
+			//		'clearOnClose' is used instead.
+			// tag:
+			//		Public
+
+			if (this._isLoading && !this._storeLoaded.isFulfilled()) {
+				this._storeLoaded.cancel( new CBTError( "RequestError", "close", "Pending load request was canceled"));
+			}
+			var clearStore = clear || this.clearOnClose;
+			if (!!clearStore) {
+				this._data        = [];
+				this._indexId     = {};
+				this.total        = 0;
+				this.data         = null;
+				this.url          = null;
+				this._storeLoaded = new Deferred();
+				this._isLoading   = false;
+			}
+			this.onClose( this.total, !!clearStore );
 		},
 
 		get: function (/*String|Number*/ id) {
@@ -647,10 +688,13 @@ define(["module",
 			//		dojo/promise/Promise
 			// tag:
 			//		Public
-			return this._storeLoaded.then(
-				lang.hitch( (scope || this),callback), 
-				lang.hitch( (scope || this),errback)
-			);
+			if (callback || errback) {
+				return this._storeLoaded.then(
+					callback ? lang.hitch( (scope || this),callback) : null, 
+					errback  ? lang.hitch( (scope || this),errback)  : null
+				);
+			}
+			return this._storeLoaded.promise;
 		},
 
 		remove: function (/*String|Number*/ id) {
@@ -667,7 +711,7 @@ define(["module",
 				this._data.splice(at, 1);
 				// now we have to reindex
 				this._indexData();
-				this.total--;
+				this.total = this._data.length;
 				return true;
 			}
 			return false;
@@ -675,6 +719,20 @@ define(["module",
 
 		toString: function () {
 			return "[object MemoryStore]";
+		},
+		
+		//===========================================================
+		// callbacks
+		
+		onClose: function (/*==== count, cleared ===*/) {
+			// summary:
+			//		Callback when the store is closed. 
+			// count:
+			//		Number of records left in the store.
+			// cleared: Boolean
+			//		Indicates if the store was cleared.
+			//  tag:
+			//		callback
 		}
 
 	});	/* end declare() */
