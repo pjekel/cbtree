@@ -12,8 +12,10 @@
 define(["module",
         "dojo/_base/declare",
         "dojo/_base/lang",
+        "dijit/Destroyable",
         "dijit/registry",
         "dijit/tree/dndSource",
+        "../Evented",
         "../Tree",
         "../extensions/TreeStyling",
         "../model/TreeStoreModel",
@@ -22,7 +24,8 @@ define(["module",
         "../errors/createError!../errors/CBTErrors.json",
         "./QueryEngine",
         "./shim/Array"             // ECMA-262 Array shim
-       ], function ( module, declare, lang, registry, dndSource, Tree, TreeStyling, TreeStoreModel,
+       ], function ( module, declare, lang, Destroyable, registry, dndSource,
+                     Evented, Tree, TreeStyling, TreeStoreModel,
                      ObjectStore, Ancestry, createError, QueryEngine) {
 
   // module:
@@ -58,7 +61,7 @@ define(["module",
     return isDescendant(rootChild, node);
   }
 
-  var TOC = declare( null, {
+  var TOC = declare( [Destroyable, Evented], {
 
     checked: false,
     model: null,
@@ -72,18 +75,20 @@ define(["module",
     constructor: function (/*Object*/ kwArgs, location) {
       // summary:
       // kwArgs:
+      var toc = this;
       
       declare.safeMixin( this, kwArgs );
 
-      var root = { id:"ROOT", name:this.name, type:"ROOT", ref:null };
+      var root = { id:"ROOT", name:this.name, type:"ROOT" };
       this.store = new ObjectStore( {data: [ root ]} );
       this.model = new TreeStoreModel({ store: this.store, 
                                           enabledAttr:"enabled",
                                           query:{type:"ROOT"},
                                           checkedAll: false
-                                         });
+                                        });
       this.tree  = new Tree( { model: this.model, 
                                 checkItemAcceptance: this._acceptEntry,
+																clickEventCheckBox: false,
                                 dndController: dndSource,
                                 betweenThreshold: 5,
                                 openOnDblClick: this.openOnDblClick || false,
@@ -94,11 +99,23 @@ define(["module",
                                 showRoot:true
                                },
                                location);
+
+			// Relay some of the Tree and Model events..
+			this.own( 
+				this.tree.on("checkBoxClick", function() { toc.onCheckBoxClick.apply(toc, arguments); }),
+				this.tree.on("Dblclick", function() { toc.onDblClick.apply(arguments); }),
+				this.tree.on("click", function() { toc.onClick.apply(toc, arguments); } ),
+				this.model.on("pasteItem", function() { toc.onMoved(toc, arguments); }),
+				this.model.on("delete", function() { toc.onDelete.apply(toc, arguments);} )
+			);
+
     },
 
     destroy: function () {
       // summary:
       //    Release all memory and mark store as destroyed.
+			this.inherited(arguments);
+
       this.store.destroy();
       this.model.destroy();
       this.tree.destroy();
@@ -132,6 +149,8 @@ define(["module",
     },
 
     _getIdentity: function (something) {
+			// summary:
+			//		Get identity
       if ( {}.toString.call(something) == "[object Object]") {
         return this.store.getIdentity(something);
       } else if (typeof something == "string" || typeof something == "number") {
@@ -140,6 +159,8 @@ define(["module",
     },
 
     _makeEntry: function( object, options) {
+			// summary:
+			//		Fabricate a basic TOC record.
       if (object && object.name) {
         if (object.id && (typeof object.id != "string" && typeof object.id != "number")) {
           throw new CBTError( "InvalidProperty", "_makeEntry", "Property: id"  );
@@ -164,19 +185,23 @@ define(["module",
     // Public methods
 
     addHeader: function ( header, options) {
+			// summary:
+			//		Add a TOC header entry..
       if (header && header.id) {
         var parentId = this._getIdentity(options && options.parent) || "ROOT";
         options = lang.mixin( options, {parent:parentId});
         header      = this._makeEntry( header, options );
         header.type = "HEADER-" + this.store.getAncestors(options.parent).length;
         // Add header to store and return the object.
-        headerId = this.store.add( header, {parent:options.parent} );
+        var headerId = this.store.add( header, {parent:options.parent} );
         return this.get(headerId);
       }
       throw new CBTError( "PropertyMissing", "addHeader" );
     },
 
     addEntry: function ( entry, options) {
+			// summary:
+			//		Add a TOC sub entry..
       if (entry && entry.type) {
         var parentId = this._getIdentity(options && options.parent) || null;
         options = lang.mixin( options, {parent:parentId});
@@ -191,6 +216,10 @@ define(["module",
       return this.store.get(id);
     },
 
+		getChildren: function(parent) {
+			return this.store.getChildren(parent);
+		},
+		
     getChecked: function (entry) {
       return this.model.getChecked( entry );
     },
@@ -203,18 +232,6 @@ define(["module",
       return result;
     },
     
-    on: function(/*String*/ type, /*Function*/ func){
-      switch(type.toLowerCase()) {
-        case "checkboxclick":
-        case "click":
-        case "dblclick":
-          return this.tree.on( type, func );
-        case "pasteitem":
-        case "removeitem":
-          return this.model.on( type, func );
-      }
-    },
-
     query: function (query, options) {
       return this.store.query(query, options);
     },
@@ -229,7 +246,16 @@ define(["module",
     
     toString: function () {
       return "[object TOC]";
-    }
+    },
+
+		//=======================================================================
+		// Callbacks
+
+		onCheckBoxClick: function(/*===== item, node, evt =====*/) {},
+		onClick: function(/*===== item, node, evt =====*/) {},
+		onDblClick: function(/*===== item, node, evt =====*/) {},
+		onDelete: function(/*===== item =====*/) {},
+		onMoved: function(/*===== item =====*/) {}
 
   });  /* end declare() */
 
