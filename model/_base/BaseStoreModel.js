@@ -126,6 +126,7 @@ define(["module",                 // module.id
 			this._eventable     = false;
 			this._forest        = false;
 			this._loadRequested = false;
+			this._resetPending  = false;
 			this._monitored     = false;
 			this._observable    = false;
 			this._writeEnabled  = true;					 // used in StoreModel-API
@@ -143,7 +144,6 @@ define(["module",                 // module.id
 									 "isItem"
 									];
 			var store = this.store;
-			var model = this;
 
 			// Prepare the store for usage with this model. Depending on the current
 			// store functionality, or lack thereof, the store may be extended with
@@ -167,7 +167,7 @@ define(["module",                 // module.id
 								break;
 							case "emit":								// Eventable store
 								if (store.eventable === true) {
-									this._evtHandles = store.on( "change, delete, new",
+									this._evtHandles = store.on( "change, delete, new, close", 
 																					lang.hitch(this, this._onStoreEvent));
 									this._observable = false;	// evented takes precedence
 									this._eventable	= true;
@@ -221,9 +221,9 @@ define(["module",                 // module.id
 						}
 					}
 				}, this);
-
 				this._monitored = (this._eventable || this._observable);
-
+				// In case the store support the onClose() callback
+				aspect.after(store, "onClose", lang.hitch(this, this._onStoreClosed), true);
 			} else {
 				throw new CBTError( "ParameterMissing", "constructor", "Store parameter is required");
 			}
@@ -478,7 +478,7 @@ define(["module",                 // module.id
 			return false;
 		},
 
-		deleteItem: function (items) {
+		deleteItem: function (/*Object|Object[]*/ items,/*Boolean?*/ recursive) {
 			// summary:
 			//		Delete an item from the store. This method is called by the cbtree
 			//		when the user selected a node and pressed CTRL+DELETE. Although a
@@ -486,19 +486,39 @@ define(["module",                 // module.id
 			//		instead.
 			// items:
 			//		The item, or array of items, to be removed from the store.
+			// recursive:
+			//		If true, all descendants of the item(s) are delete from the store.
 			// tag:
 			//		Public
-			var items = items instanceof Array ? items : [items];
-			var self  = this;
+			var items  = items instanceof Array ? items : [items];
+			var self   = this;
 
-			items.forEach( function (item) {
-				var result = this.store.remove( this.getIdentity(item) );
-				if (!this._monitored) {
-					when( result, function () {
+			function getDescendants (item) {
+				var itemId = self.getIdentity(item);
+				if (itemId) {
+					if (recursive) {
+						// Go remove children first....
+						self.getChildren(item, function (children) {
+							children.forEach( getDescendants );
+						});
+					}
+					if (self._forest && item == self.root) {
 						self._onDeleteItem(item);
-					});
+					} else {
+						var result = self.store.remove( itemId );
+						if (!self._monitored) {
+							when( result, function () {
+								self._onDeleteItem(item);
+							});
+						}
+					}
+					if (item == self.root) {
+						// entire tree is dropped.....
+						self.root = null;
+					}
 				}
-			}, this );
+			}
+			items.forEach (getDescendants);
 		},
 
 		// =======================================================================
@@ -716,7 +736,7 @@ define(["module",                 // module.id
 				}
 			);
 			this._deleteCacheEntry(id);
-			this.onRemoveItem(item);
+			this.onDelete(item);
 			
 			this.getParents(item).then( function (parents) {
 				if (self.isChildOf(item, self.root)) {
@@ -784,6 +804,57 @@ define(["module",                 // module.id
 			return true;
 		},
 
+		_onStoreClosed: function (count, cleared) {
+			// summary:
+			//		Handler for close notifications from the store.  A reset event
+			//		is generated only in case the store was explicitly cleared and
+			//		we don't already have a reset pending.
+			// count:
+			//		Number of objects left in the store.
+			// cleared:
+			//		Indicates if the store was cleared.
+			// tag:
+			//		Private
+
+			var reset = !(count && cleared);
+			if (reset) {
+				for(var id in this._childrenCache) {
+					this._deleteCacheEntry(id);
+				}
+				this._childrenCache = {};
+				this._objectCache   = {};
+			}
+			// Inform the tree about the store closure but only if we haven't done
+			// so already.
+			if (cleared && !this._resetPending) {
+				delete this.store.isValidated;
+				this._resetPending = true;
+				this.onResetStart();
+
+				if (!this._forest) {
+					this.root = null;
+				}
+				// Call the store ready() method if available.
+				if (typeof this.store.ready == "function") {
+					when( this.store.ready(), lang.hitch(this, "_onResetEnd") );
+				} else {
+					// otherwise We can only assume the store is ready...
+					this._onResetEnd();
+				}
+			}
+		},
+
+		_onResetEnd: function () {
+			// summary:
+			//		Handler for store ready notification after a store closure and reload.
+			//		This method will be overwritten by the CheckStoreModel to trigger an
+			//		new data validation cycle if required.
+			// tag:
+			//		Private.
+			this._resetPending = false;
+			this.onResetEnd();
+		},
+
 		_onStoreEvent: function (event) {
 			// summary:
 			//		Common store event listener for eventable stores.	An eventable store
@@ -796,6 +867,9 @@ define(["module",                 // module.id
 			switch (event.type) {
 				case "change":
 					this._onChange( event.item, null );
+					break;
+				case "close":
+					this._onStoreClose(event.count, event.cleared);
 					break;
 				case "delete":
 					this._onDeleteItem(event.item);
@@ -836,7 +910,7 @@ define(["module",                 // module.id
 			//		callback
 		},
 
-		onRemoveItem: function (/*Object*/ storeItem) {
+		onDelete: function (/*Object*/ storeItem) {
 			// summary:
 			//		Callback when an item is removed.
 			// storeItem:
@@ -844,6 +918,16 @@ define(["module",                 // module.id
 			//		callback
 		},
 
+
+		onResetEnd: function () {
+			// summary:
+			//		Callback when the store is ready again after a close request.
+		},
+
+		onResetStart: function () {
+			// summary:
+			//		Callback when the store was closed and explictly cleared.
+		},
 
 		onRootChange: function (/*Object*/ storeItem, /*String*/ action) {
 			// summary:

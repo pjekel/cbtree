@@ -606,6 +606,19 @@ define(["module",                  // module.id
 			this.onChildrenChange(parent, newChildrenList);
 		},
 
+		_onResetEnd: function () {
+			// summary:
+			//		Handler for store ready notification after a store closure and reload.
+			//		This method will be overwritten by the CheckStoreModel to trigger an
+			//		new data validation cycle if required.
+			// tag:
+			//		Private.
+
+			// First, trigger a store validation if required.
+			this.set("checkedStrict", this.checkedStrict);
+			this.inherited(arguments);
+		},
+
 		_onSetItem: function (/*Object*/ storeItem, /*string*/ property, /*any*/ oldValue,
 													 /*any*/ newValue) {
 			// summary:
