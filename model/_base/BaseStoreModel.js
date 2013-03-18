@@ -534,7 +534,29 @@ define(["module",								  // module.id
 			items.forEach (getDescendants);
 		},
 		
-		ready: function () {
+		ready: function (/*Function?*/ callback,/*Function?*/ errback,/*thisArg*/ scope) {
+			// summary:
+			//		Execute the callback when the model is ready.  If an error is
+			//		detected that will prevent the model from getting ready errback
+			//		is called instead.
+			// callback:
+			//		Function called when the store is ready.
+			// errback:
+			//		Function called when a condition was detected preventing the model
+			//		from getting ready.
+			// scope:
+			//		The scope/closure in which callback and errback are executed. If
+			//		not specified the model is used.
+			// returns:
+			//		dojo/promise/Promise
+			// tag:
+			//		Public
+			if (callback || errback) {
+				return this._modelReady.then(
+					callback ? lang.hitch( (scope || this), callback) : null, 
+					errback  ? lang.hitch( (scope || this), errback)  : null
+				);
+			}
 			return this._modelReady.promise;
 		},
 
