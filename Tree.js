@@ -243,11 +243,7 @@ define(["module",
 			}
 			removeNode(this);
 			if (parent && this != tree.rootNode) {
-try {
 				parent.removeChild(this);
-} catch(err) {
-console.log("oeps");
-}
 			}
 			// Destroy DOM node and its descendants
 			this.destroyRecursive(); 
@@ -618,51 +614,42 @@ console.log("oeps");
 			this.mapEventToAttr(oldValue, newValue, "label");
 		},
 
-		_onResetStart: function () {
+		_onModelReset: function () {
 			// summary:
-			//		Handler called when the model is reset. The model may have been reset
-			//		due to a store closure. As a result the tree and all its nodes have
-			//		become invalid.
-
-			var tree = this;
-
-			this.resetDeferred = new Deferred();			
+			//		Handler called when a model reset event is received. A model reset
+			//		is typically due to a store close/flush event.
+			// tag:
+			//		Private.
+			
+			var expanded = lang.clone(this._openedNodes);
+			var model    = this.model;
+			var tree     = this;
+			// Wait until the tree is fully loaded. Canceling an ongoing tree load
+			// will cause the dijit/Tree to throw all sorts of exceptions it doesn't
+			// recover from, sad face :(  (trust me I've tried).
 			this.onLoadDeferred.always( function () {
 				if (tree.rootNode && !tree.rootNode._destroyed) {
 					// Mimic an 'onDelete()' event from the model using the tree root item
 					// which will clear out and reset the whole shebang....
-					tree.defer( function () {
-						tree._openedNodesSaved = lang.clone(tree._openedNodes);
-						tree._onItemDelete(tree.rootNode.item);
-						tree.resetDeferred.resolve();
-					});
-				} else {
-					tree.resetDeferred.resolve();
+					tree._onItemDelete(tree.rootNode.item);
 				}
-			});			
-			// and now we wait till we get an 'resetEnd' event....
-		},
+				// Next, wait until the model is ready again.
+				model.ready().then( function () {
+					tree.expandChildrenDeferred  = new Deferred();
+					tree.pendingCommandsDeferred = tree.expandChildrenDeferred;
 
-		_onResetEnd: function () {
-			// summary:
-			//		Handler called when the model exited the reset state. Typically
-			//		called when the underlying store is reloaded or at least signalled
-			//		it is ready again.
-
-			var tree = this;
-			this.resetDeferred.then( function () {
-				// The deferreds are either fulfilled or canceled so get some new...
-				tree.expandChildrenDeferred  = new Deferred();
-				tree.pendingCommandsDeferred = tree.expandChildrenDeferred;
-
-				if (tree.persist) {
-					// restore the opened paths, if any.
-					tree._openedNodes = tree._openedNodesSaved;
-				}
-				delete tree._openedNodesSaved;
-				tree._load();		// Reload the tree
+					if (tree.persist) {
+						// restore the expanded paths, if any.
+						tree._openedNodes = expanded;
+					}
+					tree._load();		// Reload the tree
+				},
+				function (err) {
+					// Model failed to get ready, this is likely due to a fatal store
+					// reload error (http errors are not fatal!)
+					throw err;
+				});
 			});
-
 		},
 
 		_setWidgetAttr: function (/*String|Function|Object*/ widget) {
@@ -840,8 +827,8 @@ console.log("oeps");
 
 				aspect.after(model, "onLabelChange", lang.hitch(this, "_onLabelChange"), true);	// Remove with 2.0
 
-				aspect.after(model, "onResetStart", lang.hitch(this, "_onResetStart"), true);
-				aspect.after(model, "onResetEnd", lang.hitch(this, "_onResetEnd"), true);
+				aspect.after(model, "onReset", lang.hitch(this, "_onModelReset"), true);
+//				aspect.after(model, "onResetEnd", lang.hitch(this, "_onResetEnd"), true);
 
 				this.mapEventToAttr(null, model.get("enabledAttr"), "_enabled_");
 				this.mapEventToAttr(null, model.get("labelAttr"), "label");
