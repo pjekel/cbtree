@@ -343,6 +343,13 @@ define(["module",
 		//		generated.
 		clickEventCheckBox: true,
 		
+		// deleteRecursive: Boolean
+		//		Determines if a delete operation, initiated from the keyboard, should
+		//		include all descendants of the selected item(s). If false, only the
+		//		selected item(s) are deleted from the store. This property has only
+		//		effect when 'enableDelete' is true.
+		deleteRecursive: false,
+		
 		// enableDelete: Boolean
 		//		Determines if deleting tree nodes using the keyboard is allowed. By
 		//		default items can only be deleted using the store interface. If set
@@ -565,7 +572,7 @@ define(["module",
 						return path[path.length-1];
 					});
 					if (items.length) {
-						this.model.deleteItem(items, true);
+						this.model.deleteItem(items, this.deleteRecursive);
 					}
 				}
 			}
