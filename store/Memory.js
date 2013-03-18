@@ -727,7 +727,7 @@ define(["module",
 			//		from getting ready.
 			// scope:
 			//		The scope/closure in which callback and errback are executed. If
-			//		no specified the store is used.
+			//		not specified the store is used.
 			// returns:
 			//		dojo/promise/Promise
 			// tag:
