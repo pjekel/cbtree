@@ -124,7 +124,8 @@ define(["module",                  // module.id
 			// _loadOptions property set.  This because dojo/Stateful isn't called
 			// until AFTER BaseStoreModel.postscript().
 			
-			if (this.set("checkedStrict", this.checkedStrict)) {
+			this.set("checkedStrict", this.checkedStrict);
+			if (this.checkedStrict === true) {
 				this._loadOptions = {all:true};
 			}
 			this._validateDefer = new Deferred();
