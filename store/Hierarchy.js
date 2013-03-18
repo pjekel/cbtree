@@ -461,11 +461,11 @@ define(["module",
 			var data     = _dataSet || this._data;
 			var self     = this;
 
-			if (this._storeLoaded.isFulfilled() || _dataSet) {
+			if (this._loadDeferred.isFulfilled() || _dataSet) {
 				return QueryResults( this.queryEngine(query, options)(data, !!_dataSet) );
 			} else {
 				// If the store data isn't loaded yet defer the query until it is...
-				return QueryResults( this._storeLoaded.then( function () {
+				return QueryResults( this._loadDeferred.then( function () {
 					return self.queryEngine(query, options)(self._data, false)
 				}));
 			}

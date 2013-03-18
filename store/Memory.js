@@ -82,6 +82,7 @@ define(["module",
 		autoLoad: true,
 
 		// clearOnClose: Boolean
+		//		If true, the store content will be deleted when the store is closed.
 		clearOnClose: false,
 		
 		// data: Array
@@ -153,6 +154,8 @@ define(["module",
 		// End constructor keyword
 		//=========================================================================
 
+		state: "closed",
+
 		// total: Number [read-only]
 		//		The total number of objects currently in the store.
 		total: 0,
@@ -180,11 +183,13 @@ define(["module",
 			//			}
 			var store = this;
 
-			this._storeLoaded = new Deferred( this._loadCanceled );
-			this._isLoading   = false;
-			this._data        = [];
-			this._indexId     = {};
-			this.total        = 0;
+			this._loadDeferred = new Deferred( this._loadReset );
+			this._storeReady   = new Deferred();
+			this._loadPending  = false;
+			this._data         = [];
+			this._indexId      = {};
+			this.state         = "waitOnLoad";
+			this.total         = 0;
 
 			// Mixin the keyword arguments.
 			declare.safeMixin( this, kwArgs );
@@ -217,6 +222,11 @@ define(["module",
 						setter ? setter.call(scope, options) : lang.mixin(scope, options);
 					}
 				}
+			}
+			// If no data or URL is specified and autoLoad is enabled it is assumed
+			// the caller wants to create an empty store.
+			if (!this.data && !this.url && this.autoLoad) {
+				this.set("data",[]);
 			}
 		},
 
@@ -372,61 +382,91 @@ define(["module",
 			}
 		},
 
-		_loadCanceled: function (reason) {
+		_loadError: function (err, defer) {
 			// summary:
-			//		Called when the load request is canceled.
-			// reason:
-			//		The reason why the request was  canceled. This is typically an instance
-			//		of Error.
+			//		a XHR request failed or the data loaded is invalid, reset the current
+			//		load state and reject the load request.
+			// err:
+			//		Error condition.
+			// defer:
+			//		The deferred associated with the user load request. This is NOT the
+			//		promise returned by the XHR request!
+			// returns:
+			//		dojo/promise/Promise
 			// tag:
 			//		Private
-
-			// currently no special action is taken.
+			this._loadReset(err);
+			defer.reject( new CBTError( correctException(err), "load"));
+			return defer.promise;
 		},
 
-		_loadData: function (/*Object[]?*/ data) {
+		_loadData: function (/*Object[]?*/ data, /*dojo.deferred*/ ldrDef) {
 			// summary:
 			//		Load an array of data objects into the store and indexes it.	This
 			//		method is called after the raw data has been processed by the data
 			//		handler in case the 'handleAs' property is set.
 			// data:
 			//		An array of objects.
+			// ldrDef:
+			//		dojo/Deferred associated with the load request.
+			// returns:
+			//		dojo/promise/Promise
 			// tag:
 			//		Private
-			var object, id, i;
-			var self = this;
-			var at;
-			
-			this._indexId = {};
-			this._data    = [];
-			this.data     = null;
 
-			data = data || [];
+			// Load the store but only if the deferred isn't fulfilled (e.g canceled). 
+			if (!ldrDef.isFulfilled()) {
+				var object, id, i;
+				var self = this;
+				var at;
+				
+				this._indexId = {};
+				this._data    = [];
+				this.data     = null;
 
-			if (data instanceof Array) {
-				try {
-					for (i=0; i<data.length; i++) {
-						object = data[i];
-						id = this._getObjectId(object);
-						at = this._indexId[id] || -1;
-						if (at >= 0) {
-							// Different record, same id. Don't overwrite the existing record
-							// as it will mess up the store hierarchy and childrens index.
-							console.warn( new CBTError("ItemExist", "_loadData", "Object with ID: ["+id+"] already exist") );
-						} else {
-							this._writeObject(id, object, at);
+				data = data || [];
+
+				if (data instanceof Array) {
+					try {
+						for (i=0; i<data.length; i++) {
+							object = data[i];
+							id = this._getObjectId(object);
+							at = this._indexId[id] || -1;
+							if (at >= 0) {
+								// Different record, same id. Don't overwrite the existing record
+								// as it will mess up the store hierarchy and childrens index.
+								console.warn( new CBTError("ItemExist", "_loadData", "Object with ID: ["+id+"] already exist") );
+							} else {
+								this._writeObject(id, object, at);
+							}
 						}
+						this._indexData();
+						// Enter the store ready stage and resolve the specific load request.
+						this._storeReady.resolve(true);
+						this.state = "active";
+						ldrDef.resolve(true);
+					} catch(err) {
+						self._loadError(err, ldrDef);
 					}
-					this._indexData();
-					this._storeLoaded.resolve(true);
-				} catch(err) {
-					this._storeLoaded.reject(err);
+				} else {
+					self._loadError(new CBTError("InvalidData", "_loadData"), ldrDef);
 				}
-			} else {
-				var err = new CBTError("InvalidData", "_loadData");
-				this._storeLoaded.reject(err);
+				this._loadPending = false;
 			}
-			delete this._isLoading;
+			return ldrDef.promise;
+		},
+
+		_loadReset: function () {
+			// summary:
+			//		Called when a load request was canceled or failed.
+			// tag:
+			//		Private
+			this._loadDeferred = new Deferred(this._loadReset);
+			this._loadPending  = false;
+			this.handleAs = null;
+			this.data = null;
+			this.url = null;
+			this.state = "closed";
 		},
 
 		_writeObject: function (/*String|Number*/ id, /*Object*/ object,/*Number*/ index,/*PutDirectives*/ options) {
@@ -501,20 +541,24 @@ define(["module",
 			// tag:
 			//		Public
 
-			if (this._isLoading && !this._storeLoaded.isFulfilled()) {
-				this._storeLoaded.cancel( new CBTError( "RequestError", "close", "Pending load request was canceled"));
+			// If the deferred in not fulfilled attach _final() in case nobody else is
+			// listening otherwise instrumentation will throw an exception...
+			if (!this._loadDeferred.isFulfilled()) {
+				this._loadDeferred.then( null, function _final () {});
+				this._loadDeferred.cancel( new CBTError( "RequestCancel", "close", "load request was canceled") );
 			}
-			var clearStore = clear || this.clearOnClose;
+			// Handle storeReady separate from individual load request(s).
+			if (this._storeReady.isFulfilled()) {
+				this._storeReady = new Deferred();
+			}
+			var clearStore = !!(clear || this.clearOnClose);
 			if (!!clearStore) {
-				this._data        = [];
-				this._indexId     = {};
-				this.total        = 0;
-				this.data         = null;
-				this.url          = null;
-				this._storeLoaded = new Deferred();
-				this._isLoading   = false;
+				this._loadReset();
+				this._indexId = {};
+				this._data    = [];
+				this.total    = 0;
 			}
-			this.onClose( this.total, !!clearStore );
+			this.onClose(clearStore, this.total);
 		},
 
 		get: function (/*String|Number*/ id) {
@@ -558,57 +602,72 @@ define(["module",
 			return false;
 		},
 
-		load: function (options) {
+		load: function (/*LoadDirectives?*/ options) {
 			// summary:
-			//		Implements a simple store loader to load data.
+			//		Implements a simple store loader to load data. If the load request
+			//		contains a dataset or URL and a load request is currently pending
+			//		the new request is rejected.
 			// options:
-			//		cbtree/store/api/Store.LoadDirectives
+			//		optional cbtree/store/api/Store.LoadDirectives
 			// returns:
 			//		dojo/promise/Promise
 			// tag:
 			//		Public
-			if (!this._isLoading && !this._storeLoaded.isFulfilled()) {
-				this._isLoading = true;
+
+			var props = ["data", "filter", "handleAs", "url"];
+			var ldrDef = this._loadDeferred;
+			if (!this._loadPending && !ldrDef.isFulfilled()) {
 				if (options) {
-					if (options.data) {
-						this.data = options.data;
-					} else if (options.url) {
-						this.url = options.url;
-					}
-					if (options.filter && options.all != true) {
-						//Filter data to be loaded...
-						this.filter = options.filter;
+					for (var key in options) {
+						if (props.indexOf(key) != -1) {
+							this[key] = options[key];
+						}
 					}
 				}
 
 				if (this.data || this.url) {
 					var queryFunc = this.filter ? QueryEngine(this.filter): function(data) {return data;};
+					var store  = this;
+					this.state ="loading";
+					this._loadPending = true;
 					if (this.data) {
 						if (this.handleAs)  {
-							var response = {data: this.data, options:{handleAs: this.handleAs}};
-							this.data = handlers( response ).data;
+							var response = {text: this.data, options:{handleAs: this.handleAs}};
+							try {
+								this.data = handlers( response ).data;
+							} catch (err) {
+								return store._loadError(err, ldrDef);
+							}
 						}
-						this._loadData( queryFunc(this.data) );
+						this._loadData( queryFunc(this.data), ldrDef );
 						this.url = null;
 					} else {
-						var result, header, self = this;
 						if (!this.handleAs) {
 							this.handleAs = "json";
 						}
-						result = this._xhrGet( this.url, this.handleAs, null );
+						var result = this._xhrGet( this.url, this.handleAs, null );
 						result.then( 
 							function (data){
-								self._loadData( queryFunc(data) );
+								store._loadData( queryFunc(data), ldrDef );
 							}, 
 							function (err) {
-								self._storeLoaded.reject( new CBTError( correctException(err), "load"));
+								store._loadError(err, ldrDef);
 							});
 					}
-				} else {
-					this._loadData( null );		// Empty store
+				}
+			} else {
+				// Store is already loaded or a load request is pending.
+				if (options) {
+					if (options.url || options.data) {
+						var def =  new Deferred();
+						if (this._loadPending) {
+							return def.reject( new CBTError("RequestPending", "load"));
+						}
+						return def.reject( new CBTError("Access", "load", "store already loaded"));						
+					}
 				}
 			}
-			return this._storeLoaded.promise;
+			return ldrDef.promise;
 		},
 
 		put: function (/*Object*/ object,/*PutDirectives?*/ options) {
@@ -642,59 +701,44 @@ define(["module",
 			//		The optional arguments to apply to the resultset.
 			// returns: dojo/store/api/Store.QueryResults
 			//		The results of the query, extended with iterative methods.
-			//
-			// example:
-			//		Given the following store:
-			//
-			//	|	var store = new Memory({
-			//	|		data: [
-			//	|			{id: 1, name: "one", prime: false },
-			//	|			{id: 2, name: "two", even: true, prime: true},
-			//	|			{id: 3, name: "three", prime: true},
-			//	|			{id: 4, name: "four", even: true, prime: false},
-			//	|			{id: 5, name: "five", prime: true}
-			//	|		]
-			//	|	});
-			//
-			//	...find all items where "prime" is true:
-			//
-			//	|	var results = store.query({ prime: true });
-			//
-			//	...or find all items where "even" is true:
-			//
-			//	|	var results = store.query({ even: true });
 			// tag:
 			//		Public
-			var self = this;
+			var store = this;
 
-			if (this._storeLoaded.isFulfilled()) {
-				return QueryResults( this.queryEngine(query, options)(this._data, false) );
-			} else {
-				// If the store data isn't loaded yet defer the query until it is...
-				return QueryResults( this._storeLoaded.then( function () {
-					return self.queryEngine(query, options)(self._data, false)
-				}));
-			}
+			return QueryResults( this._storeReady.then( function () {
+				return store.queryEngine(query, options)(store._data, false)
+			}));
 		},
 
-		ready: function (callback, errback, scope) {
+		ready: function (/*Function?*/ callback,/*Function?*/ errback,/*thisArg*/ scope) {
 			// summary:
-			//		Execute the callback when the store data has been loaded. If an error
-			//		is detected during the loading process errback is called instead.
+			//		Execute the callback when the store has been loaded. If an error
+			//		is detected that will prevent the store from getting ready errback
+			//		is called instead.
+			// note:
+			//		When the promise returned resolves it merely indicates one of
+			//		potentially many load requests was successful. To keep track of
+			//		a specific load request use the promise returned by the load()
+			//		function instead.
 			// callback:
+			//		Function called when the store is ready.
 			// errback:
+			//		Function called when a condition was detected preventing the store
+			//		from getting ready.
 			// scope:
+			//		The scope/closure in which callback and errback are executed. If
+			//		no specified the store is used.
 			// returns:
 			//		dojo/promise/Promise
 			// tag:
 			//		Public
 			if (callback || errback) {
-				return this._storeLoaded.then(
-					callback ? lang.hitch( (scope || this),callback) : null, 
-					errback  ? lang.hitch( (scope || this),errback)  : null
+				return this._storeReady.then(
+					callback ? lang.hitch( (scope || this), callback) : null, 
+					errback  ? lang.hitch( (scope || this), errback)  : null
 				);
 			}
-			return this._storeLoaded.promise;
+			return this._storeReady.promise;
 		},
 
 		remove: function (/*String|Number*/ id) {
@@ -724,13 +768,13 @@ define(["module",
 		//===========================================================
 		// callbacks
 		
-		onClose: function (/*==== count, cleared ===*/) {
+		onClose: function (/*==== cleared, count ===*/) {
 			// summary:
 			//		Callback when the store is closed. 
-			// count:
-			//		Number of records left in the store.
 			// cleared: Boolean
 			//		Indicates if the store was cleared.
+			// count:
+			//		Number of records left in the store.
 			//  tag:
 			//		callback
 		}
