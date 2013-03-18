@@ -284,6 +284,8 @@ define(["dojo/_base/lang",
 					}
 				);
 				cacheURL[url] = true;
+			} else {
+				resourceDone();
 			}
 		});
 	};
