@@ -10,12 +10,13 @@
 //
 
 define(["module",                  // module.id
-				"dojo/_base/declare",      // declare()
-				"dojo/_base/lang",         // lang.hitch()
-				"dojo/when",               // when()
-				"./BaseStoreModel",
-				"../../errors/createError!../../errors/CBTErrors.json"
-			 ], function (module, declare, lang, when, BaseStoreModel, createError) {
+        "dojo/_base/declare",      // declare()
+        "dojo/_base/lang",         // lang.hitch()
+        "dojo/Deferred",           // Deferred()
+        "dojo/when",               // when()
+        "./BaseStoreModel",
+        "../../errors/createError!../../errors/CBTErrors.json"
+       ], function (module, declare, lang, Deferred, when, BaseStoreModel, createError) {
 		// module:
 		//		cbtree/model/_base/CheckedStoreModel
 		// summary:
@@ -94,9 +95,6 @@ define(["module",                  // module.id
 		//		If not equal to zero it indicates store validation is in progress.
 		_validating: 0,
 
-		// _isValidated: Boolean
-		_isValidated: false,
-
 		// _checkedInherit: Boolean
 		//		Indicate if children inherit the checked state from its parent. If the
 		//		property "checkedStrict" is true then _checkedInherit will be true by
@@ -121,23 +119,15 @@ define(["module",                  // module.id
 			if (!this._writeEnabled) {
 				throw new CBTError( "MethodMissing", "constructor", "Store must be write enabled, no put() supported");
 			}
-		},
 
-		postscript: function (/*Object*/ kwArgs) {
-			// summary:
-			//		If the checkedStrict property was not specified as part of the models
-			//		keyword arguments, set it explicitly to quarentee the validateData()
-			//		method is called when needed.	Note, this method is called after all
-			//		(chained) constructors have been called.
-			// kwArgs:
-			//		Keyword arguments (see constructor)
-			// tags:
-			//		private
-
-			this.inherited(arguments);
-			if (kwArgs && !kwArgs.checkedStrict) {
-				this.set("checkedStrict", this.checkedStrict);
+			// Set 'checkedStrict' explicitly so BaseStoreModel.postscript() has the
+			// _loadOptions property set.  This because dojo/Stateful isn't called
+			// until AFTER BaseStoreModel.postscript().
+			
+			if (this.set("checkedStrict", this.checkedStrict)) {
+				this._loadOptions = {all:true};
 			}
+			this._validateDefer = new Deferred();
 		},
 
 		// =======================================================================
@@ -187,9 +177,6 @@ define(["module",                  // module.id
 					throw new CBTError( "InvalidType", "set", "invalid checkedStrict value");
 			}
 			this.checkedStrict = value;
-			if (this.checkedStrict) {
-				this.validateData();
-			}
 			return this.checkedStrict;
 		},
 
@@ -305,6 +292,15 @@ define(["module",                  // module.id
 			if (this.enabledAttr) {
 				this._setValue(object, this.enabledAttr, !!value);
 			}
+		},
+
+		validateData: function () {
+			// summary:
+			//		Deprecated, see _validateStore() description instaed.
+			// TODO:
+			//		Remove with dojo 2.0
+			// tag:
+			//		Public
 		},
 
 		// =======================================================================
@@ -426,12 +422,12 @@ define(["module",                  // module.id
 
 			// Set the parent state first. The order in which any child checked states
 			// are set is important to optimize _updateCheckedParent() performance.
-			var self= this;
+			var model = this;
 
 			this._setChecked(parent, newState);
 			this.getChildren(parent, function (children) {
 					children.forEach(function (child) {
-						self._updateCheckedChild(child, newState);
+						model._updateCheckedChild(child, newState);
 					});
 				},
 				function (err) {
@@ -456,21 +452,21 @@ define(["module",                  // module.id
 			}
 			var promise    = this.getParents(child),
 					childState = this.getChecked(child),
-					self       = this,
+					model      = this,
 					newState;
 
 			promise.then( function (parents) {
 				parents.forEach(function (parentItem) {
 					// Only process a parent update if the current child state differs from
 					// its parent otherwise the parent is already up-to-date.
-					if ((childState !== self.getChecked(parentItem)) || forceUpdate) {
-						self.getChildren(parentItem, function (children) {
-								newState = self._getCompositeState(children);
+					if ((childState !== model.getChecked(parentItem)) || forceUpdate) {
+						model.getChildren(parentItem, function (children) {
+								newState = model._getCompositeState(children);
 								if (newState !== undef) {
-									self._setChecked(parentItem, newState);
+									model._setChecked(parentItem, newState);
 								}
 							},
-							self.onError);
+							model.onError);
 					}
 				}, this); /* end forEach() */
 			});
@@ -524,40 +520,40 @@ define(["module",                  // module.id
 			// If the validation count drops to zero we're done.
 			this._validating--;
 			if (!this._validating) {
-				this.onDataValidated();
+				this._onDataValidated();
 			}
 		},
 
-		validateData: function () {
+		_validateStore: function () {
 			// summary:
-			//		Validate/normalize the parent-child checked state relationship. If the
-			//		property 'checkedStrict' is true this method is called as part of the
-			//		post creation of the Tree instance.
-			// TODO:
-			//		Rename to _validateData() with dojo 2.0
+			//		Function called from _loadStore() as soon as the store is ready.
+			//		Validate/normalize the parent-child checked state relationship.
+			//		If the property 'checkedStrict' is true this method is called as
+			//		part of the	post creation of the Tree instance.
+			// returns:
+			//		dojo/Promise/promise
 			// tag:
-			//		private
-			var options = this.checkedStrict ? {all:true} : null;
-			var self    = this;
+			//		Private
+			var model = this;
 
-			when( this._loadStore(options), function () {
-				if (self.checkedStrict) {
-					if (!self.store.isValidated) {
-						if (!self._validating) {
-							self.getRoot( function (rootItem) {
-								self.getChildren(rootItem, function (children) {
-									self._validateChildren(rootItem, children);
-								}, self.onError);
-							}, self.onError);
-						}
-					} else {
-						// Fire onDataValidated() but only once
-						if (!self._isValidated) {
-							self.onDataValidated();		// Trigger event.
-						}
+			this._validateDefer = new Deferred();
+			if (this.checkedStrict) {
+				if (!this.store.isValidated) {
+					if (!this._validating) {
+						this.getRoot( function (rootItem) {
+							model.getChildren(rootItem, function (children) {
+								model._validateChildren(rootItem, children);
+							}, model.onError);
+						}, model.onError);
 					}
+				} else {
+					// Fire onDataValidated
+					this._onDataValidated();		// Trigger event.
 				}
-			});
+			} else {
+				this._validateDefer.resolve();
+			}
+			return this._validateDefer.promise;
 		},
 
 		// =======================================================================
@@ -606,17 +602,13 @@ define(["module",                  // module.id
 			this.onChildrenChange(parent, newChildrenList);
 		},
 
-		_onResetEnd: function () {
+		_onDataValidated: function () {
 			// summary:
-			//		Handler for store ready notification after a store closure and reload.
-			//		This method will be overwritten by the CheckStoreModel to trigger an
-			//		new data validation cycle if required.
 			// tag:
-			//		Private.
-
-			// First, trigger a store validation if required.
-			this.set("checkedStrict", this.checkedStrict);
-			this.inherited(arguments);
+			//		Private
+			this.store.isValidated = true;
+			this.onDataValidated();
+			this._validateDefer.resolve();
 		},
 
 		_onSetItem: function (/*Object*/ storeItem, /*string*/ property, /*any*/ oldValue,
@@ -650,6 +642,25 @@ define(["module",                  // module.id
 			return this.inherited(arguments);
 		},
 
+		_onStoreClosed: function (cleared, count) {
+			// summary:
+			//		Handler for close notifications from the store.  A reset event
+			//		is generated only in case the store was explicitly cleared and
+			//		we don't already have a reset pending.
+			// cleared:
+			//		Indicates if the store was cleared.
+			// count:
+			//		Number of objects left in the store.
+			// tag:
+			//		Private
+			if (!this._resetPending) {
+				if (!!cleared) {
+					delete this.store.isValidated;
+				}
+				this.inherited(arguments);
+			}
+		},
+		
 		// =======================================================================
 		// Callbacks
 
@@ -659,8 +670,6 @@ define(["module",                  // module.id
 			//		parent-child relationship is enabled.
 			// tag:
 			//		callback
-			this.store.isValidated = true;
-			this._isValidated = true;
 		}
 
 	});	/* end declare() */

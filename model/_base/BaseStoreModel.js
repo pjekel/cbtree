@@ -9,23 +9,22 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 
-define(["module",                 // module.id
-				"dojo/_base/declare",			// declare()
-				"dojo/_base/lang",				// lang.hitch()
-				"dojo/aspect",						// aspect.before()
-				"dojo/Deferred",
-				"dojo/promise/all",
-				"dojo/promise/Promise",	  // instanceof()
-				"dojo/Stateful",					// set() & get()
-				"dojo/when",							// when()
-				"./Parents",
-				"./Prologue",							// Store Prologue methods
-				"../../Evented",					// on()
-				"../../errors/createError!../../errors/CBTErrors.json",
-				"../../util/shim/Array"		// ECMA-262 Array shim
-			 ], function (module, declare, lang, aspect, Deferred, all, Promise, Stateful,
-										 when, Parents, Prologue, Evented, createError) {
-	"use strict";
+define(["module",								  // module.id
+        "dojo/_base/declare",     // declare()
+        "dojo/_base/lang",        // lang.hitch()
+        "dojo/aspect",            // aspect.before()
+        "dojo/Deferred",
+        "dojo/promise/all",
+        "dojo/promise/Promise",   // instanceof()
+        "dojo/Stateful",          // set() & get()
+        "dojo/when",              // when()
+        "./Parents",
+        "./Prologue",             // Store Prologue methods
+        "../../Evented",          // on()
+        "../../errors/createError!../../errors/CBTErrors.json",
+        "../../util/shim/Array"    // ECMA-262 Array shim
+       ], function (module, declare, lang, aspect, Deferred, all, Promise, Stateful,
+                     when, Parents, Prologue, Evented, createError) {
 		// module:
 		//		cbtree/model/_base/BaseStoreModel
 		// summary:
@@ -90,7 +89,11 @@ define(["module",                 // module.id
 		// End Parameters to constructor
 		//==============================
 
-		 // root: [readonly] Object
+		// state:
+		//		Reflects the current state of the model.
+		state: "created",
+
+		// root: [readonly] Object
 		//		Pointer to the root item (read only, not a parameter)
 		root: null,
 
@@ -119,114 +122,127 @@ define(["module",                 // module.id
 			// tags:
 			//		private
 
-			this._childrenCache = {};
-			this._objectCache   = {};
-			this._storeMethods  = {};
+      this._childrenCache = {};
+      this._objectCache   = {};
+      this._methods       = {};
 
-			this._eventable     = false;
-			this._forest        = false;
-			this._loadRequested = false;
-			this._resetPending  = false;
-			this._monitored     = false;
-			this._observable    = false;
-			this._writeEnabled  = true;					 // used in StoreModel-API
+      this._eventable     = false;
+      this._forest        = false;
+      this._loadOptions   = null;
+      this._loadRequested = false;
+      this._monitored     = false;
+      this._observable    = false;
+      this._resetPending  = false;
+      this._writeEnabled  = true;           // used in StoreModel-API
 
-			this._evtHandles    = { remove: function () {} };
-			this._storeLoaded   = new Deferred();
-
-			this._storeLoader = returnTrue;			// Function returning boolean true
-			this._hasChildren = returnTrue;
+      this._evtHandles    = { remove: function () {} };
+      this._modelReady    = new Deferred();
+      this._storeReady    = new Deferred();
 
 			declare.safeMixin(this, kwArgs);
 
 			var props = ["add", "put", "get", "load", "hasChildren", "getChildren", "getParents",
 									 "addParent", "query", "removeParent", "queryEngine", "notify", "emit",
-									 "isItem"
+									 "isItem", "ready"
 									];
 			var store = this.store;
+
+			if (!store) {
+				throw new CBTError( "ParameterMissing", "constructor", "Store parameter is required");
+			}
 
 			// Prepare the store for usage with this model. Depending on the current
 			// store functionality, or lack thereof, the store may be extended with
 			// additional methods, advice and/or properties.
 
-			if (store) {
-				// Exchange the "parentProperty".
-				if (store.parentProperty) {
-					this.parentProperty = store.parentProperty;
-				} else {
-					store.parentProperty = this.parentProperty;
-				}
-				props.forEach( function (prop) {
-					if (typeof store[prop] == "function") {
-						this._storeMethods[prop] = store[prop];
-						switch (prop) {
-							case "add":
-								if (store.hierarchical !== true) {
-									aspect.before( store, "add", Prologue );
-								}
-								break;
-							case "emit":								// Eventable store
-								if (store.eventable === true) {
-									this._evtHandles = store.on( "change, delete, new, close", 
-																					lang.hitch(this, this._onStoreEvent));
-									this._observable = false;	// evented takes precedence
-									this._eventable	= true;
-								}
-								break;
-							case "hasChildren":
-								this._hasChildren = store.hasChildren;
-								break;
-							case "load":
-								this._storeLoader = store.load;
-								break;
-							case "notify":								// Observable store
-								if (!this._eventable) {
-									this._observable = true;
-								}
-								break;
-							case "put":
-								if (store.hierarchical !== true) {
-									aspect.before( store, "put", Prologue );
-								}
-								break;
-						}
-					} else {
-						// Method(s) not supported by the store, extend the store with the
-						// required functionality.
-						switch (prop) {
-							case "getChildren":
-								if (typeof store["query"] == "function") {
-									var funcBody = "return this.query({"+this.parentProperty+": this.getIdentity(object)});"
-									store.getChildren = new Function("object", funcBody);
-								} else {
-									throw new CBTError( "MethodMissing", "constructor", "store MUST support getChildren()" +
-																			" or query() method");
-								}
-								break;
-							case "isItem":
-								// NOTE: This will only work for synchronous stores...
-								store.isItem = function (/*Object*/ object) {
-									if (object && typeof object == "object") {
-										return (object == this.get(this.getIdentity(object)));
-									}
-									return false;
-								};
-								break;
-							case "get":
-								// The store must at a minimum support get()
-								throw new CBTError( "MethodMissing", "constructor", "store MUST support the get() method");
-							case "put":
-								this._writeEnabled = false;
-								break;
-						}
-					}
-				}, this);
-				this._monitored = (this._eventable || this._observable);
-				// In case the store support the onClose() callback
-				aspect.after(store, "onClose", lang.hitch(this, this._onStoreClosed), true);
+			// STEP 1: Exchange the "parentProperty".
+			if (store.parentProperty) {
+				this.parentProperty = store.parentProperty;
 			} else {
-				throw new CBTError( "ParameterMissing", "constructor", "Store parameter is required");
+				store.parentProperty = this.parentProperty;
 			}
+
+			// STEP 2: Check and extend store functionality
+			props.forEach( function (prop) {
+				if (typeof store[prop] == "function") {
+					this._methods[prop] = store[prop];
+					switch (prop) {
+						case "add":
+							if (store.hierarchical !== true) {
+								aspect.before( store, "add", Prologue );
+							}
+							break;
+						case "emit":								// Eventable store
+							if (store.eventable === true) {
+								this._evtHandles = store.on( "change, delete, new", 
+																				lang.hitch(this, this._onStoreEvent));
+								this._observable = false;	// evented takes precedence
+								this._eventable	= true;
+							}
+							break;
+						case "notify":								// Observable store
+							if (!this._eventable) {
+								this._observable = true;
+							}
+							break;
+						case "put":
+							if (store.hierarchical !== true) {
+								aspect.before( store, "put", Prologue );
+							}
+							break;
+					}
+				} else {
+					// Method(s) not supported by the store, extend the store with the
+					// required functionality.
+					switch (prop) {
+						case "getChildren":
+							if (typeof store["query"] == "function") {
+								var funcBody = "return this.query({"+this.parentProperty+": this.getIdentity(object)});"
+								store.getChildren = new Function("object", funcBody);
+							} else {
+								throw new CBTError( "MethodMissing", "constructor", "store MUST support getChildren()" +
+																		" or query() method");
+							}
+							break;
+						case "isItem":
+							// NOTE: This will only work for synchronous stores...
+							store.isItem = function (/*Object*/ object) {
+								if (object && typeof object == "object") {
+									return (object == this.get(this.getIdentity(object)));
+								}
+								return false;
+							};
+							break;
+						case "get":
+							// The store must at a minimum support get()
+							throw new CBTError( "MethodMissing", "constructor", "store MUST support the get() method");
+						case "hasChildren":
+						case "load":
+						case "ready":
+							this._methods[prop] = returnTrue;
+							break;
+						case "put":
+							this._writeEnabled = false;
+							break;
+					}
+				}
+			}, this);
+			this._monitored = (this._eventable || this._observable);
+
+			// STEP 3: Check for additonal events/callbacks supported by the store.
+			aspect.after(store, "onClose", lang.hitch(this, "_onStoreClosed"), true);
+
+		},
+
+		postscript: function () {
+			// summary:
+			//		Called by dojo/_base/declare after all chained constructors have
+			//		been called.
+			// tag:
+			//		
+			// step 4: Finally trigger a store load....
+			this.inherited(arguments);
+			this._loadStore( this._loadOptions );
 		},
 
 		// =======================================================================
@@ -261,10 +277,9 @@ define(["module",                 // module.id
 			}
 			this._evtHandles.remove();	// Remove event listeners if any..
 
-			this._childrenCache = {};
-			this._objectCache   = {};
-			this.store          = undef;
-
+      this._childrenCache = {};
+      this._objectCache   = {};
+      this.store          = undef;
 		},
 
 		getChildren: function (/*Object*/ parent, /*Function*/ onComplete, /*Function*/ onError) {
@@ -343,11 +358,11 @@ define(["module",                 // module.id
 			// tags:
 			//		private
 			var deferred = new Deferred();
-			var parents  = [];
+			var parents	= [];
 
 			if (storeItem) {
 				// Leverage the store if is has a getParents() method.
-				if (this._storeMethods.getParents) {
+				if (this._methods.getParents) {
 					when( this.store.getParents(storeItem), function (parents) {
 						deferred.resolve(parents || []);
 					}, deferred.reject );
@@ -392,12 +407,8 @@ define(["module",                 // module.id
 			if (this.root) {
 				onItem(this.root);
 			} else {
-				// If no store load request was issued, do so now.
-				if (!this._loadRequested) {
-					this._loadStore();
-				}
-				if (this._storeMethods.query) {
-					when( this._storeLoaded, function () {
+				if (this._methods.query) {
+					when( this._storeReady, function () {
 						var result = self.store.query(self.query);
 						when(result, function (items) {
 							if (items.length != 1) {
@@ -416,7 +427,7 @@ define(["module",                 // module.id
 							}
 							onItem(self.root);
 						}, onError);
-					});
+					}, onError );
 				} else {
 					throw new CBTError( "MethodMissing", "getRoot", "store has no query() method" );
 				}
@@ -447,14 +458,16 @@ define(["module",                 // module.id
 			// tags:
 			//		public
 
+			var method = this._methods["hasChildren"];
 			var itemId = this.getIdentity(item);
 			var result = this._childrenCache[itemId];
+
 			if (result) {
 				if ( !(result instanceof Promise) ) {
 					return !!result.length;
 				}
 			}
-			return this._hasChildren.call(this.store, item);
+			return method.call(this.store, item);
 		},
 
 		// =======================================================================
@@ -490,8 +503,8 @@ define(["module",                 // module.id
 			//		If true, all descendants of the item(s) are delete from the store.
 			// tag:
 			//		Public
-			var items  = items instanceof Array ? items : [items];
-			var self   = this;
+			var items	= items instanceof Array ? items : [items];
+			var self	 = this;
 
 			function getDescendants (item) {
 				var itemId = self.getIdentity(item);
@@ -519,6 +532,10 @@ define(["module",                 // module.id
 				}
 			}
 			items.forEach (getDescendants);
+		},
+		
+		ready: function () {
+			return this._modelReady.promise;
 		},
 
 		// =======================================================================
@@ -550,8 +567,8 @@ define(["module",                 // module.id
 			//		Public
 
 			var mpStore = parent[this.parentProperty] instanceof Array;
-			var itemId  = this.getIdentity(args);
-			var self    = this;
+			var itemId	= this.getIdentity(args);
+			var self		= this;
 			var result;
 
 			parent = (this._forest && parent == this.root) ? undef : parent;
@@ -623,15 +640,15 @@ define(["module",                 // module.id
 			//		Move or copy an item from one parent item to another.
 			//		Used in drag & drop
 
-			var parentIds   = new Parents( childItem, this.parentProperty );
-			var newParentId = this.getIdentity(newParentItem);
-			var oldParentId = this.getIdentity(oldParentItem);
-			var updParents  = [newParentItem];
-			var self = this;
+      var parentIds   = new Parents( childItem, this.parentProperty );
+      var newParentId = this.getIdentity(newParentItem);
+      var oldParentId = this.getIdentity(oldParentItem);
+      var updParents  = [newParentItem];
+      var model = this;
 
 			if (oldParentId != newParentId) {
 				var wasRoot = (oldParentItem == this.root);
-				var isRoot  = (newParentItem == this.root);
+				var isRoot	= (newParentItem == this.root);
 				if (!bCopy) {
 					updParents.push(oldParentItem);
 					parentIds.remove(oldParentId);
@@ -651,7 +668,7 @@ define(["module",                 // module.id
 
 			if (!this._monitored || (this._eventable && before)) {
 				when( itemId, function () {
-					self._childrenChanged( updParents );
+					model._childrenChanged( updParents );
 				});
 			}
 			this.onPasteItem( childItem, insertIndex, before );
@@ -719,7 +736,7 @@ define(["module",                 // module.id
 			//		The store item that was deleted.
 			// tag:
 			//		Private
-			var id   = this.getIdentity(item);
+			var id	 = this.getIdentity(item);
 			var self = this;
 
 			// Because observable does not provide definitive information if the item
@@ -778,7 +795,7 @@ define(["module",                 // module.id
 			// tags:
 			//		extension
 			var parentProp = this.parentProperty;
-			var self       = this;
+			var self			 = this;
 
 			if (property === parentProp) {
 				var np = new Parents(newValue, parentProp);
@@ -804,55 +821,49 @@ define(["module",                 // module.id
 			return true;
 		},
 
-		_onStoreClosed: function (count, cleared) {
+		_onStoreClosed: function (cleared, count) {
 			// summary:
-			//		Handler for close notifications from the store.  A reset event
+			//		Handler for close notifications from the store.	A reset event
 			//		is generated only in case the store was explicitly cleared and
-			//		we don't already have a reset pending.
-			// count:
-			//		Number of objects left in the store.
+			//		we don't have a reset pending.
 			// cleared:
 			//		Indicates if the store was cleared.
+			// count:
+			//		Number of objects left in the store.
 			// tag:
 			//		Private
-
-			var reset = !(count && cleared);
-			if (reset) {
-				for(var id in this._childrenCache) {
-					this._deleteCacheEntry(id);
+			if (!this._resetPending) {
+				var reset = !(count && cleared);
+				if (reset) {
+					for(var id in this._childrenCache) {
+						this._deleteCacheEntry(id);
+					}
+					this._childrenCache = {};
+					this._objectCache	 = {};
 				}
-				this._childrenCache = {};
-				this._objectCache   = {};
+				// Inform the tree about the store closure.
+				if (cleared) {
+					var model = this;
+					if (!this._modelReady.isFulfilled()) {
+						this._modelReady.cancel( new CBTError( "RequestCancel", "_onStoreClosed") );
+					}
+					this._modelReady		= new Deferred();
+					this._storeReady		= new Deferred();
+					this._loadRequested = false;
+					this._resetPending	= true;
+					this.state					= "reset";
+					// Trigger 'resetStart' event
+					this.onReset();
+
+					if (!this._forest) {
+						this.root = null;
+					}
+
+					this._loadStore().then( function() {
+						model._resetPending = false;
+					});
+				}
 			}
-			// Inform the tree about the store closure but only if we haven't done
-			// so already.
-			if (cleared && !this._resetPending) {
-				delete this.store.isValidated;
-				this._resetPending = true;
-				this.onResetStart();
-
-				if (!this._forest) {
-					this.root = null;
-				}
-				// Call the store ready() method if available.
-				if (typeof this.store.ready == "function") {
-					when( this.store.ready(), lang.hitch(this, "_onResetEnd") );
-				} else {
-					// otherwise We can only assume the store is ready...
-					this._onResetEnd();
-				}
-			}
-		},
-
-		_onResetEnd: function () {
-			// summary:
-			//		Handler for store ready notification after a store closure and reload.
-			//		This method will be overwritten by the CheckStoreModel to trigger an
-			//		new data validation cycle if required.
-			// tag:
-			//		Private.
-			this._resetPending = false;
-			this.onResetEnd();
 		},
 
 		_onStoreEvent: function (event) {
@@ -919,14 +930,10 @@ define(["module",                 // module.id
 		},
 
 
-		onResetEnd: function () {
+		onReset: function () {
 			// summary:
-			//		Callback when the store is ready again after a close request.
-		},
-
-		onResetStart: function () {
-			// summary:
-			//		Callback when the store was closed and explictly cleared.
+			//		Callback when the store was closed and explictly cleared. As a 
+			//		result the model is reset.
 		},
 
 		onRootChange: function (/*Object*/ storeItem, /*String*/ action) {
@@ -1011,7 +1018,7 @@ define(["module",                 // module.id
 			//		Callback function, called in case an error occurred.
 			// tags:
 			//		public
-			var id   = this.getIdentity(parent);
+			var id	 = this.getIdentity(parent);
 			var self = this;
 			var result;
 
@@ -1087,18 +1094,51 @@ define(["module",                 // module.id
 
 		_loadStore: function (/*Object?*/ options) {
 			// summary:
-			//		Issue a store load request. If the underlying store supports the
-			//		load() method call it here otherwise _storeLoader() immediately
-			//		returns true. (See cbtree/store/api/Store)
+			//		Issue a store load request and then wait for the store to get ready.
+			//		The load request is issued just in case the store is configured for
+			//		deferred loading (e.g. autoLoad:false)
 			// options:
-			//		Arabitrary JavaScript key:value pairs object which is passed to the
+			//		Arbitrary JavaScript key:value pairs object which is passed to the
 			//		store load() method.
 			// tag:
 			//		Private
-			this._loadRequested = true;
-			return when( this._storeLoader.call(this.store, options),
-										this._storeLoaded.resolve,
-										this._storeLoaded.reject );
+
+			if (!this._loadRequested) {
+				var ready	= this._methods.ready;
+				var loader = this._methods.load;
+				var promList, model = this;
+
+				this._loadRequested = true;
+				this.state = "loading";
+				
+				promList = [
+					loader.call(this.store, options), 
+					ready.call(this.store)
+				];
+				
+				this._loadPromise = all(promList).always( function() {
+					return when (ready.call(model.store), function () {
+						model._storeReady.resolve();
+						//	Go validate the store
+						model._validateStore().then ( 
+							function () {
+								model._modelReady.resolve();
+								model.state = "active";
+							},
+							function (err) {
+								model._modelReady.reject(err);
+								model.state = "in-active";
+							});
+						return true;
+					},
+					// Store failed to get ready.
+					function(err) {
+						model._modelReady.reject(err);
+						model._storeReady.reject(err);
+					})
+				});
+			}
+			return this._loadPromise;
 		},
 
 		_setProp: function (/*String*/ propPath,/*Object*/ item,/*any*/ value ) {
@@ -1141,8 +1181,8 @@ define(["module",                 // module.id
 			if (item[property] !== value) {
 				if (this._writeEnabled) {
 					var orgItem = lang.mixin(null, item);
-					var result  = null;
-					var self    = this;
+					var result	= null;
+					var self		= this;
 					this._setProp( property, item, value );
 					result = this.store.put( item, {overwrite: true});
 					if (!this._monitored) {
@@ -1192,6 +1232,19 @@ define(["module",                 // module.id
 				self._childrenCache[parentId] = childCache;
 				return childCache;
 			});
+		},
+
+		_validateStore: function () {
+			// summary:
+			//		Function called from _loadStore() as soon as the store is ready.
+			//		Models derived from the BaseStoreModel may override this function.
+			// returns:
+			//		dojo/Promise/promise
+			// tag:
+			//		Private
+
+			var defer = new Deferred();
+			return defer.resolve();
 		}
 
 	});	/* end declare() */

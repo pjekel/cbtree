@@ -63,7 +63,7 @@ define(["module",               // module.id
 
 			// Get a query function from the store's Query Engine which we can use to
 			// determine if an item is a child of the forest root.
-			if (this._storeMethods.queryEngine) {
+			if (this._methods.queryEngine) {
 				this._rootQuery = store.queryEngine( this.query );
 			} else {
 				throw new CBTError( "MethodMissing", "_createForestRoot", "store has no query engine");
