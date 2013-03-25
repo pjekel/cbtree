@@ -631,15 +631,15 @@ define(["module",
 					this.state ="loading";
 					this._loadPending = true;
 					if (this.data) {
-						if (this.handleAs)  {
-							var response = {text: this.data, options:{handleAs: this.handleAs}};
-							try {
+						try {
+							if (this.handleAs)  {
+								var response = {text: this.data, options:{handleAs: this.handleAs}};
 								this.data = handlers( response ).data;
-							} catch (err) {
-								return store._loadError(err, ldrDef);
 							}
+							this._loadData( queryFunc(this.data), ldrDef );
+						} catch(err) {
+							return store._loadError(err, ldrDef);
 						}
-						this._loadData( queryFunc(this.data), ldrDef );
 						this.url = null;
 					} else {
 						if (!this.handleAs) {
