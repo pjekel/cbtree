@@ -62,7 +62,7 @@ define(["module",
 			//		Public
 			var id = this.inherited(arguments);
 			if (id != undef) {
-				this.emit("new", {type:"new", item: object});
+				this.emit("new", {type:"new", detail:{item: object}});
 			}
 			return id;
 		},
@@ -92,9 +92,9 @@ define(["module",
 			}
 			id = this._writeObject(id, object, at, options);
 			if (exist) {
-				this.emit("change", {type:"change", item: object, oldItem: orgObj});
+				this.emit("change", {type:"change", detail:{item: object, oldItem: orgObj}});
 			} else {
-				this.emit("new", {type:"new", item: object});
+				this.emit("new", {type:"new", detail:{item: object}});
 			}
 			return id;
 		},
@@ -110,7 +110,7 @@ define(["module",
 			if (object) {
 				var result = this.inherited(arguments);
 				if (result) {
-					this.emit("delete", {type:"delete", item: object});
+					this.emit("delete", {type:"delete", detail:{item: object}});
 				}
 				return result;
 			}

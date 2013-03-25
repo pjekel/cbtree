@@ -142,7 +142,8 @@ define(["module",								  // module.id
 			declare.safeMixin(this, kwArgs);
 
 			var props = ["add", "put", "get", "load", "hasChildren", "getChildren", "getParents",
-									 "addParent", "query", "removeParent", "queryEngine", "notify", "emit",
+									 "addParent", "query", "removeParent", "queryEngine", 
+									 "notify", "emit", "dispatchEvent",
 									 "isItem", "ready"
 									];
 			var store = this.store;
@@ -172,6 +173,7 @@ define(["module",								  // module.id
 								aspect.before( store, "add", Prologue );
 							}
 							break;
+						case "dispatchEvent":
 						case "emit":								// Eventable store
 							if (store.eventable === true) {
 								this._evtHandles = store.on( "change, delete, new", 
@@ -818,7 +820,6 @@ define(["module",								  // module.id
 			//		extension
 			var parentProp = this.parentProperty;
 			var self			 = this;
-
 			if (property === parentProp) {
 				var np = new Parents(newValue, parentProp);
 				var op = new Parents(oldValue, parentProp);
@@ -897,18 +898,24 @@ define(["module",								  // module.id
 			//		Event recieved from the store.
 			// tag:
 			//		Private
+
+			var detail = event;
+			// See if this is a DOM4 style CustomEvent
+			if (event.detail) {
+				detail = event.detail;
+			}
 			switch (event.type) {
 				case "change":
-					this._onChange( event.item, null );
+					this._onChange( detail.item, null );
 					break;
 				case "close":
-					this._onStoreClose(event.count, event.cleared);
+					this._onStoreClose(detail.count, detail.cleared);
 					break;
 				case "delete":
-					this._onDeleteItem(event.item);
+					this._onDeleteItem(detail.item);
 					break;
 				case "new":
-					this._onNewItem(event.item);
+					this._onNewItem(detail.item);
 					break;
 			}
 		},

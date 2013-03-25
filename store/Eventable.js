@@ -94,7 +94,7 @@ define(["dojo/_base/lang",
 			var result = orgMethods["add"].apply(store, arguments);
 			when( result, function(id) {
 				if (id) {
-					store.emit("new", {type:"new", item: object});
+					store.emit("new", {type:"new", detail:{item: object}});
 				}
 			}, mutex.onError);
 			return result;
@@ -110,9 +110,9 @@ define(["dojo/_base/lang",
 						when( result, function(id) {
 							mutex.release(id);
 							if (storeItem) {
-								store.emit("change", {type:"change", item: object, oldItem: orgItem});
+								store.emit("change", {type:"change", detail:{item: object, oldItem: orgItem}});
 							} else {
-								store.emit("new", {type:"new", item: object});
+								store.emit("new", {type:"new", detail:{item: object}});
 							}
 						}, mutex.onError);
 					},
@@ -120,7 +120,7 @@ define(["dojo/_base/lang",
 						var result	= orgMethods["put"].apply(store, args);
 						when( result, function(id) {
 							mutex.release(id);
-							store.emit("new", {type:"new", item: object});
+							store.emit("new", {type:"new", detail:{item: object}});
 						}, mutex.onError);
 					}
 				);
@@ -136,7 +136,7 @@ define(["dojo/_base/lang",
 					when( result, function(removed) {
 						mutex.release(removed);
 						if (orgItem) {
-							store.emit("delete", {type:"delete", item: orgItem});
+							store.emit("delete", {type:"delete", detail:{item: orgItem}});
 						}
 					});
 				}, mutex.onError );
