@@ -81,6 +81,7 @@ define(["dojo/_base/lang",
 		this.childProperty  = ["children"];		// Default children property name
 		this.parentProperty = "parent";				// Default parent property name
 		this.idProperty     = "id";						// Default id property name/
+		this.referenceToId  = true;
 		this.typeMap        = {};							// Custom datatype map
 
 		var self = this;
@@ -98,12 +99,15 @@ define(["dojo/_base/lang",
 			var childProps = self.childProperty;
 			var identProp  = self.idProperty;
 			var typeMap    = self.typeMap;
+			var refToId    = self.referenceToId;
 
-			var allItems = [];
-			var index    = {};
+			var autoIndex = 1;
+			var allItems  = [];
+			var undefRef  = [];
+			var index     = {};
 			var ifrsData;
-			var maxRef   = 0;
-
+			var maxRef    = 0;
+			
 			function addParent(/*String|Number*/ reference,/*String|Number*/ parentId ) {
 				// summary:
 				//		Add a parent id to the reference object
@@ -112,7 +116,7 @@ define(["dojo/_base/lang",
 				var child;
 
 				if (reference) {
-					var child = getReference(reference);
+					var child = getReference(reference, false);
 					if (child) {
 						var childId = child[identProp];
 						var parents = child[parentProp];
@@ -134,8 +138,17 @@ define(["dojo/_base/lang",
 				// parent:
 				//		The parent object to be flattened.
 
-				var parentId = parent[identProp] || ((Math.random() * 10000000) >>> 0);
+				var parentId = parent[identProp];
 				var property;
+
+				// Make sure we have an id for the object.
+				if (parentId) {
+					if (typeof parentId == "number" && parentId > autoIndex) {
+						autoIndex = Math.floor(parentId+1);
+					}
+				} else{
+					parentId = autoIndex++;
+				}
 
 				parent[identProp] = parentId;
 				index[parentId]   = parent;
@@ -158,15 +171,19 @@ define(["dojo/_base/lang",
 				}
 			}	/* end flattenHierarchy() */
 
-			function getReference (/*Stirng|Number|Object*/ reference) {
+			function getReference (/*Stirng|Number|Object*/ reference, /*Boolean*/ idOnly) {
 				// summary:
 				//		Locate and return the object associated with the reference.
 				// reference:
 				//		If reference is an object the first store item that matches all
 				//		of its property values is returned, otherwise reference is used
 				//		as an identifier and the index is search to locate the item.
+				// idOnly:
+				//		Indicates if only the reference id is to be returned.
+				var item;
+				
 				if (isObject(reference)) {
-					return allItems.filter( function (item) {
+					item = allItems.filter( function (item) {
 						for (var prop in reference) {
 							if (item[prop] != reference[prop]) {
 								return false;
@@ -174,8 +191,15 @@ define(["dojo/_base/lang",
 						}
 						return true;
 					})[0];
+				} else {
+					// Keep track of any undefined references.
+					if (!(item =index[reference])) {
+						if (undefRef.indexOf(reference) == -1) {
+							undefRef.push(reference);
+						}
+					}
 				}
-				return index[reference];
+				return (item && idOnly) ? item[identProp] : item;
 			}
 
 			function mapType(/*String*/ type,/*any*/ value) {
@@ -222,7 +246,7 @@ define(["dojo/_base/lang",
 					var values = object[property];
 					if (values) {
 						// Check if the values are considered children...
-						if (childProps.indexOf(property) != -1) {
+						if (parentProp && childProps.indexOf(property) != -1) {
 							if (values instanceof Array) {
 								values.forEach( function (child) {
 									if (child._reference) {
@@ -237,18 +261,19 @@ define(["dojo/_base/lang",
 							values = values.map( function (value) {
 								if (isObject(value)) {
 									if (value._reference) {
-										return getReference( value._reference );
+										return getReference( value._reference, refToId );
 									} else if (value._type) {
 										return mapType(value._type, value._value)
 									}
 								}
 								return value;
 							});
-							object[property] = values;
+							// remove any undefined references.
+							object[property] = values.filter( function (item) {return !!item;});
 						} else {
 							if (isObject(values)) {
 								if (values._reference) {
-									object[property] = getReference( values._reference );
+									object[property] = getReference( values._reference, refToId );
 								} else if (values._type) {
 									object[property] = mapType( values._type, values._value );
 								}
@@ -267,13 +292,18 @@ define(["dojo/_base/lang",
 				ifrsData.items.forEach( flattenHierarchy );
 				allItems.forEach( resolveRefAndType );
 
-				// If this is single parent reference hierarchy convert the parent
+				// If this is a single parent reference hierarchy convert the parent
 				// property to a single value.
 				if (maxRef == 1) {
 					allItems.forEach( function (item) {
 						item[parentProp] = item[parentProp] ? item[parentProp][0] : undefined;
 					});
 				}
+
+				if (undefRef.length > 0) {
+					console.warn("Undefined references: " + undefRef);
+				}
+
 			} else {
 				// Don't try to be smart and guess the file format...
 				throw new TypeError(moduleName+"::handler(): invalid IFRS file format");
