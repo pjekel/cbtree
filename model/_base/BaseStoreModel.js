@@ -818,11 +818,12 @@ define(["module",								  // module.id
 			//		New property value.
 			// tags:
 			//		extension
+
 			var parentProp = this.parentProperty;
-			var self			 = this;
 			if (property === parentProp) {
 				var np = new Parents(newValue, parentProp);
 				var op = new Parents(oldValue, parentProp);
+				var self = this;
 				var dp = [];
 
 				np.forEach( function (parent) {
@@ -838,9 +839,13 @@ define(["module",								  // module.id
 						dp.push(self._objectCache[parent]);
 					}
 				});
-				self._childrenChanged( dp );
+				if (dp.length) {
+					self._childrenChanged( dp );
+					this.onChange(storeItem, property, newValue, oldValue);
+				}
+			} else {
+				this.onChange(storeItem, property, newValue, oldValue);
 			}
-			this.onChange(storeItem, property, newValue, oldValue);
 			return true;
 		},
 
@@ -1052,7 +1057,7 @@ define(["module",								  // module.id
 			var result;
 
 			if (parent && id != undef) {
-				if (this._childrenCache[id]) {
+				if (this._observable && this._childrenCache[id]) {
 					when(this._childrenCache[id], onComplete, onError);
 					return;
 				}
