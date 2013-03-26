@@ -95,6 +95,7 @@ define(["module",
                                 openOnClick: this.openOnClick || false,
                                 valueToIconMap: this.valueToIconMap || null,
                                 enableDelete: this.enableDelete || false,
+                                deleteRecursive: this.deleteRecursive || false,
                                 persist: false,
                                 showRoot:true
                                },
