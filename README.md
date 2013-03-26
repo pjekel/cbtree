@@ -75,10 +75,10 @@ style:
 
 <h2 id="checkbox-tree-demos">CheckBox Tree Demos</h2>
 The cbtree packages comes with a set of demos each demonstrating the CheckBox
-Tree features and capabilities.
-A comprehensive [live demo](http://thejekels.com/cbtree/demos) is also available at:
+Tree features and capabilities. Two comprehensive demos are available online:
 
-* [http://thejekels.com/cbtree/demos](http://thejekels.com/cbtree/demos)
+* <a href="http://thejekels.com/cbtree/demos" target="_blank">Live CheckBox Tree demo</a>
+* <a href="http://thejekels.com/cbtree/demos/ArcGIS.php" target="_blank">ArcGIS demo with CheckBox Tree</a>
 
 In addition, the CheckBox Tree [wiki](https://github.com/pjekel/cbtree/wiki) has
 several tutorials using, for example, the popular ArcGIS API for JavaScript.
