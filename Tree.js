@@ -18,20 +18,22 @@ define(["module",
 				"dojo/Deferred",
 				"dojo/dom-construct",
 				"dojo/keys",
+				"dojo/on",
 				"dojo/topic",
 				"dojo/text!./templates/cbtreeNode.html",
+				"dijit/registry",
 				"dijit/Tree",
 				"./CheckBox",
 				"./errors/createError!./errors/CBTErrors.json",
 				"./util/shim/Array"						// ECMA-262 Array shim
 			 ], function (module, require, connect, declare, event, lang, aspect, Deferred, domConstruct,
-										 keys, topic, NodeTemplate,	Tree, CheckBox,
+										 keys, on, topic, NodeTemplate,	registry, Tree, CheckBox,
 										 createError) {
 
 	// module:
 	//		cbtree/Tree
 	// note:
-	//		This implementation is compatible with dojo 1.8 & 1.9
+	//		This implementation is compatible with dojo 1.8 and 1.9
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
 	var dojoVers = 0;
@@ -265,7 +267,7 @@ define(["module",
 					oldState = this._checkBox.get("checked");
 					newState = (oldState == "mixed" ? true : !oldState);
 				}
-				this.tree.model.setChecked(this.item, newState);
+				this._checkBox.set("checked", newState );
 			}
 			return newState;
 		},
@@ -445,7 +447,7 @@ define(["module",
 			return new TreeNode(args);
 		},
 
-		_onCheckBoxClick: function (/*TreeNode*/ nodeWidget, /*Boolean|String*/ newState, /*Event*/ evt) {
+		_onCheckBoxClick: function (/*Event*/ evt, /*treeNode*/ nodeWidget) {
 			// summary:
 			//		Translates checkbox click events into commands for the controller
 			//		to process.
@@ -455,39 +457,18 @@ define(["module",
 			//		we are not dealing with any node expansion or collapsing here.
 			// tags:
 			//		private
+			var newState = nodeWidget._checkBox.get("checked");
+			var item     = nodeWidget.item;
 
-			var item = nodeWidget.item;
+			this.model.setChecked(item, newState);
+			this.onCheckBoxClick(item, nodeWidget, evt);
+			if (this.clickEventCheckBox) {
+				this.onClick(item, nodeWidget, evt);
+			}
+			this.focusNode(nodeWidget);
 
 			topic.publish("checkbox", { item: item, node: nodeWidget, state: newState, evt: evt});
-			// Generate events incase any listeners are tuned in...
-			this.onCheckBoxClick(item, nodeWidget, evt);
-			this.focusNode(nodeWidget);
-		},
-
-		_onClick: function(/*TreeNode*/ nodeWidget, /*Event*/ evt){
-			// summary:
-			//		Handler for onclick event on a tree node
-			// description:
-			//		If the click event occured on a checkbox, get the new checkbox checked
-			//		state, update the model and generate the checkbox click related events
-			//		otherwise pass the event on to the tree as a regular click event.
-			// evt:
-			//		Event object.
-			// tags:
-			//		private extension
-			var checkedWidget = nodeWidget._widget;
-
-			if (evt.target.nodeName == checkedWidget.target) {
-				var newState = nodeWidget._checkBox.get("checked");
-				this.model.setChecked(nodeWidget.item, newState);
-				this._onCheckBoxClick(nodeWidget, newState, evt);
-				if (this.clickEventCheckBox) {
-					this.onClick(nodeWidget.item, nodeWidget, evt);
-				}
-				event.stop(evt);
-			} else {
-				this.inherited(arguments);
-			}
+			event.stop(evt);
 		},
 
 		_onItemChange: function (/*data.Item*/ item, /*String*/ attr, /*AnyType*/ value){
@@ -578,36 +559,33 @@ define(["module",
 			}
 		},
 
-		_onEnterKey: function (/*message || evt, node*/) {
+		_onEnterKey: function (message) {
+			// summary:
+			//		Dojo 1.8 only.
+			// tags:
+			//		private
+			var node = message.node;
+			var evt  = message.evt;				
+
+			if (!evt.altKey && evt.keyCode == keys.SPACE) {
+				this._onSpaceKey(evt,node);
+			}
+			this.inherited(arguments);
+		},
+
+		_onSpaceKey: function (evt, node) {
 			// summary:
 			//		Toggle the checkbox state when the user pressed the spacebar.
 			//		The spacebar is only processed if the widget that has focus is
 			//		a tree node and has a checkbox.
-			// NOTE:
-			//		Dojo 1.8 and 1.9 _onEnterKey have different signatures because
-			//		of the introdution of _KeyNavMixin() in 1.9
-			//
-			//				Dojo 1.9 signature:	_onEnterKey( evt, node );
-			//				Dojo 1.8 signature:	_onEnterKey( message );
-			//
 			// tags:
 			//		private
-			var msg, evt, node;
-
-			msg = evt = arguments[0];
-			if (dojoVers < 19) {
-				node = msg.node;
-				evt  = msg.evt;				
-			} else {                      // dojo 1.9
-				node = arguments[1];
-			}
-
 			if (node && node._checkBox) {
 				if (!evt.altKey && evt.keyCode == keys.SPACE) {
-					this._onCheckBoxClick(node, node._toggleCheckBox(), evt);
+					node._toggleCheckBox();
+					this._onCheckBoxClick(evt, node);
 				}
 			}
-			this.inherited(arguments);
 		},
 
 		_onLabelChange: function (/*String*/ oldValue, /*String*/ newValue) {
@@ -768,6 +746,7 @@ define(["module",
 			// tag:
 			//		public
 
+			// TODO: remove with dojo 2.0
 			if (this.model.isItem(item) && this._eventAttrMap[event]) {
 				this._onItemChange(item, event, value);
 				this.onEvent(item, event, value);
@@ -809,6 +788,7 @@ define(["module",
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
 			var model = this.model;
+			var self  = this;
 
 			if (this.model) {
 				if (this.checkBoxes === true) {
@@ -835,21 +815,34 @@ define(["module",
 				aspect.after(model, "onLabelChange", lang.hitch(this, "_onLabelChange"), true);	// Remove with 2.0
 
 				aspect.after(model, "onReset", lang.hitch(this, "_onModelReset"), true);
-//				aspect.after(model, "onResetEnd", lang.hitch(this, "_onResetEnd"), true);
 
 				this.mapEventToAttr(null, model.get("enabledAttr"), "_enabled_");
 				this.mapEventToAttr(null, model.get("labelAttr"), "label");
 
 				this.inherited(arguments);
 
-				// Enable CTRL + DELETE support
-				if (dojoVers >= 19) {
-					this._keyNavCodes[keys.DELETE] = lang.hitch(this, "_onDeleteKey");
-				} else {                 // dojo 1.8
-					// Force the creation of the _keyHandlerMap property.
+				if (dojoVers < 19) {
+					// dojo 1.8
+					this.own( 
+						// Register a dedicated checkbox click event listener.
+						on(this.domNode, on.selector(".cbtreeCheckBox", "click"), function(evt){
+							self._onCheckBoxClick(evt, registry.getEnclosingWidget(this.parentNode));
+						})
+					);
+					// Add support for CTRL+DELETE
 					this._onKeyDown( null, {} );
 					this._keyHandlerMap[keys.DELETE] = "_onDeleteKey";
+				} else {
+					// dojo 1.9
+					this.own( 
+						on(this.containerNode, on.selector(".cbtreeCheckBox", "click"), function(evt){
+							self._onCheckBoxClick(evt, registry.getEnclosingWidget(this.parentNode));
+						})
+					);
+					this._keyNavCodes[keys.DELETE] = lang.hitch(this, "_onDeleteKey");
+					this._keyNavCodes[keys.SPACE]  = lang.hitch(this, "_onSpaceKey");
 				}
+
 			}
 			else // The CheckBox Tree requires a model.
 			{
@@ -881,6 +874,8 @@ define(["module",
 			//			function(item, nodeAttr, newValue)
 			//
 			//		and the result returned is assigned to the _TreeNode attribute.
+
+			// TODO: remove with dojo 2.0
 
 			if (typeof attr == "string" && typeof nodeAttr == "string") {
 				if (attr.length && nodeAttr.length) {
