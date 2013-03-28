@@ -64,6 +64,11 @@ define(["module",								  // module.id
 		//		If specified, get label for tree nodes using this property.
 		labelAttr: "name",
 
+		// labelType: [const] String
+		//		Specifies how to interpret the labelAttr in the data store items.
+		//		Can be "html" or "text".
+		labelType: "text",
+
 		// parentProperty: String
 		//		The property name of a store object identifying its parent ID(s).
 		parentProperty: "parent",
@@ -462,10 +467,10 @@ define(["module",								  // module.id
 
 			var method = this._methods["hasChildren"];
 			var itemId = this.getIdentity(item);
-			var result = this._childrenCache[itemId];
 
-			if (result) {
-				if ( !(result instanceof Promise) ) {
+			if (this._observable) {
+				var result = this._childrenCache[itemId];
+				if (result && !(result instanceof Promise) ) {
 					return !!result.length;
 				}
 			}
