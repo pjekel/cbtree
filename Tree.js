@@ -508,7 +508,10 @@ define(["module",
 					} else {
 						request[nodeProp.attribute] = value;
 					}
+					// For each node update the item, in case a store hands out cloned
+					// objects, and issue a set request.
 					nodes.forEach(function (node){
+							node.item = item;
 							node.set(request);
 						}, this);
 				}
