@@ -467,12 +467,10 @@ define(["module",								  // module.id
 
 			var method = this._methods["hasChildren"];
 			var itemId = this.getIdentity(item);
+			var result = this._childrenCache[itemId];
 
-			if (this._observable) {
-				var result = this._childrenCache[itemId];
-				if (result && !(result instanceof Promise) ) {
-					return !!result.length;
-				}
+			if (result && !(result instanceof Promise) ) {
+				return !!result.length;
 			}
 			return method.call(this.store, item);
 		},
@@ -917,6 +915,9 @@ define(["module",								  // module.id
 			switch (event.type) {
 				case "change":
 					this._onChange( detail.item, null );
+					if (detail.from && detail.from != detail.at) {
+						when ( this.getParents(detail.item), lang.hitch( this, "_childrenChanged" ) );
+					}
 					break;
 				case "close":
 					this._onStoreClose(detail.count, detail.cleared);
@@ -1057,9 +1058,9 @@ define(["module",								  // module.id
 			//		Callback function, called in case an error occurred.
 			// tags:
 			//		public
-			var id	 = this.getIdentity(parent);
-			var self = this;
-			var result;
+			var id	   = this.getIdentity(parent);
+			var self   = this;
+			var result = null;
 
 			if (parent && id != undef) {
 				if (this._observable && this._childrenCache[id]) {
@@ -1067,8 +1068,8 @@ define(["module",								  // module.id
 					return;
 				}
 				// Call user specified method to fetch the children
-				this._childrenCache[id] = result = method.call(this, parent, id);
-
+				self._childrenCache[id] = result = method.call(self, parent, id);
+				
 				if (!this._objectCache[id]) {
 					this._objectCache[id] = lang.mixin(null, parent);
 				}
