@@ -412,7 +412,9 @@ define(["module",								  // module.id
 			var self = this;
 
 			if (this.root) {
-				onItem(this.root);
+				when( this._storeReady, function () {				
+					onItem(self.root);
+				});
 			} else {
 				if (this._methods.query) {
 					when( this._storeReady, function () {
