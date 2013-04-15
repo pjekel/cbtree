@@ -43,13 +43,13 @@ define(["module",
 			}
 			if (valueB instanceof Array) {
 				return valueB.every( function (value) {
-					value = value.toLowerCase ? value.toLowerCase() : value;
+					value = (ignoreCase && value.toLowerCase) ? value.toLowerCase() : value;
 					return contains(valueA, value, ignoreCase);
 				});
 			}
 			if (ignoreCase) {
 				return valueA.some( function (value) {
-					value  = value.toLowerCase ? value.toLowerCase() : value;
+					value  = (ignoreCase && value.toLowerCase) ? value.toLowerCase() : value;
 					return (value == valueB);
 				});
 			}
@@ -80,9 +80,11 @@ define(["module",
 		//		otherwise false.
 		// query:
 		//		JavaScript key:value pairs object.
-		for(var key in query) {
-			if (/\./.test(key)) {
-				return true;
+		if (query) {
+			for(var key in query) {
+				if (/\./.test(key)) {
+					return true;
+				}
 			}
 		}
 		return false;
