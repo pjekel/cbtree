@@ -407,6 +407,10 @@ define(["module",
 		//
 		_dojoRequired: { min: {major:1, minor:8}, max: {major:1, minor:9}},
 
+		// _widgetBaseClass:
+		//		The default baseClass 
+		_checkboxBaseClass: CheckBox.prototype.baseClass,
+
 		_assertVersion: function () {
 			// summary:
 			//		Test if we're running the correct dojo version.
@@ -660,6 +664,7 @@ define(["module",
 			//		experimental
 			var customWidget = widget,
 					property = "checked",
+					baseClass,
 					message,
 					proto;
 
@@ -671,6 +676,7 @@ define(["module",
 				customWidget = widget.type;
 				if (typeof customWidget == "function") {
 					proto = customWidget.prototype;
+					this._checkboxBaseClass = customWidget.prototype.baseClass;
 					if (proto && typeof proto[property] !== "undefined"){
 						// See if the widget has a getter and setter methods...
 						if (typeof proto.get == "function" && typeof proto.set == "function") {
@@ -824,11 +830,12 @@ define(["module",
 
 				this.inherited(arguments);
 
+				var cbSelector = "." + this._checkboxBaseClass;
 				if (dojoVers < 19) {
 					// dojo 1.8
 					this.own( 
 						// Register a dedicated checkbox click event listener.
-						on(this.domNode, on.selector(".cbtreeCheckBox", "click"), function(evt){
+						on(this.domNode, on.selector(cbSelector, "click"), function(evt){
 							self._onCheckBoxClick(evt, registry.getEnclosingWidget(this.parentNode));
 						})
 					);
@@ -838,7 +845,7 @@ define(["module",
 				} else {
 					// dojo 1.9
 					this.own( 
-						on(this.containerNode, on.selector(".cbtreeCheckBox", "click"), function(evt){
+						on(this.containerNode, on.selector(cbSelector, "click"), function(evt){
 							self._onCheckBoxClick(evt, registry.getEnclosingWidget(this.parentNode));
 						})
 					);
