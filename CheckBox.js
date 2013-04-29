@@ -74,7 +74,7 @@ define(["dijit/form/CheckBox",
 			} 
 			txtState = (newState == 'mixed' ? newState : (newState ? 'true' : 'false'));
 
-			this._set('checked', newState );			/* Fast track set() */
+			this._set('checked', newState );
 			domAttr.set(this.focusNode || this.domNode, 'checked', newState );
 			(this.focusNode || this.domNode).setAttribute('aria-checked', txtState );
 			this._handleOnChange( newState, priorityChange);
