@@ -171,11 +171,11 @@ define(["module",
 			// tags:
 			//		private
 
-			var model	 = this.tree.model;
-			var enabled = true;
-			var checked = model.getChecked(this.item);
-			var widget	= this._widget;
-			var args		= widget.args;
+			var model    = this.tree.model;
+			var enabled  = true;
+			var checked  = model.getChecked(this.item);
+			var widget   = this._widget;
+			var args     = widget.args;
 
 			if (typeof model.getEnabled == "function") {
 				enabled = model.getEnabled(this.item);
@@ -185,6 +185,7 @@ define(["module",
 				// Initialize the default checkbox/widget attributes.
 				args.multiState = multiState;
 				args.checked		= checked;
+				
 				args.value			= this.label;
 
 				if (typeof widget.mixin == "function") {
@@ -193,6 +194,7 @@ define(["module",
 
 				this._checkBox = new widget.type( args );
 				if (this._checkBox) {
+					this._checkBox.item = this.item;
 					if (typeof this._widget.postCreate == "function") {
 						lang.hitch(this._checkBox, this._widget.postCreate)(this);
 					}
@@ -472,8 +474,32 @@ define(["module",
 			this.focusNode(nodeWidget);
 
 			topic.publish("checkbox", { item: item, node: nodeWidget, state: newState, evt: evt});
-			event.stop(evt);
+			evt.stopPropagation();		// ONLY stop propagation, not the default actions...
+			return newState;
 		},
+
+		_onClick: function(/*TreeNode*/ nodeWidget, /*Event*/ e){
+			// summary:
+			//		Translates click events into commands for the controller to process
+			//		For dojo 1.8 compatibility only (remove in 2.0)
+			var node = registry.getEnclosingWidget(e.target)
+			if(node.isInstanceOf(TreeNode)){
+				var domElement = e.target,
+					isExpandoClick = this.isExpandoNode(domElement, nodeWidget);
+
+				if(nodeWidget.isExpandable && (this.openOnClick || isExpandoClick)){
+					// expando node was clicked, or label of a folder node was clicked; open it
+					this._onExpandoClick({node: nodeWidget});
+				}else{
+					this._publish("execute", { item: nodeWidget.item, node: nodeWidget, evt: e });
+					this.onClick(nodeWidget.item, nodeWidget, e);
+					this.focusNode(nodeWidget);
+				}
+				e.stopPropagation();
+				e.preventDefault();
+			}
+		},
+
 
 		_onItemChange: function (/*data.Item*/ item, /*String*/ attr, /*AnyType*/ value){
 			// summary:
