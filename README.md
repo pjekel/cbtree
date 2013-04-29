@@ -109,7 +109,7 @@ section:
   <tbody>
     <tr style="vertical-align:top">
       <td>cbtree-v09.3-0</td>
-      <td style="color:red;">TBD: Mar 2013</td>
+      <td style="color:red;">TBD: May 2013</td>
       <td>1.8 - 1.9</td>
       <td>
 	New stores implementing the <a href="https://github.com/pjekel/cbtree/wiki/Store-API">cbtree/store/api/Store</a> API.<br/>
