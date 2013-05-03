@@ -484,22 +484,9 @@ define(["module",
 			//		For dojo 1.8 compatibility only (remove in 2.0)
 			var node = registry.getEnclosingWidget(e.target)
 			if(node.isInstanceOf(TreeNode)){
-				var domElement = e.target,
-					isExpandoClick = this.isExpandoNode(domElement, nodeWidget);
-
-				if(nodeWidget.isExpandable && (this.openOnClick || isExpandoClick)){
-					// expando node was clicked, or label of a folder node was clicked; open it
-					this._onExpandoClick({node: nodeWidget});
-				}else{
-					this._publish("execute", { item: nodeWidget.item, node: nodeWidget, evt: e });
-					this.onClick(nodeWidget.item, nodeWidget, e);
-					this.focusNode(nodeWidget);
-				}
-				e.stopPropagation();
-				e.preventDefault();
+				this.inherited(arguments);
 			}
 		},
-
 
 		_onItemChange: function (/*data.Item*/ item, /*String*/ attr, /*AnyType*/ value){
 			// summary:
