@@ -73,6 +73,9 @@ style:
       }
     }
 
+For a detailed description of [Tree Styling](https://github.com/pjekel/cbtree/wiki/Tree-Styling)
+Wiki pages.
+
 <h2 id="checkbox-tree-demos">CheckBox Tree Demos</h2>
 The cbtree packages comes with a set of demos each demonstrating the CheckBox
 Tree features and capabilities. Two comprehensive demos are available online:
@@ -109,7 +112,7 @@ section:
   <tbody>
     <tr style="vertical-align:top">
       <td>cbtree-v09.3-0</td>
-      <td style="color:red;">TBD: May 2013</td>
+      <td>May-03 2013</td>
       <td>1.8 - 1.9</td>
       <td>
 	New stores implementing the <a href="https://github.com/pjekel/cbtree/wiki/Store-API">cbtree/store/api/Store</a> API.<br/>
@@ -150,8 +153,4 @@ section:
     </tr>
   </tbody>
 </table>
-
-
-
-<h2 id="basics">CheckBox Tree Migration</h2>
 
