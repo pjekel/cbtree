@@ -129,6 +129,7 @@ define(["module",								  // module.id
 
       this._childrenCache = {};
       this._objectCache   = {};
+			this._obsHandles    = {};
       this._methods       = {};
 
       this._eventable     = false;
@@ -1033,8 +1034,10 @@ define(["module",								  // module.id
 			// tag:
 			//		Private
 			if (this._childrenCache[id]) {
-				this._childrenCache[id].handle && this._childrenCache[id].handle.remove();
+				var handle = this._obsHandles[id];
+				handle && handle.remove();
 				delete this._childrenCache[id];
+				delete this._obsHandles[id];
 			}
 		},
 
@@ -1105,7 +1108,7 @@ define(["module",								  // module.id
 							});
 						}
 					}, true);	// true means to notify on item changes
-					result.handle = handle; // Save the observer handle with the result.
+					this._obsHandles[id] = handle;		// Save the Observer handle.
 				}
 			} else {
 				// No parent or id.
