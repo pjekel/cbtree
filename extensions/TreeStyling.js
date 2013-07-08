@@ -867,6 +867,9 @@ define(["module",
 										throw new CBTError( "InvalidResponse", "_valueToIcon" );
 									}
 									break;
+								case "object":
+									icon = this._icon2Object(icon);
+									break;
 								default:
 									icon = null;
 							}
@@ -1072,7 +1075,7 @@ define(["module",
 							newIcon = this._initStyleElement("icon");
 							newIcon.baseClass = classes[0];
 							newIcon.iconClass = icon;
-							newIcon.indent		= true;
+							newIcon.indent    = true;
 							return newIcon;;
 						}
 					} else {
