@@ -4,19 +4,19 @@
 //
 //	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//	1 - BSD 2-Clause				(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License	(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["module",
-				"dojo/_base/lang",
-				"dojo/aspect",
-				"dojo/dom-class",
-				"dojo/dom-prop",
-				"dojo/dom-style",
-				"dijit/Tree",
-				"../errors/createError!../errors/CBTErrors.json"
-			], function (module, lang, aspect, domClass, domProp, domStyle, Tree, createError) {
+		"dojo/_base/lang",
+		"dojo/aspect",
+		"dojo/dom-class",
+		"dojo/dom-prop",
+		"dojo/dom-style",
+		"dijit/Tree",
+		"../errors/createError!../errors/CBTErrors.json"
+	], function (module, lang, aspect, domClass, domProp, domStyle, Tree, createError) {
 	// summary:
 	//		Tree Styling extensions to customize the look and feel of a dijit tree.
 	// description:
@@ -27,10 +27,10 @@ define(["module",
 	//		or default dijit/Tree tree.
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
-	
+
 	var C_WILDCARD = "*";
 	var _DSID = "__DEFAULT";			// Item ID of default styling object.
-	
+
 	function isEmpty(o) {
 		// summary:
 		//		Return true if object is empty otherwise false.
@@ -56,7 +56,7 @@ define(["module",
 			// attribute:
 			//		The lower case attribute name to use, e.g. 'icon', 'label' or 'row'.
 			// tags:
-			//		private
+			//		protected
 			var currClass, newClass, newStyle, className, styleName, nodeName;
 
 			className = attribute + "Class";
@@ -88,7 +88,7 @@ define(["module",
 			// icon:
 			//		A icon object. (See _icon2Object() for more details on the layout).
 			// tag:
-			//		private
+			//		protected
 			if (icon.iconClass) {
 				this._set_iconClass_Attr(icon.iconClass);
 				this.icon = icon;
@@ -102,7 +102,7 @@ define(["module",
 			// cssClass:
 			//		css class name
 			// tag:
-			//		private
+			//		protected
 			if(cssClass && (cssClass !== this.iconClass)) {
 				domClass.replace(this.iconNode, cssClass, this.iconClass || "");
 				this._applyClassAndStyle(this.item,"icon");
@@ -117,7 +117,7 @@ define(["module",
 			// newValue:
 			//		Not used.
 			// tags:
-			//		private
+			//		protected
 
 			this._updateItemClasses(this.item);
 		},
@@ -128,7 +128,7 @@ define(["module",
 			// style:
 			//		Object suitable for input to domStyle.set() like:	{color: "red"}
 			// tags:
-			//		private
+			//		protected
 
 			this.iconStyle = style;
 			this._applyClassAndStyle( this.item, 'icon');
@@ -140,7 +140,7 @@ define(["module",
 			// style:
 			//		Object suitable for input to domStyle.set() like:	{color: "red"}
 			// tags:
-			//		private
+			//		protected
 
 			this.labelStyle = style;
 			this._applyClassAndStyle( this.item, 'label');
@@ -152,7 +152,7 @@ define(["module",
 			// style:
 			//		Object suitable for input to domStyle.set() like:	{color: "red"}
 			// tags:
-			//		private
+			//		protected
 
 			this.rowStyle = style;
 			this._applyClassAndStyle( this.item, 'row');
@@ -215,7 +215,7 @@ define(["module",
 			// returns:
 			//		A string, A list of class names, each separated by a space.
 			// tag:
-			//		private
+			//		protected
 
 			var classNames = nodeWidget ? domProp.get(nodeWidget["iconNode"], "className") : "";
 			var classes, index, i;
@@ -252,7 +252,7 @@ define(["module",
 			// returns:
 			//		An object in case of a style element otherwise a string
 			// tag:
-			//		private
+			//		protected
 			var name = attr+type;
 			if ((this._itemAttr.indexOf(attr) != -1) &&
 					(this._typeAttr.indexOf(type) != -1)) {
@@ -283,7 +283,7 @@ define(["module",
 			// returns:
 			//		Data item styling as an object container.
 			// tag:
-			//		private
+			//		protected
 
 			if (!this._connected) { this._connectModel(); };
 
@@ -360,7 +360,7 @@ define(["module",
 			//		The context in which both onItem and onComplete are executed. If none
 			//		is specified 'this' will be used.
 			// tag:
-			//		private
+			//		protected
 
 			var onItemArgs = (args ? (args instanceof Array ? args : this._object2Array(args)) : [])
 			var identity;
@@ -402,7 +402,7 @@ define(["module",
 			// returns:
 			//		The updated styling object if an item was specified otherwise null.
 			// tag:
-			//		private
+			//		protected
 			if (typeof cssClass === "string") {
 				if (this._itemAttr.indexOf(attr) != -1) {
 					// Note: the classname may contain multiple name, use the first as
@@ -450,7 +450,7 @@ define(["module",
 			// cssClass:
 			//		ccs classname
 			// tag:
-			//		private
+			//		protected
 
 			if (item) {
 				this._setAttrClass(item,attr, cssClass,
@@ -487,7 +487,7 @@ define(["module",
 			// returns:
 			//		The updated styling object if an item was specified otherwise null.
 			// tag:
-			//		private
+			//		protected
 
 			if (lang.isObject(style)) {
 				if (this._itemAttr.indexOf(attr) != -1) {
@@ -526,7 +526,7 @@ define(["module",
 			// style:
 			//		Object suitable for input to domStyle.set() like:	{color: "red"}
 			// tag:
-			//		private
+			//		protected
 
 			var request = {};
 
@@ -556,7 +556,7 @@ define(["module",
 			// value:
 			//		New value of the item attribute
 			// tags:
-			//		private
+			//		protected
 			var identity = this.model.getIdentity(item),
 					nodes		= this._itemNodesMap[identity],
 					request	= {};
@@ -580,7 +580,7 @@ define(["module",
 			// returns:
 			//		Icon styling element as an object
 			// tag:
-			//		private
+			//		protected
 			var styling = this._getItemStyling(item);
 
 			// If the styling is derived from the root node ask the model if there is
@@ -648,7 +648,7 @@ define(["module",
 			// returns:
 			//		The converted icon styling object.
 			// tags:
-			//		private
+			//		protected
 
 			var newIcon = this._icon2Object(icon);
 			if (newIcon) {
@@ -686,7 +686,7 @@ define(["module",
 			// returns:
 			//		The updated property value.
 			// tags:
-			//		private
+			//		protected
 			return this._setAttrClassSet(item,'icon', cssClass);
 		},
 
@@ -702,7 +702,7 @@ define(["module",
 			// returns:
 			//		The updated property value.
 			// tags:
-			//		private
+			//		protected
 			return this._setAttrStyleSet(item,'icon', style);
 		},
 
@@ -718,7 +718,7 @@ define(["module",
 			// returns:
 			//		The updated property value.
 			// tags:
-			//		private
+			//		protected
 			return this._setAttrClassSet(item,'label', cssClass);
 		},
 
@@ -734,7 +734,7 @@ define(["module",
 			// returns:
 			//		The updated property value.
 			// tags:
-			//		private
+			//		protected
 			return this._setAttrStyleSet(item,'label', style);
 		},
 
@@ -750,7 +750,7 @@ define(["module",
 			// returns:
 			//		The updated property value.
 			// tags:
-			//		private
+			//		protected
 			return this._setAttrClassSet(item,'row', cssClass);
 		},
 
@@ -766,7 +766,7 @@ define(["module",
 			// returns:
 			//		The updated property value.
 			// tags:
-			//		private
+			//		protected
 			return this._setAttrStyleSet(item,'row', style);
 		},
 
@@ -776,7 +776,7 @@ define(["module",
 			// map:
 			// returns:
 			// tag:
-			//		private
+			//		protected
 			if (isObject(map)) {
 				var prop, value, table = {};
 				// Loop thru the properties...
@@ -842,7 +842,7 @@ define(["module",
 			// returns:
 			//		Icon object or null
 			// tag:
-			//		Private
+			//		Protected
 			if (item && this._valueToIconMap) {
 				var prop, table, val, icon;
 				for( prop in this._valueToIconMap) {
@@ -858,28 +858,47 @@ define(["module",
 						if (icon) {
 							switch (typeof icon) {
 								case "string":
-									icon = icon.replace( /\*/g, val );
-									icon = this._icon2Object(icon);
+								case "object":
 									break;
 								case "function":
-									icon = icon(item, prop, val );
-									if (icon && typeof icon != "string") {
+									icon = icon.call(this, item, prop, val );
+									if (icon && (!isObject(icon) && typeof icon != "string")) {
 										throw new CBTError( "InvalidResponse", "_valueToIcon" );
 									}
-									break;
-								case "object":
-									icon = this._icon2Object(icon);
 									break;
 								default:
 									icon = null;
 							}
 							if (icon) {
+								icon = this._icon2Object(icon);
+								icon = this._wcToValue(icon, val);
 								return icon;
 							}
 						}
 					}
 				}
 			}
+		},
+
+		_wcToValue: function (obj, wcValue) {
+			// summary:
+			//		Replace any occurrence of the wildcard character (*) in an
+			//		object with wcValue.
+			// obj: any
+			// wcValue: any
+			// tag:
+			//		Protected
+			if (!isObject(obj)) {
+				if (obj && typeof obj.replace == "function") {
+					return obj.replace(/\*/g, wcValue);
+				}
+				return obj;
+			}
+			var key, newObj = obj.constructor();
+			for (key in obj) {
+				newObj[key] = this._wcToValue(obj[key], wcValue);
+			}
+			return newObj;
 		},
 
 		//====================================================================
@@ -898,7 +917,7 @@ define(["module",
 			// returns:
 			//		Classname(s) as a string
 			// tag:
-			//		private
+			//		protected
 
 			var isExpandable, itemIcon, nodeItem = item;
 			var iconClass, baseClass, newClass, indent;
@@ -915,7 +934,7 @@ define(["module",
 			// To determine the icon for any given item we first test if value-to-icon
 			// mapping is available. If the mapping does not return an icon we test
 			// if a custom icon is available otherwise we default to the dijit icons.
-			
+
 			if (this._valueToIconMap) {
 				itemIcon = this._valueToIcon(nodeItem);
 			}
@@ -951,7 +970,11 @@ define(["module",
 		},
 
 		getIconStyle: function (/*dojo.data.item*/ item, /*Boolean*/ opened) {
-			return this._getClassOrStyle(item,"icon","Style");
+			var style = this._getClassOrStyle(item,"icon","Style");
+			var icon  = this._valueToIconMap ? this._valueToIcon(item) : null;
+
+			style = (icon && icon.iconStyle) || style;
+			return style;
 		},
 
 		getLabelClass: function (/*dojo.data.item*/ item, /*Boolean*/ opened) {
@@ -1010,14 +1033,14 @@ define(["module",
 			//		'_onStyleDelete' will take care of that. In addition, create an event
 			//		mapping for the item 'icon' attribute.
 			// tag:
-			//		private
+			//		protected
 			var model = this.model;
 
 			this._connected		= true;
 
 			// Reset the style mapping table and make sure we have at least a default
 			// styling object.
-			this._itemStyleMap = {};		
+			this._itemStyleMap = {};
 			this._getItemStyling(null);
 
 			if (model) {
@@ -1063,7 +1086,7 @@ define(["module",
 			// returns:
 			//		Updated or new icon styling object
 			// tags:
-			//		private
+			//		protected
 
 			var attr, classes, newIcon;
 
@@ -1108,7 +1131,7 @@ define(["module",
 			// returns:
 			//		Array style object.
 			// tag:
-			//		private
+			//		protected
 			var newArray = [],
 					attr;
 
@@ -1142,7 +1165,7 @@ define(["module",
 			// request:
 			//		Object defining the set() request. For example: {icon:'myIcon'}
 			// tag:
-			//		private.
+			//		protected.
 			if (node) {
 				if (lang.isObject(request)) {
 					node.set(request);
@@ -1152,7 +1175,7 @@ define(["module",
 				}
 			}
 		}
-		
+
 	}); /* end lang.extend() */
 
 }); /* end define() */
