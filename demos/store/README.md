@@ -4,9 +4,9 @@ stores.
 
 * tree00.html - Basic CheckBox Tree using a dojo/store Memory store and a in-memory object to create the store.
 * tree01.html - Basic CheckBox Tree using an observable dojo/store Memory store.
-* tree02.html - Demostrate the checkboxes and the tree styling API
-* tree03.html - Demostrate an observable and multi-parented cbtree/store Hierarchy Store.
-* tree04.html - Demostrate the use of a cbtree/store ObjectStore (Evented store with Hierarchy).
+* tree02.html - Demonstrate the checkboxes and the tree styling API
+* tree03.html - Demonstrate an observable and multi-parented cbtree/store Hierarchy Store.
+* tree04.html - Demonstrate the use of a cbtree/store ObjectStore (Evented store with Hierarchy).
 * tree05.html - Two CheckBox trees using the same cbtree/store ObjectStore.
 * tree06.html - Demonstrate Drag-n-Drop.
 * tree07.html - Demonstrate the cbtree/store ObjectStore and the cbtree/model ForestStoreModel.
