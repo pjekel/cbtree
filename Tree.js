@@ -9,26 +9,26 @@
 //	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["module",
-				"require",
-				"dojo/_base/connect",
-				"dojo/_base/declare",
-				"dojo/_base/event",
-				"dojo/_base/lang",
-				"dojo/aspect",
-				"dojo/Deferred",
-				"dojo/dom-construct",
-				"dojo/keys",
-				"dojo/on",
-				"dojo/topic",
-				"dojo/text!./templates/cbtreeNode.html",
-				"dijit/registry",
-				"dijit/Tree",
-				"./CheckBox",
-				"./errors/createError!./errors/CBTErrors.json",
-				"./util/shim/Array"						// ECMA-262 Array shim
-			 ], function (module, require, connect, declare, event, lang, aspect, Deferred, domConstruct,
-										 keys, on, topic, NodeTemplate,	registry, Tree, CheckBox,
-										 createError) {
+		"require",
+		"dojo/_base/connect",
+		"dojo/_base/declare",
+		"dojo/_base/event",
+		"dojo/_base/lang",
+		"dojo/aspect",
+		"dojo/Deferred",
+		"dojo/dom-construct",
+		"dojo/keys",
+		"dojo/on",
+		"dojo/topic",
+		"dojo/text!./templates/cbtreeNode.html",
+		"dijit/registry",
+		"dijit/Tree",
+		"./CheckBox",
+		"./errors/createError!./errors/CBTErrors.json",
+		"./util/shim/Array"						// ECMA-262 Array shim
+	], function (module, require, connect, declare, event, lang, aspect, Deferred, domConstruct,
+				 keys, on, topic, NodeTemplate,	registry, Tree, CheckBox,
+				 createError) {
 
 	// module:
 	//		cbtree/Tree
@@ -37,7 +37,7 @@ define(["module",
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
 	var dojoVers = 0;
-	
+
 	var TreeNode = declare([Tree._TreeNode], {
 		// templateString: String
 		//		Specifies the HTML template to be used.
@@ -63,8 +63,8 @@ define(["module",
 			//		widget argument list.
 
 			var checkBoxWidget = { type: CheckBox, target: 'INPUT', mixin: null, postCreate: null };
-			var widgetArgs		 = { multiState: null, checked: undefined, value: 'on' };
-			var customWidget	 = args.widget;
+			var widgetArgs	   = { multiState: null, checked: undefined, value: 'on' };
+			var customWidget   = args.widget;
 
 			if (customWidget) {
 				lang.mixin( widgetArgs, customWidget.args );
@@ -79,7 +79,7 @@ define(["module",
 
 		// =======================================================================
 		// Node getters and setters
-		
+
 		_getCheckedAttr: function () {
 			// summary:
 			//		Get the current checkbox state. This method provides the hook for
@@ -185,7 +185,7 @@ define(["module",
 				// Initialize the default checkbox/widget attributes.
 				args.multiState = multiState;
 				args.checked		= checked;
-				
+
 				args.value			= this.label;
 
 				if (typeof widget.mixin == "function") {
@@ -194,6 +194,7 @@ define(["module",
 
 				this._checkBox = new widget.type( args );
 				if (this._checkBox) {
+					this._checkBox.name = this._checkBox.id;
 					this._checkBox.item = this.item;
 					if (typeof this._widget.postCreate == "function") {
 						lang.hitch(this._checkBox, this._widget.postCreate)(this);
@@ -222,7 +223,7 @@ define(["module",
 			var parent = this.getParent();
 			var tree   = this.tree;
 			var model  = tree.model;
-			
+
 			function removeNode (node) {
 				if (!node._destroyed) {
 					var itemId = model.getIdentity(node.item);
@@ -250,7 +251,7 @@ define(["module",
 				parent.removeChild(this);
 			}
 			// Destroy DOM node and its descendants
-			this.destroyRecursive(); 
+			this.destroyRecursive();
 		},
 
 		_toggleCheckBox: function (){
@@ -346,14 +347,16 @@ define(["module",
 		//		when a checkbox is clicked. If false only the 'checkBoxClick' event is
 		//		generated.
 		clickEventCheckBox: true,
-		
+
+		closeOnUnchecked: false,
+
 		// deleteRecursive: Boolean
 		//		Determines if a delete operation, initiated from the keyboard, should
 		//		include all descendants of the selected item(s). If false, only the
 		//		selected item(s) are deleted from the store. This property has only
 		//		effect when 'enableDelete' is true.
 		deleteRecursive: false,
-		
+
 		// enableDelete: Boolean
 		//		Determines if deleting tree nodes using the keyboard is allowed. By
 		//		default items can only be deleted using the store interface. If set
@@ -370,6 +373,8 @@ define(["module",
 		//		check/uncheck branch checkboxes and thus overwriting the per store item
 		//		'enabled' features for any store item associated with a tree leaf.
 		leafReadOnly: false,
+
+		openOnChecked: false,
 
 		// End Parameters to constructor
 		//==============================
@@ -410,7 +415,7 @@ define(["module",
 		_dojoRequired: { min: {major:1, minor:8}, max: {major:1, minor:9}},
 
 		// _widgetBaseClass:
-		//		The default baseClass 
+		//		The default baseClass
 		_checkboxBaseClass: CheckBox.prototype.baseClass,
 
 		_assertVersion: function () {
@@ -467,6 +472,11 @@ define(["module",
 			var item     = nodeWidget.item;
 
 			this.model.setChecked(item, newState);
+			if (newState && this.openOnChecked) {
+				this.expandChecked();
+			} else if (!newState && this.closeOnUnchecked) {
+				this.collapseUnchecked();
+			}
 			this.onCheckBoxClick(item, nodeWidget, evt);
 			if (this.clickEventCheckBox) {
 				this.onClick(item, nodeWidget, evt);
@@ -556,7 +566,7 @@ define(["module",
 		_onDeleteKey: function (/*message || evt, node*/) {
 			// summary:
 			//		Delete key pressed. Delete selected items if delete is enabled AND
-			//		the model supports the deleteItem() method. 
+			//		the model supports the deleteItem() method.
 			// evt:
 			//		Keyboard event.
 			// node:
@@ -585,7 +595,7 @@ define(["module",
 			// tags:
 			//		private
 			var node = message.node;
-			var evt  = message.evt;				
+			var evt  = message.evt;
 
 			if (!evt.altKey && evt.keyCode == keys.SPACE) {
 				this._onSpaceKey(evt,node);
@@ -625,7 +635,7 @@ define(["module",
 			//		is typically due to a store close/flush event.
 			// tag:
 			//		Private.
-			
+
 			var expanded = lang.clone(this._openedNodes);
 			var model    = this.model;
 			var tree     = this;
@@ -648,6 +658,9 @@ define(["module",
 						tree._openedNodes = expanded;
 					}
 					tree._load();		// Reload the tree
+
+					tree.onLoadDeferred = tree.pendingCommandsPromise;
+					tree.onLoadDeferred.then(lang.hitch(tree, "onLoad"));
 				},
 				function (err) {
 					// Model failed to get ready, this is likely due to a fatal store
@@ -720,6 +733,25 @@ define(["module",
 			throw new CBTError("InvalidWidget", "_setWidgetAttr", message);
 		},
 
+		collapseUnchecked: function (node) {
+			// summary:
+			//		Collapse a node if the associated item is unchecked.
+			// node: TreeNode?
+			//		The tree node the collapse. If omitted the tree root node is used.
+			// tag:
+			//		public
+			node = node || this.rootNode;
+			if (node && node.isExpandable && node.isExpanded) {
+				var children = node.getChildren(node);
+				children.forEach(function (child) {
+					this.collapseUnchecked(child);
+				}, this);
+				if (node.item.checked === false) {
+					this._collapseNode(node);
+				}
+			}
+		},
+
 		create: function() {
 			this._assertVersion();
 			this.inherited(arguments);
@@ -728,6 +760,25 @@ define(["module",
 		destroy: function() {
 			this.model = null;
 			this.inherited(arguments);
+		},
+
+		expandChecked: function (node) {
+			// summary:
+			//		Expand a node if the associated item is checked.
+			// node: TreeNode?
+			//		The tree node the expand. If omitted the tree root node is used.
+			// tag:
+			//		public
+			node = node || this.rootNode;
+			if (node && node.isExpandable && node.item.checked) {
+				if (!node.isExpanded) {
+					this._expandNode(node);
+				}
+				var children = node.getChildren(node);
+				children.forEach( function (child) {
+					this.expandChecked(child);
+				}, this);
+			}
 		},
 
 		getIconStyle:function (/*data.item*/ item, /*Boolean*/ opened) {
@@ -846,7 +897,7 @@ define(["module",
 				var cbSelector = "." + this._checkboxBaseClass;
 				if (dojoVers < 19) {
 					// dojo 1.8
-					this.own( 
+					this.own(
 						// Register a dedicated checkbox click event listener.
 						on(this.domNode, on.selector(cbSelector, "click"), function(evt){
 							self._onCheckBoxClick(evt, registry.getEnclosingWidget(this.parentNode));
@@ -857,7 +908,7 @@ define(["module",
 					this._keyHandlerMap[keys.DELETE] = "_onDeleteKey";
 				} else {
 					// dojo 1.9
-					this.own( 
+					this.own(
 						on(this.containerNode, on.selector(cbSelector, "click"), function(evt){
 							self._onCheckBoxClick(evt, registry.getEnclosingWidget(this.parentNode));
 						})
@@ -865,7 +916,11 @@ define(["module",
 					this._keyNavCodes[keys.DELETE] = lang.hitch(this, "_onDeleteKey");
 					this._keyNavCodes[keys.SPACE]  = lang.hitch(this, "_onSpaceKey");
 				}
-
+				this.on("load", function () {
+					if (!self.autoExpand && self.openOnChecked) {
+						self.expandChecked();
+					}
+				});
 			}
 			else // The CheckBox Tree requires a model.
 			{
