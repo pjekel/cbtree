@@ -119,7 +119,7 @@ define(["module",
 		if (valueA instanceof Array) {
 			return contains(valueA, valueB, ignoreCase);
 		}
-		// Thrid, check if the object has a test method, which makes it also work
+		// Third, check if the object has a test method, which makes it also work
 		// with regular expressions (RegExp).
 		if (valueB && valueB.test) {
 			return valueB.test(valueA);
