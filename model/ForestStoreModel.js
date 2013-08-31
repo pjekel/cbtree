@@ -90,7 +90,8 @@ define(["module",               // module.id
 			//		public
 
 			this._getChildren( parent, function (parent, id) {
-				return ((parent == this.root) ? this.store.query(this.query) : this.store.getChildren(parent));
+				return ((parent == this.root) ? this.store.query(this.query, this.options)
+				                              : this.store.getChildren(parent, this.options));
 			}, onComplete, onError );
 		},
 
@@ -206,7 +207,7 @@ define(["module",               // module.id
 		// Internal event listeners.
 
 		_onSetItem: function (/*dojo.store.item*/ storeItem, /*string*/ property, /*AnyType*/ oldValue,
-													/*AnyType*/ newValue) {
+							  /*AnyType*/ newValue) {
 
 			// If the property that changed is part of the root query go check if the
 			// item attached to or detached from the root.

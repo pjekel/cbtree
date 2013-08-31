@@ -38,7 +38,7 @@ define(["module",								  // module.id
 		//		restrictions:
 		//
 		//		1 - Each model derived from BaseStoreModel MUST implement their own
-		//				getChildren() method.
+		//			getChildren() method.
 
 	var CBTError = createError( module.id );		// Create the CBTError type.
 	var undef;
@@ -80,6 +80,11 @@ define(["module",								  // module.id
 		// example:
 		//		{type:'continent'}
 		query: null,
+
+		// options: Object
+		// 		A JavaScript key:value pairs object. Currently this object is only
+		//		passed to the store query.
+		options: null,
 
 		// rootLabel: String
 		//		Alternative label for the root item
@@ -129,7 +134,7 @@ define(["module",								  // module.id
 
       this._childrenCache = {};
       this._objectCache   = {};
-			this._obsHandles    = {};
+	  this._obsHandles    = {};
       this._methods       = {};
 
       this._eventable     = false;
@@ -148,7 +153,7 @@ define(["module",								  // module.id
 			declare.safeMixin(this, kwArgs);
 
 			var props = ["add", "put", "get", "load", "hasChildren", "getChildren", "getParents",
-									 "addParent", "query", "removeParent", "queryEngine", 
+									 "addParent", "query", "removeParent", "queryEngine",
 									 "notify", "emit", "dispatchEvent",
 									 "isItem", "ready"
 									];
@@ -182,8 +187,7 @@ define(["module",								  // module.id
 						case "dispatchEvent":
 						case "emit":								// Eventable store
 							if (store.eventable === true) {
-								this._evtHandles = store.on( "change, delete, new", 
-																				lang.hitch(this, this._onStoreEvent));
+								this._evtHandles = store.on( "change, delete, new",	lang.hitch(this, this._onStoreEvent));
 								this._observable = false;	// evented takes precedence
 								this._eventable	= true;
 							}
@@ -205,11 +209,11 @@ define(["module",								  // module.id
 					switch (prop) {
 						case "getChildren":
 							if (typeof store["query"] == "function") {
-								var funcBody = "return this.query({"+this.parentProperty+": this.getIdentity(object)});"
-								store.getChildren = new Function("object", funcBody);
+								var funcBody = "return this.query({"+this.parentProperty+": this.getIdentity(object)}, options);"
+								store.getChildren = new Function(["object", "options"], funcBody);
 							} else {
 								throw new CBTError( "MethodMissing", "constructor", "store MUST support getChildren()" +
-																		" or query() method");
+													" or query() method");
 							}
 							break;
 						case "isItem":
@@ -247,7 +251,7 @@ define(["module",								  // module.id
 			//		Called by dojo/_base/declare after all chained constructors have
 			//		been called.
 			// tag:
-			//		
+			//
 			// step 4: Finally trigger a store load....
 			this.inherited(arguments);
 			this._loadStore( this._loadOptions );
@@ -273,7 +277,7 @@ define(["module",								  // module.id
 			}
 			return this.checkedAttr;
 		},
-		
+
 		// =======================================================================
 		// cbtree/model/Model API methods
 
@@ -413,16 +417,16 @@ define(["module",								  // module.id
 			var self = this;
 
 			if (this.root) {
-				when( this._storeReady, function () {				
+				when( this._storeReady, function () {
 					onItem(self.root);
 				});
 			} else {
 				if (this._methods.query) {
 					when( this._storeReady, function () {
-						var result = self.store.query(self.query);
+						var result = self.store.query(self.query, self.options);
 						when(result, function (items) {
 							if (items.length != 1) {
-								throw new CBTError( "InvalidResponse", "getRoot", 
+								throw new CBTError( "InvalidResponse", "getRoot",
 																		 "Root query returned %{0} items, but must return exactly one",
 																		 items.length );
 							}
@@ -541,7 +545,7 @@ define(["module",								  // module.id
 			}
 			items.forEach (getDescendants);
 		},
-		
+
 		ready: function (/*Function?*/ callback,/*Function?*/ errback,/*thisArg*/ scope) {
 			// summary:
 			//		Execute the callback when the model is ready.  If an error is
@@ -561,7 +565,7 @@ define(["module",								  // module.id
 			//		Public
 			if (callback || errback) {
 				return this._modelReady.then(
-					callback ? lang.hitch( (scope || this), callback) : null, 
+					callback ? lang.hitch( (scope || this), callback) : null,
 					errback  ? lang.hitch( (scope || this), errback)  : null
 				);
 			}
@@ -784,7 +788,7 @@ define(["module",								  // module.id
 			);
 			this._deleteCacheEntry(id);
 			this.onDelete(item);
-			
+
 			this.getParents(item).then( function (parents) {
 				if (self.isChildOf(item, self.root)) {
 					self.onRootChange(item, "delete");
@@ -975,7 +979,7 @@ define(["module",								  // module.id
 
 		onReset: function () {
 			// summary:
-			//		Callback when the store was closed and explictly cleared. As a 
+			//		Callback when the store was closed and explictly cleared. As a
 			//		result the model is reset.
 		},
 
@@ -1014,10 +1018,10 @@ define(["module",								  // module.id
 			if (parents && parents.length) {
 				parents.forEach(function (parent) {
 					parentId = self.getIdentity(parent);
-					self._deleteCacheEntry(parentId);					
+					self._deleteCacheEntry(parentId);
 					self.getChildren(parent, function (children) {
 						self._onChildrenChange(parent, children.slice(0) );
-					}, 
+					},
 					function (err) {
 						console.error(err);		// At least log the error condition
 					});
@@ -1042,7 +1046,7 @@ define(["module",								  // module.id
 		},
 
 		_getChildren: function (/*Object*/ parent,/*Function*/ method,/*Function*/ onComplete,
-														 /*Function*/ onError) {
+								/*Function*/ onError) {
 			// summary:
 			//		The generic dispatcher for all instances of the getChildren() method.
 			//		The public getChildren() method is model and/or store specific however,
@@ -1074,7 +1078,7 @@ define(["module",								  // module.id
 				}
 				// Call user specified method to fetch the children
 				self._childrenCache[id] = result = method.call(self, parent, id);
-				
+
 				if (!this._objectCache[id]) {
 					this._objectCache[id] = lang.mixin(null, parent);
 				}
@@ -1155,17 +1159,17 @@ define(["module",								  // module.id
 
 				this._loadRequested = true;
 				this.state = "loading";
-				
+
 				promList = [
-					loader.call(this.store, options), 
+					loader.call(this.store, options),
 					ready.call(this.store)
 				];
-				
+
 				this._loadPromise = all(promList).always( function() {
 					return when (ready.call(model.store), function () {
 						model._storeReady.resolve();
 						//	Go validate the store
-						model._validateStore().then ( 
+						model._validateStore().then (
 							function () {
 								model._modelReady.resolve();
 								model.state = "active";

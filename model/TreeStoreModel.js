@@ -4,9 +4,9 @@
 //
 //	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//	1 - BSD 2-Clause				(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License	(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["dojo/_base/declare",		// declare
 				"dojo/_base/lang",			// when()
@@ -41,7 +41,7 @@ define(["dojo/_base/declare",		// declare
 			//		public
 
 			this._getChildren( parent, function (parent, id) {
-				return this.store.getChildren(parent);
+				return this.store.getChildren(parent, this.options);
 			}, onComplete, onError );
 		},
 
