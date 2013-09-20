@@ -746,7 +746,7 @@ define(["module",
 				children.forEach(function (child) {
 					this.collapseUnchecked(child);
 				}, this);
-				if (node.item.checked === false) {
+				if (this.model.getChecked(node.item) === false) {
 					this._collapseNode(node);
 				}
 			}
@@ -770,7 +770,7 @@ define(["module",
 			// tag:
 			//		public
 			node = node || this.rootNode;
-			if (node && node.isExpandable && node.item.checked) {
+			if (node && node.isExpandable && this.model.getChecked(node.item)) {
 				if (!node.isExpanded) {
 					this._expandNode(node);
 				}
