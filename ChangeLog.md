@@ -1,3 +1,32 @@
+# cbtree 0.9.3-3
+### New Features:
+* A new property, **_branchCheckBox_**, has been added to the tree. The **_branchCheckBox_**
+property controls if checkboxes will be displayed for tree branches. The default is `true`.
+if set to `false` the branch checkboxes will be hidden but still available for checking their
+state.
+
+* Tree Nodes can now be sorted using the new **_options_** property of the store models:
+```javascript
+var mySortOptions = {sort: [
+  {attribute: "name", descending: true, ignoreCase: true},
+  {attribute: "hair", ignoreCase: true},
+  {attribute: "age"}
+]};
+var model = new TreeStoreModel( { store: store,
+                                  query: {name: "Root"},
+                                  options: {sort: mySortOptions}
+                                });
+```
+For a detailed description of this new feature and the ABNF definition of the **_options_**
+property please refer to the
+[cbtree Wiki](https://github.com/pjekel/cbtree/wiki/CheckBox-Tree-Usage#sorting-tree-nodes)
+
+
+### Bug Fixes:
+* When the **_checkAttr_** property on the store model is set to anything other than the
+default 'checked', both the expandChecked() and collapseUnChecked() method did not work
+as documented. Issue #35: [expandChecked()](https://github.com/pjekel/cbtree/issues/35)
+
 # cbtree 0.9.3-2
 
 ### Enhancements:

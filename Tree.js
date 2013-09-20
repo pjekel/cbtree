@@ -196,10 +196,13 @@ define(["module",
 				if (this._checkBox) {
 					this._checkBox.name = this._checkBox.id;
 					this._checkBox.item = this.item;
-					if (typeof this._widget.postCreate == "function") {
-						lang.hitch(this._checkBox, this._widget.postCreate)(this);
+
+					if (!this.isExpandable || this.tree.branchCheckBox) {
+						if (typeof this._widget.postCreate == "function") {
+							lang.hitch(this._checkBox, this._widget.postCreate)(this);
+						}
+						domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
 					}
-					domConstruct.place(this._checkBox.domNode, this.checkBoxNode, 'replace');
 				}
 			}
 			if (this._checkBox) {
@@ -325,6 +328,12 @@ define(["module",
 
 		//==============================
 		// Parameters to constructor
+
+		// branchCheckBox: Boolean
+		// 		If true, the checkbox associated with a tree branch will be displayed,
+		//		otherwise the checkbox will be hidden but still available for checking
+		//		its state.
+		branchCheckBox: true,
 
 		// branchIcons: Boolean
 		//		Determines if the FolderOpen/FolderClosed icon or their custom equivalent
@@ -769,8 +778,14 @@ define(["module",
 			//		The tree node the expand. If omitted the tree root node is used.
 			// tag:
 			//		public
-			node = node || this.rootNode;
-			if (node && node.isExpandable && this.model.getChecked(node.item)) {
+			var expand = false;
+
+			if (!node) {
+				node   = this.rootNode;
+				expand = !node._checkBox;
+			}
+
+			if (node && node.isExpandable && (expand || this.model.getChecked(node.item))) {
 				if (!node.isExpanded) {
 					this._expandNode(node);
 				}
