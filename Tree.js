@@ -31,7 +31,7 @@ define(["module",
 				 createError) {
 
 	// module:
-	//		cbtree/Tree
+	//		cbtree/Tree 0.9.3-3
 	// note:
 	//		This implementation is compatible with dojo 1.8 and 1.9
 

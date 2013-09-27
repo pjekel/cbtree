@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>The CheckBox Tree</title>
+    <style type="text/css">
+      @import "../../../dijit/themes/claro/claro.css";
+      @import "../../themes/claro/claro.css";
+    </style>
+
+    <script type="text/javascript">
+      var dojoConfig = {async: true, parseOnLoad: true, baseUrl: "../../../",
+            packages: [
+              { name: "dojo",  location: "dojo" },
+              { name: "dijit", location: "dijit" },
+              { name: "cbtree",location: "cbtree" }
+            ]
+      };
+    </script>
+
+    <script type="text/javascript" src="../../../dojo/dojo.js"></script>
+    <script type="text/javascript">
+      require(["dojo/ready",
+               "cbtree/Tree",
+               "cbtree/model/ForestStoreModel",
+               "cbtree/store/ObjectStore"
+              ], function( ready, Tree, StoreModel, ObjectStore) {
+
+		var data = [
+			{ name:"Root", parent:[] },
+
+			{ name:"Lisa", parent:["Homer","Marge"], visible: true},
+			{ name:"Bart", parent:["Homer","Marge"], visible: true},
+			{ name:"Maggie", parent:["Homer","Marge"], visible: true, checked: true},
+
+			{ name:"Patty", parent:["Jacqueline"], visible: true},
+			{ name:"Selma", parent:["Jacqueline"], visible: true},
+
+			{ name:"Rod", parent:["Ned"], visible: true},
+			{ name:"Todd", parent:["Ned"], visible: true},
+
+			{ name:"Abe", parent:["Root"], visible: true},
+			{ name:"Mona", parent:["Root"], visible: true},
+			{ name:"Jacqueline", parent:["Root"], visible: true},
+			{ name:"Homer", parent:["Abe","Mona"], visible: true},
+			{ name:"Marge", parent:["Jacqueline"], visible: true},
+			{ name:"Ned", parent:["Root"], visible: true},
+
+			{ name:"Apu", parent:["Root"], visible: true},
+			{ name:"Manjula", parent:["Apu"], visible: true}
+		]
+
+		var store = new ObjectStore({data: data, idProperty:"name"});
+        var model = new StoreModel({store: store, query: {visible: true}});
+        var tree = new Tree({model: model}, "CheckboxTree");
+
+        ready(function(){
+			// On click event change 'visible' property
+			tree.on("click", function (item, node, evt) {
+				item.visible = false;
+				store.put(item);
+				// mimic some external control
+				setTimeout(function () {
+					item.visible = true;
+					store.put(item);
+				}, 2000);
+			});
+			tree.startup();
+	});
+        });
+      </script>
+
+  </head>
+
+  <body class="claro">
+    <div id="CheckboxTree">
+    </div>
+  </body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>The CheckBox Tree with an Eventable Store and custom data handler.</title>
+    <style type="text/css">
+      @import "../../../dijit/themes/claro/claro.css";
+      @import "../../../dijit/themes/claro/document.css";
+      @import "../../../dijit/tests/css/dijitTests.css";
+      @import "../../themes/claro/claro.css";
+    </style>
+
+    <script type="text/javascript">
+      var dojoConfig = {
+            async: true,
+            parseOnLoad: true,
+            isDebug: false,
+            baseUrl: "../../../",
+            packages: [
+              { name: "dojo",  location: "dojo" },
+              { name: "dijit", location: "dijit" },
+              { name: "cbtree",location: "cbtree" }
+            ]
+      };
+    </script>
+
+    <script type="text/javascript" src="../../../dojo/dojo.js"></script>
+    <script type="text/javascript">
+      require([
+        "dojo/_base/lang",
+        "dojo/json",
+        "dojo/ready",
+        "cbtree/Tree",                        // Checkbox tree
+        "cbtree/model/ForestStoreModel",        // Object Store Tree Model
+				"cbtree/model/StoreModel-EXT",
+        "cbtree/store/ObjectStore",           // Eventable Object Store with Hierarchy
+//        "cbtree/store/Hierarchy",           // Evented Object Store with Hierarchy
+//        "cbtree/store/Memory",           // Evented Object Store with Hierarchy
+//				"dojo/store/Memory",
+        "cbtree/store/handlers/ifrsHandler",   // IFRS Data Handler.
+				"cbtree/store/Eventable"
+        ], function( lang, JSON, ready, Tree, ObjectStoreModel, api, ObjectStore, ifrsHandler, Eventable) {
+
+					// Create an object store and register a custom data handler.
+//          var store = new ObjectStore( { url:"../../data/json/Simpsons.json",
+//          var store = new ObjectStore( { url:"../../store/json/Simpsons.json",
+//          var store = new ObjectStore( { url:"/js/datastore/TEST_JSON_1000.json",
+          var store = new ObjectStore( { url:"/js/datastore/TEST_JSON_2500.json",
+																					defaultProperties: {checked:false},
+//																					indexChildren: false,
+                                          idProperty:"name",
+                                          handleAs: "ifrs",
+                                          dataHandler: {
+                                            handler: ifrsHandler,
+                                            options: {
+//																							idProperty:"id"
+                                            }
+                                          }
+                                         });
+//					store = Eventable(store);
+          var model = new ObjectStoreModel( { store: store,
+                                               query: {type: "2"},
+//                                               query: {type: "computer"},
+//                                               query: {type: "parent"},
+                                               rootLabel: "The Simpsons",
+                                               checkedRoot: true
+                                             });
+
+					model.on("change", function (evt) {
+//console.log( "itemChange" );
+					});
+
+					model.on("dataValidated", function (evt) {
+console.log( "validated" );
+					});
+
+					model.on( "rootChange", function (evt) {
+console.log( evt.action );
+					});
+
+          function checkBoxClicked( item, nodeWidget, event ) {
+            // Do something when a checkbox is clicked...
+//						this.addParent( item, this.root );
+						console.log("Bingo");
+          }
+
+          ready(function(){
+            var tree = new Tree( { model: model, id: "FamilyTree", checkBoxes: true }, "CheckboxTree" );
+						tree.on( "checkBoxClick", checkBoxClicked);
+						tree.on("load", function() {
+							console.log("Tree Loaded");
+						});
+            tree.startup();
+          });
+        });
+      </script>
+
+  </head>
+
+  <body class="claro">
+    <h1 class="DemoTitle">The CheckBox Tree with Multi State CheckBoxes</h1>
+    <p>
+			A CheckBox Tree using a cbtree/store ObjectStore with a custom CSV data handler.<br/>
+			The store loads an rfc4180 compliant CSV file using a URL<br/>
+    </p>
+    <div id="CheckboxTree">
+    </div>
+  </body>
+</html>
