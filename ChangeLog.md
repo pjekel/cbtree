@@ -1,4 +1,4 @@
-# cbtree 0.9.3-3
+# cbtree 0.9.3-3 (Oct 2013)
 ### New Features:
 * A new property, **_branchCheckBox_**, has been added to the tree. The **_branchCheckBox_**
 property controls if checkboxes will be displayed for tree branches. The default is `true`.
@@ -25,7 +25,7 @@ property please refer to the
 ### Bug Fixes:
 * When the **_checkAttr_** property on the store model is set to anything other than the
 default 'checked', both the expandChecked() and collapseUnChecked() method did not work
-as documented. Issue #35: [expandChecked()](https://github.com/pjekel/cbtree/issues/35)
+as documented. Issue #36: [expandChecked()](https://github.com/pjekel/cbtree/issues/36)
 
 # cbtree 0.9.3-2
 
