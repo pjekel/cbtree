@@ -8,9 +8,9 @@ state.
 * Tree Nodes can now be sorted using the new **_options_** property of the store models:
 ```javascript
 var mySortOptions = {sort: [
-  {attribute: "name", descending: true, ignoreCase: true},
-  {attribute: "hair", ignoreCase: true},
-  {attribute: "age"}
+    {attribute: "name", descending: true, ignoreCase: true},
+    {attribute: "hair", ignoreCase: true},
+    {attribute: "age"}
 ]};
 var model = new TreeStoreModel( { store: store,
                                   query: {name: "Root"},
