@@ -140,7 +140,7 @@
 	*
 	*				http://httpd.apache.org/docs/2.2/howto/cgi.html
 	*
-	*	NOTE:	
+	*	NOTE:
 	*
 	*		When using the ANSI-C CGI implementation no PHP support is required.
 	*
@@ -203,24 +203,24 @@
 	***************************************************************************************/
 
 	// Define the possible HTTP result codes returned by this application.
-	define( "HTTP_V_OK",				 200);
-	define( "HTTP_V_NO_CONTENT",		 204);
-	define( "HTTP_V_BAD_REQUEST",		 400);
-	define( "HTTP_V_UNAUTHORIZED",		 401);
-	define( "HTTP_V_FORBIDDEN",			 403);
-	define( "HTTP_V_NOT_FOUND",			 404);
+	define( "HTTP_V_OK",                 200);
+	define( "HTTP_V_NO_CONTENT",         204);
+	define( "HTTP_V_BAD_REQUEST",        400);
+	define( "HTTP_V_UNAUTHORIZED",       401);
+	define( "HTTP_V_FORBIDDEN",	         403);
+	define( "HTTP_V_NOT_FOUND",          404);
 	define( "HTTP_V_METHOD_NOT_ALLOWED", 405);
-	define( "HTTP_V_CONFLICT",			 409);
-	define( "HTTP_V_GONE",				 410);
-	define( "HTTP_V_SERVER_ERROR",		 500);
+	define( "HTTP_V_CONFLICT",           409);
+	define( "HTTP_V_GONE",               410);
+	define( "HTTP_V_SERVER_ERROR",       500);
 
 	$docRoot = $_SERVER["DOCUMENT_ROOT"];
 
 	$relPath = "";
-	$method	= null;
-	$files	 = null;
-	$total	 = 0;
-	$status	 = 0;
+	$method  = null;
+	$files   = null;
+	$total   = 0;
+	$status  = 0;
 
 	$method = $_SERVER["REQUEST_METHOD"];
 
@@ -233,7 +233,7 @@
 	}
 
 	// Validate the HTTP QUERY-STRING parameters
-	$args	= getArguments($method, $status);
+	$args = getArguments($method, $status);
 	if ($args == null ) {
 		cgiResponse( HTTP_V_BAD_REQUEST, "Bad Request", "Malformed query arguments." );
 		return;
@@ -258,10 +258,10 @@
 				$files = deleteFile( $fullPath, $rootDir, $args, $status );
 				if ($files) {
 					// Compile the final result
-					$result							= new stdClass();
-					$result->total			= count($files);
-					$result->status			= $status;
-					$result->items			= $files;
+					$result         = new stdClass();
+					$result->total  = count($files);
+					$result->status = $status;
+					$result->items  = $files;
 
 					header("Content-Type: text/json");
 					print( json_encode($result) );
@@ -275,10 +275,10 @@
 				if ($files) {
 					$total = count($files);
 					// Compile the final result
-					$result							= new stdClass();
-					$result->total			= $total;
-					$result->status			= $total ? HTTP_V_OK : HTTP_V_NO_CONTENT;
-					$result->items			= $files;
+					$result         = new stdClass();
+					$result->total  = $total;
+					$result->status = $total ? HTTP_V_OK : HTTP_V_NO_CONTENT;
+					$result->items  = $files;
 
 					header("Content-Type: text/json");
 					print( json_encode($result) );
@@ -291,10 +291,10 @@
 				$files = renameFile( $fullPath, $rootDir, $args, $status );
 				// Compile the final result
 				if ($status == HTTP_V_OK) {
-					$result							= new stdClass();
-					$result->total			= count($files);
-					$result->status			= $status;
-					$result->items			= $files;
+					$result         = new stdClass();
+					$result->total  = count($files);
+					$result->status = $status;
+					$result->items  = $files;
 
 					header("Content-Type: text/json");
 					print( json_encode($result) );
@@ -320,7 +320,7 @@
 	function cgiMethodAllowed( /*string*/ $method ) {
 		$allowed = "GET," . getenv("CBTREE_METHODS");
 		$methods = explode(",", $allowed);
-		$count	 = count($methods);
+		$count   = count($methods);
 
 		for ($i = 0;$i<$count; $i++) {
 			if ($method == trim($methods[$i])) {
@@ -365,7 +365,7 @@
 		chmod($dirPath, 0777);
 
 		if( ($dirHandle = opendir($dirPath)) ) {
-			$files	 = array();
+			$files = array();
 
 			while($file = readdir($dirHandle)) {
 				if ($file != "." && $file != "..") {
@@ -373,8 +373,8 @@
 					$filePath = $dirPath . "/" . $file;
 					if (is_dir($filePath)) {
 						$children = _deleteDirectory( $filePath, $rootDir, $args, $stat );
-						$files		= array_merge( $files, $children );
-						$result	 = rmdir( $filePath );
+						$files    = array_merge( $files, $children );
+						$result   = rmdir( $filePath );
 					} else {
 						chmod($path, 0666);
 						$result = unlink($filePath);
@@ -407,13 +407,13 @@
 	**/
 	function deleteFile( /*string*/$filePath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
 		if( file_exists( $filePath ) ) {
-			$status	 = HTTP_V_OK;
-			$files		 = array();
-			$uri			 = parsePath( $filePath, $rootDir );
+			$status   = HTTP_V_OK;
+			$files    = array();
+			$uri      = parsePath( $filePath, $rootDir );
 			$fileInfo = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
 
 			if (is_dir($filePath)) {
-				$files	= _deleteDirectory( $filePath, $rootDir, $args, $stat );
+				$files  = _deleteDirectory( $filePath, $rootDir, $args, $stat );
 				$result = rmdir( $filePath );
 			} else {
 				chmod($filePath, 0666);
@@ -463,23 +463,23 @@
 	**/
 	function fileToStruct( /*string*/$dirPath, /*string*/$rootDir, /*string*/$filename, /*object*/$args ) {
 		$fullPath = $dirPath . "/" . $filename;
-		$atts		 = stat( $fullPath );
+		$atts     = stat( $fullPath );
 
-		$relPath	= "./" . substr( $fullPath, (strlen($rootDir)+1) );
-		$relPath	= trim( str_replace( "\\", "/", $relPath ), "/");
+		$relPath  = "./" . substr( $fullPath, (strlen($rootDir)+1) );
+		$relPath  = trim( str_replace( "\\", "/", $relPath ), "/");
 
-		$fileInfo							= new stdClass();
-		$fileInfo->name			 = $filename;
-		$fileInfo->path				= $relPath;
-		$fileInfo->modified	 = $atts[9];
+		$fileInfo           = new stdClass();
+		$fileInfo->name     = $filename;
+		$fileInfo->path     = $relPath;
+		$fileInfo->modified = $atts[9];
 
 		if (is_dir($fullPath)) {
 			$fileInfo->directory = true;
 			$fileInfo->children	= array();
-			$fileInfo->_EX			 = false;
-			$fileInfo->size			= 0;
+			$fileInfo->_EX  = false;
+			$fileInfo->size = 0;
 		} else {
-			$fileInfo->size			= filesize($fullPath);
+			$fileInfo->size = filesize($fullPath);
 		}
 		return $fileInfo;
 	}
@@ -502,14 +502,14 @@
 	function getArguments( $method, /*integer*/&$status ) {
 
 		$status	= HTTP_V_BAD_REQUEST;		// Lets assume its a malformed query string
-		$_ARGS	= null;
+		$_ARGS  = null;
 
-		$args										= new stdClass();
-		$args->authToken				= null;
-		$args->basePath					= "";
-		$args->deep						 = false;
-		$args->path						 = null;
-		$args->showHiddenFiles	= false;
+		$args                  = new stdClass();
+		$args->authToken       = null;
+		$args->basePath        = "";
+		$args->deep            = false;
+		$args->path            = null;
+		$args->showHiddenFiles = false;
 
 		switch ($method) {
 			case "DELETE":
@@ -522,8 +522,8 @@
 			case "GET":
 				$_ARGS = $_GET;
 
-				$args->ignoreCase			 = false;
-				$args->rootDir					= "";
+				$args->ignoreCase = false;
+				$args->rootDir    = "";
 
 				// Get the 'options' and 'queryOptions' first before processing any other parameters.
 				if (array_key_exists("options", $_ARGS)) {
@@ -560,10 +560,10 @@
 			case "POST":
 				$_ARGS = $_POST;
 
-				$args->newValue	= null;
+				$args->newValue = null;
 
 				if( !array_key_exists("newValue", $_ARGS) ||
-						!array_key_exists("path", $_ARGS)) {
+					!array_key_exists("path", $_ARGS)) {
 					return null;
 				}
 				if (is_string($_ARGS['newValue'])) {
@@ -659,8 +659,8 @@
 	**/
 	function getFile( /*string*/$filePath, /*string*/$rootDir, /*object*/$args, /*number*/&$status ) {
 		if( file_exists( $filePath ) ) {
-			$files		 = array();
-			$uri			 = parsePath( $filePath, $rootDir );
+			$files    = array();
+			$uri      = parsePath( $filePath, $rootDir );
 			$fileInfo = fileToStruct( $uri->dirPath, $rootDir, $uri->filename, $args );
 
 			if (!fileFilter( $fileInfo, $args )) {
@@ -697,17 +697,17 @@
 		$fullPath = str_replace( "\\", "/", $fullPath );
 		$fullPath = realURL( $fullPath );
 
-		$lsegm		= strrpos($fullPath,"/");
+		$lsegm    = strrpos($fullPath,"/");
 		$filename = substr( $fullPath, ($lsegm ? $lsegm + 1 : 0));
-		$dirPath	= substr( $fullPath, 0, $lsegm);
+		$dirPath  = substr( $fullPath, 0, $lsegm);
 
-		$relPath	= substr( $fullPath, (strlen($rootDir)+1));
-		$relPath	= trim( ("./" . $relPath), "/" );
+		$relPath  = substr( $fullPath, (strlen($rootDir)+1));
+		$relPath  = trim( ("./" . $relPath), "/" );
 
-		$uri						 = new stdClass();
-		$uri->relPath		= $relPath;
-		$uri->dirPath		= $dirPath;
-		$uri->filename	= $filename;
+		$uri           = new stdClass();
+		$uri->relPath  = $relPath;
+		$uri->dirPath  = $dirPath;
+		$uri->filename = $filename;
 
 		return $uri;
 	}
@@ -761,7 +761,7 @@
 			}
 			$segm = substr( $path, 0, $pos );
 			$path = substr( $path, $pos );
-			$url	= $url . $segm;
+			$url  = $url . $segm;
 
 		} while( $path != $p );
 		return str_replace( "//", "/", $url );
