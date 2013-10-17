@@ -6,208 +6,213 @@
 	*		The cbtree FileStore Server Side Application (cbtreeFileStore.php) is released under
 	*		to following license:
 	*
-	*			BSD 2-Clause		(http://thejekels.com/cbtree/LICENSE)
+	*			BSD 2-Clause	(http://thejekels.com/cbtree/LICENSE)
 	*
 	*	@author		Peter Jekel
 	*
-	*	@date			12/01/2012
+	*	@date		12/01/2012
 	*
 	*	@version	1.2
 	*
 	*	History:
 	*
-	*		1.2			12/01/12	Path and BasePath parameters can now be a quoted string.
-	*		1.1			08/01/12	Removed handling of queries and sorting, improved performance,
-	*											reduced the overall JSON response sizes.
-	*		1.0			07/01/12	Initial release
+	*		1.2		12/01/12	Path and BasePath parameters can now be a quoted string.
+	*		1.1		08/01/12	Removed handling of queries and sorting, improved performance,
+	*							reduced the overall JSON response sizes.
+	*		1.0		07/01/12	Initial release
 	*
 	*****************************************************************************************
 	*
-	*		Description:
+	*	Description:
 	*
-	*			This file contains the server side application required	to enable the dojo
-	*			cbtree FileStore and is part of the github project 'cbtree'. Your server MUST
-	*			provide support for PHP applications in order for it to work properly.
-	*			Alternatively, an ANSI-C CGI application is also available. See the notes on
-	*			performance below.
+	*		This file contains the server side application required to enable the dojo
+	*		cbtree FileStore and is part of the github project 'cbtree'. Your server MUST
+	*		provide support for PHP applications in order for it to work properly.
+	*		Alternatively, an ANSI-C CGI application is also available. See the notes on
+	*		performance below.
 	*
-	*			The cbtree FileStore.php application is invoked by means of a HTTP GET, DELETE
-	*			or POST request, the basic ABNF format of a request looks like:
+	*		The cbtree FileStore.php application is invoked by means of a HTTP GET, DELETE
+	*		or POST request, the basic ABNF format of a request looks like:
 	*
-	*				HTTP-request	::= uri ('?' query-string)?
-	*				query-string	::= (qs-param ('&' qs-param)*)?
-	*				qs-param			::= authToken | basePath | path | query | queryOptions | options
-	*				authToken			::= 'authToken' '=' json-object
-	*				basePath			::= 'basePath' '=' path-rfc3986
-	*				path					::= 'path' '=' path-rfc3986
-	*				query-options ::= 'queryOptions' '=' json-object
-	*				options				::= 'options' '=' json-array
+	*			HTTP-request  ::= uri ('?' query-string)?
+	*			query-string  ::= (qs-param ('&' qs-param)*)?
+	*			qs-param      ::= authToken | basePath | path | query | queryOptions | options
+	*			authToken     ::= 'authToken' '=' json-object
+	*			basePath      ::= 'basePath' '=' path-rfc3986
+	*			path          ::= 'path' '=' path-rfc3986
+	*			query-options ::= 'queryOptions' '=' json-object
+	*			options       ::= 'options' '=' json-array
 	*
-	*			Please refer to http://json.org for the correct JSON encoding of the
-	*			parameters.
+	*		Please refer to http://json.org for the correct JSON encoding of the
+	*		parameters.
 	*
-	*		NOTE:		Configuration of your server for either PHP or CGI support is beyond
-	*						the scope of this document.
-	*
-	****************************************************************************************
-	*
-	*		QUERY-STRING Parameters:
-	*
-	*			authToken:
-	*
-	*				The authToken parameter is a JSON object. There are no restrictions with
-	*				regards to the content of the object. (currently not used).
-	*
-	*			basePath:
-	*
-	*				The basePath parameter is a URI reference (rfc 3986) relative to the server's
-	*				document root used to compose the root directory as follows:
-	*
-	*					root-dir ::= document_root '/' basePath?
-	*
-	*			path:
-	*
-	*				The path parameter is used to specify a specific location relative to the
-	*				above mentioned root_dir. Therfore, the full search path is:
-	*
-	*					full-path = root_dir '/' path?
-	*
-	*			queryOptions:
-	*
-	*				The queryOptions parameter specifies a set of JSON 'property:value' pairs
-	*				used during the file search. Currently two properties are supported: "deep"
-	*				and "ignoreCase". Property deep indicates if a recursive search is required
-	*				whereas ignoreCase indicates if values are to be compared case insensitive/
-	*
-	*				Example:	queryOptions={"deep":true, "ignorecase":true}
-	*
-	*			options:
-	*
-	*				The options parameter is a JSON array of strings. Each string specifying a
-	*				search options to be enabled. Currently the following option is supported:
-	*				"showHiddenFiles".
-	*
-	*				Example:	options=["showHiddenFiles"]
+	*	NOTE:
+	*		Configuration of your server for either PHP or CGI support is beyond
+	*		the scope of this document.
 	*
 	****************************************************************************************
 	*
-	*		ENVIRONMENT VARIABLE:
+	*	QUERY-STRING Parameters:
 	*
-	*			CBTREE_BASEPATH
+	*		authToken:
 	*
-	*				The basePath is a URI reference (rfc 3986) relative to the server's
-	*				document root used to compose the root directory.	If this variable
-	*				is set it overwrites the basePath parameter in any query string and
-	*				therefore becomes the server wide basepath.
+	*			The authToken parameter is a JSON object. There are no restrictions with
+	*			regards to the content of the object. (currently not used).
 	*
-	*					CBTREE_BASEPATH /myServer/wide/path
+	*		basePath:
 	*
-	*			CBTREE_METHODS
+	*			The basePath parameter is a URI reference (rfc 3986) relative to the server's
+	*			document root used to compose the root directory as follows:
 	*
-	*				A comma separated list of HTTP methods to be supported by the Server
-	*				Side Application. By default only HTTP GET is supported. Example:
+	*				root-dir ::= document_root '/' basePath?
 	*
-	*					CBTREE_METHODS GET,DELETE
+	*		path:
 	*
-	*		Notes:
+	*			The path parameter is used to specify a specific location relative to the
+	*			above mentioned root_dir. Therfore, the full search path is:
 	*
-	*			-	Some HTTP servers require	special configuration to make environment
-	*				variables available to	script or CGI application.	For example, the
-	*				Apache HTTP servers requires you to either use the SetEnv or PassEnv
-	*				directive. To make the environment variable CBTREE_METHODS available
-	*				add the following to your httpd.conf file:
+	*				full-path = root_dir '/' path?
 	*
-	*					SetEnv CBTREE_METHODS GET,DELETE
-	*											or
-	*					PassEnv CBTREE_METHODS
+	*		queryOptions:
 	*
-	*				(See http://httpd.apache.org/docs/2.2/mod/mod_env.html for details).
+	*			The queryOptions parameter specifies a set of JSON 'property:value' pairs
+	*			used during the file search. Currently two properties are supported: "deep"
+	*			and "ignoreCase". Property deep indicates if a recursive search is required
+	*			whereas ignoreCase indicates if values are to be compared case insensitive/
 	*
-	****************************************************************************************
+	*			Example:	queryOptions={"deep":true, "ignorecase":true}
 	*
-	*		PERFORMACE:
+	*		options:
 	*
-	*				If you plan on using this cbtreeFileStore	on large file systems with, for
-	*				example, a	checkbox tree that requires a strict parent-child relationship
-	*				it is highly recommended to use the ANSI-C CGI implementation instead, that
-	*				is, assuming your server is configured to provide CGI support.
-	*				PHP is an interpreter and relatively slow compared to native compiled CGI
-	*				applications. A Microsoft Windows version of the ANSI-C CGI application is
-	*				available.
+	*			The options parameter is a JSON array of strings. Each string specifying a
+	*			search options to be enabled. Currently the following option is supported:
+	*			"showHiddenFiles".
 	*
-	*				To configure an Apache HTTP server for CGI support please refer to:
-	*
-	*						http://httpd.apache.org/docs/2.2/howto/cgi.html
-	*
-	*		NOTE:	When using the ANSI-C CGI implementation no PHP support is required.
+	*			Example:	options=["showHiddenFiles"]
 	*
 	****************************************************************************************
 	*
-	*		SECURITY:
+	*	ENVIRONMENT VARIABLE:
 	*
-	*				Some	basic security issues are addressed	by this implementation.	For example,
-	*				only HTTP methods allowed are served. Malformed QUERY-STRING parameters are NOT
-	*				skipped and	ignored, instead they will result	in a 'Bad Request' response	to
-	*				the server/client. Requests to access files above the server's document root are
-	*				rejected returning the HTTP forbidden response (403).
+	*		CBTREE_BASEPATH
 	*
-	*		AUTHENTICATION:
+	*			The basePath is a URI reference (rfc 3986) relative to the server's
+	*			document root used to compose the root directory.  If this variable
+	*			is set it overwrites the basePath parameter in any query string and
+	*			therefore becomes the server wide basepath.
 	*
-	*				This application does NOT authenticate the calling party however, it does test
-	*				for, and retreives, a 'authToken' paramter if present.
+	*				CBTREE_BASEPATH /myServer/wide/path
 	*
-	*		NOTE:	This implementation will not list any files starting with a dot like .htaccess
-	*					unless explicitly requested. However it will NOT process .htaccess files.
-	*					Therefore, it is the user's responsibility not to include any private or other
-	*					hidden files in the directory tree accessible to this application.
+	*		CBTREE_METHODS
+	*
+	*			A comma separated list of HTTP methods to be supported by the Server
+	*			Side Application. By default only HTTP GET is supported. Example:
+	*
+	*				CBTREE_METHODS GET,DELETE
+	*
+	*	Notes:
+	*
+	*		Some HTTP servers require special configuration to  make environment
+	*		variables available to script or CGI application.   For example, the
+	*		Apache HTTP servers requires you to either use the SetEnv or PassEnv
+	*		directive. To make the environment variable CBTREE_METHODS available
+	*		add the following to your httpd.conf file:
+	*
+	*			SetEnv CBTREE_METHODS GET,DELETE
+	*									or
+	*			PassEnv CBTREE_METHODS
+	*
+	*		(See http://httpd.apache.org/docs/2.2/mod/mod_env.html for details).
+	*
+	****************************************************************************************
+	*
+	*	PERFORMACE:
+	*
+	*		If you plan on using this cbtreeFileStore  on large file systems with, for
+	*		example, a  checkbox tree that requires a strict parent-child relationship
+	*		it is highly recommended to use the ANSI-C CGI implementation instead, that
+	*		is, assuming your server is configured to provide CGI support.
+	*		PHP is an interpreter and relatively slow compared to native compiled CGI
+	*		applications. A Microsoft Windows version of the ANSI-C CGI application is
+	*		available.
+	*
+	*		To configure an Apache HTTP server for CGI support please refer to:
+	*
+	*				http://httpd.apache.org/docs/2.2/howto/cgi.html
+	*
+	*	NOTE:	
+	*
+	*		When using the ANSI-C CGI implementation no PHP support is required.
+	*
+	****************************************************************************************
+	*
+	*	SECURITY:
+	*
+	*		Some basic security issues are addressed by this implementation.  For example,
+	*		only HTTP methods allowed are served. Malformed QUERY-STRING parameters are NOT
+	*		skipped and	ignored, instead they will result	in a 'Bad Request' response	to
+	*		the server/client. Requests to access files above the server's document root are
+	*		rejected returning the HTTP forbidden response (403).
+	*
+	*	AUTHENTICATION:
+	*
+	*		This application does NOT authenticate the calling party however, it does test
+	*		for, and retreives, a 'authToken' paramter if present.
+	*
+	*	NOTE:
+	*
+	*		This implementation will not list any files starting with a dot like .htaccess
+	*		unless explicitly requested. However it will NOT process .htaccess files.
+	*		Therefore, it is the user's responsibility not to include any private or other
+	*		hidden files in the directory tree accessible to this application.
 	*
 	***************************************************************************************
 	*
-	*		RESPONSES:
+	*	RESPONSES:
 	*
-	*				Assuming a valid HTTP GET or DELETE request was received the response to
-	*				the client complies with the following ABNF notation:
+	*		Assuming a valid HTTP GET or DELETE request was received the response to
+	*		the client complies with the following ABNF notation:
 	*
-	*					response			::= '{' (totals ',')? (status ',')? file-list '}'
-	*					totals				 ::= '"total"' ':' number
-	*					status				::= '"status"' ':' status-code
-	*					status-code		::=	'200' | '204' | '401'
-	*					file-list			::= '"items"' ':' '[' file-info* ']'
-	*					file-info			::= '{' name ',' path ',' size ',' modified (',' directory)?
-	*														(',' oldPath)? (',' children ',' expanded)? '}'
-	*					path					::= '"path"' ':' json-string
-	*					name					::= '"name"' ':' json-string
-	*					size					::= '"size"' ':' number
-	*					modified			::= '"modified"' ':' number
-	*					directory			::= '"directory"' ':' ('true' | 'false')
-	*					oldPath				::= '"oldPath"' ':' json-string
-	*					children			::= '[' file-info* ']'
-	*					expanded			::= '"_EX"' ':' ('true' | 'false')
-	*					quoted-string ::= '"' CHAR* '"'
-	*					number				::= DIGIT+
-	*					DIGIT					::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+	*			response      ::= '{' (totals ',')? (status ',')? file-list '}'
+	*			totals        ::= '"total"' ':' number
+	*			status        ::= '"status"' ':' status-code
+	*			status-code   ::= '200' | '204' | '401'
+	*			file-list     ::= '"items"' ':' '[' file-info* ']'
+	*			file-info     ::= '{' name ',' path ',' size ',' modified (',' directory)?
+	*							(',' oldPath)? (',' children ',' expanded)? '}'
+	*			path          ::= '"path"' ':' json-string
+	*			name          ::= '"name"' ':' json-string
+	*			size          ::= '"size"' ':' number
+	*			modified      ::= '"modified"' ':' number
+	*			directory     ::= '"directory"' ':' ('true' | 'false')
+	*			oldPath       ::= '"oldPath"' ':' json-string
+	*			children      ::= '[' file-info* ']'
+	*			expanded      ::= '"_EX"' ':' ('true' | 'false')
+	*			quoted-string ::= '"' CHAR* '"'
+	*			number        ::= DIGIT+
+	*			DIGIT         ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 	*
-	*		Notes:
+	*	Notes:
 	*
-	*				-	The expanded property indicates if a deep search was performed on a
-	*					directory. Therefore, if expanded is true and children is empty we
-	*					are dealing with an empty directory and not a directory that hasn't
-	*					been searched/expanded yet. The expanded property is typically used
-	*					when lazy loading the file store.
+	*		The expanded property indicates if a deep search was performed on a
+	*		directory. Therefore, if expanded is true and children is empty we
+	*		are dealing with an empty directory and not a directory that hasn't
+	*		been searched/expanded yet. The expanded property is typically used
+	*		when lazy loading the file store.
 	*
 	***************************************************************************************/
 
 	// Define the possible HTTP result codes returned by this application.
-	define( "HTTP_V_OK",								 200);
-	define( "HTTP_V_NO_CONTENT",					204);
-	define( "HTTP_V_BAD_REQUEST",				400);
-	define( "HTTP_V_UNAUTHORIZED",				401);
-	define( "HTTP_V_FORBIDDEN",					403);
-	define( "HTTP_V_NOT_FOUND",					404);
-	define( "HTTP_V_METHOD_NOT_ALLOWED",	405);
-	define( "HTTP_V_CONFLICT",						409);
-	define( "HTTP_V_GONE",								410);
-	define( "HTTP_V_SERVER_ERROR",				500);
+	define( "HTTP_V_OK",				 200);
+	define( "HTTP_V_NO_CONTENT",		 204);
+	define( "HTTP_V_BAD_REQUEST",		 400);
+	define( "HTTP_V_UNAUTHORIZED",		 401);
+	define( "HTTP_V_FORBIDDEN",			 403);
+	define( "HTTP_V_NOT_FOUND",			 404);
+	define( "HTTP_V_METHOD_NOT_ALLOWED", 405);
+	define( "HTTP_V_CONFLICT",			 409);
+	define( "HTTP_V_GONE",				 410);
+	define( "HTTP_V_SERVER_ERROR",		 500);
 
 	$docRoot = $_SERVER["DOCUMENT_ROOT"];
 
@@ -238,7 +243,7 @@
 		// Your authentication may go here....
 	}
 
-	$rootDir	= str_replace( "\\","/", realPath( $docRoot . "/" . $args->basePath ));
+	$rootDir  = str_replace( "\\","/", realPath( $docRoot . "/" . $args->basePath ));
 	$fullPath = str_replace( "\\","/", realPath( $rootDir . "/" . $args->path ));
 
 	if ($rootDir && $fullPath) {
@@ -303,14 +308,14 @@
 	}
 
 	/**
-	*		cgiMethodAllowed
+	*	cgiMethodAllowed
 	*
-	*			Returns true if the HTTP method is allowed, that is, supported by this
-	*			application. (See the description 'ENVIRONMENT VARIABLE' above).
+	*		Returns true if the HTTP method is allowed, that is, supported by this
+	*		application. (See the description 'ENVIRONMENT VARIABLE' above).
 	*
-	*		@param	method				Method name string.
+	*	@param	method				Method name string.
 	*
-	*		@return		true or false
+	*	@return		true or false
 	**/
 	function cgiMethodAllowed( /*string*/ $method ) {
 		$allowed = "GET," . getenv("CBTREE_METHODS");
@@ -326,9 +331,9 @@
 	}
 
 	/**
-	*		cgiResponse
+	*	cgiResponse
 	*
-	*			Sends a CGI response back to the caller.
+	*		Sends a CGI response back to the caller.
 	*
 	*	@param	status					HTTP result code
 	*	@param	statText				HTTP reason phrase.
@@ -343,15 +348,15 @@
 	}
 
 	/**
-	*		_deleteDirectory
+	*	_deleteDirectory
 	*
-	*			Delete a directory including its content. All successfully deleted files
-	*			are returned as an array of strings.
+	*		Delete a directory including its content. All successfully deleted files
+	*		are returned as an array of strings.
 	*
-	*	@param	dirPath					Directory path string
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 204 or 404).
+	*	@param	dirPath			Directory path string
+	*	@param	rootDir			Root directory
+	*	@param	args			HTTP QUERY-STRING arguments decoded.
+	*	@param	status			Receives the final result (200, 204 or 404).
 	*
 	*	@return		An array of FILE_INFO objects or NULL in case no match was found.
 	**/
@@ -389,14 +394,14 @@
 	}
 
 	/**
-	*		deleteFile
+	*	deleteFile
 	*
-	*				Delete a file.
+	*		Delete a file.
 	*
-	*	@param	filePath				File path string
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 204 or 404).
+	*	@param	filePath		File path string
+	*	@param	rootDir			Root directory
+	*	@param	args			HTTP QUERY-STRING arguments decoded.
+	*	@param	status			Receives the final result (200, 204 or 404).
 	*
 	*	@return		An array of FILE_INFO objects or NULL in case no match was found.
 	**/
@@ -426,11 +431,11 @@
 	}
 
 	/**
-	*		fileFilter
+	*	fileFilter
 	*
-	*			Returns true if a file is to be exlcuded (filtered) based on the HTTP query
-	*			string parameters such as 'showHiddenFiles', otherwise false.
-	*			The current and parent directory entries are excluded by default.
+	*		Returns true if a file is to be exlcuded (filtered) based on the HTTP query
+	*		string parameters such as 'showHiddenFiles', otherwise false.
+	*		The current and parent directory entries are excluded by default.
 	*
 	*	@param	fileInfo
 	*	@param	args
@@ -446,13 +451,13 @@
 	}
 
 	/**
-	*		fileToStruct
+	*	fileToStruct
 	*
-	*			Create a FILE_INFO object
+	*		Create a FILE_INFO object
 	*
-	*	@param	dirPath					Directory path string
-	*	@param	rootDir					Root directory
-	*	@param	filename				Filename
+	*	@param	dirPath			Directory path string
+	*	@param	rootDir			Root directory
+	*	@param	filename		Filename
 	*
 	*	@return		FILE_INFO object.
 	**/
@@ -480,17 +485,17 @@
 	}
 
 	/**
-	*		getArguments
+	*	getArguments
 	*
-	*			Returns an ARGS object with all HTTP QUERY-STRING parameters extracted and
-	*			decoded. See the description on top for the ABNF notation of the parameter.
+	*		Returns an ARGS object with all HTTP QUERY-STRING parameters extracted and
+	*		decoded. See the description on top for the ABNF notation of the parameter.
 	*
-	*	@note		All QUERY-STRING parameters are optional, if however a parameter is
-	*					specified it MUST comply with the formentioned ABNF format.
-	*					For security, invalid formatted parameters are not skipped or ignored,
-	*					instead they will result in a HTTP Bad Request status (400).
+	*	@note	All QUERY-STRING parameters are optional, if however a parameter is
+	*			specified it MUST comply with the formentioned ABNF format.
+	*			For security, invalid formatted parameters are not skipped or ignored,
+	*			instead they will result in a HTTP Bad Request status (400).
 	*
-	*	@param	status					Receives the final result code. (200 or 400)
+	*	@param	status			Receives the final result code. (200 or 400)
 	*
 	*	@return		On success an 'args' object otherwise NULL
 	**/
@@ -604,14 +609,14 @@
 	}
 
 	/**
-	*		getDirectory
+	*	getDirectory
 	*
-	*			Returns the content of a directory as an array of FILE_INFO objects.
+	*		Returns the content of a directory as an array of FILE_INFO objects.
 	*
-	*	@param	dirPath					Directory path string
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 204 or 404).
+	*	@param	dirPath			Directory path string
+	*	@param	rootDir			Root directory
+	*	@param	args			HTTP QUERY-STRING arguments decoded.
+	*	@param	status			Receives the final result (200, 204 or 404).
 	*
 	*	@return		An array of FILE_INFO objects or NULL in case no match was found.
 	**/
@@ -639,16 +644,16 @@
 	}
 
 	/**
-	*		getFile
+	*	getFile
 	*
-	*			Returns the information for the file specified by parameter fullPath.
-	*			If the designated file is a directory the directory content is returned
-	*			as the children of the file.
+	*		Returns the information for the file specified by parameter fullPath.
+	*		If the designated file is a directory the directory content is returned
+	*		as the children of the file.
 	*
-	*	@param	filePath				File path string
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 204 or 404).
+	*	@param	filePath		File path string
+	*	@param	rootDir			Root directory
+	*	@param	args			HTTP QUERY-STRING arguments decoded.
+	*	@param	status			Receives the final result (200, 204 or 404).
 	*
 	*	@return		An array of 1 FILE_INFO object or NULL in case no match was found.
 	**/
@@ -678,13 +683,13 @@
 	}
 
 	/**
-	*		parsePath
+	*	parsePath
 	*
-	*			Helper function to normalize and seperate a URI into its components. This
-	*			is a simplified implementation as we only extract what may be needed.
+	*		Helper function to normalize and seperate a URI into its components. This
+	*		is a simplified implementation as we only extract what may be needed.
 	*
-	*	@param	fullPath				Full path string
-	*	@param	rootDir					Root directory
+	*	@param	fullPath		Full path string
+	*	@param	rootDir			Root directory
 	*
 	*	@return
 	**/
@@ -708,11 +713,11 @@
 	}
 
 	/**
-	*		realURL
+	*	realURL
 	*
-	*			Remove all dot (.) segment according to RFC-3986 $5.2.4
+	*		Remove all dot (.) segment according to RFC-3986 $5.2.4
 	*
-	*	@param	path						Path string
+	*	@param	path				Path string
 	**/
 	function realURL( $path ) {
 		$url = "";
@@ -763,14 +768,14 @@
 	}
 
 	/**
-	*		renameFile
+	*	renameFile
 	*
-	*			Rename a file
+	*		Rename a file
 	*
-	*	@param	fullPath				Full path string (file path)
-	*	@param	rootDir					Root directory
-	*	@param	args						HTTP QUERY-STRING arguments decoded.
-	*	@param	status					Receives the final result (200, 204 or 404).
+	*	@param	fullPath		Full path string (file path)
+	*	@param	rootDir			Root directory
+	*	@param	args			HTTP QUERY-STRING arguments decoded.
+	*	@param	status			Receives the final result (200, 204 or 404).
 	*
 	*	@return		An array of 1 FILE_INFO object or NULL in case no match was found.
 	**/
