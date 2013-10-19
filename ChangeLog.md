@@ -3,10 +3,13 @@
 * The template driven HTML elements with class **_dijitTreeRow_** will now have an additional
 **_branch_** attribute making it easy to distinguish between tree branches and tree leafs.
 The branch attribute value is either "true" or "false"
+
 ```html
 <div class="dijitTreeRow" branch="true" role="presentation" ... >
 ```
+
 As a result you can now use css selectors like:
+
 ```html
 <style type="text/css">
 	.dijitTreeRow[branch="true"] .dijitTreeLabel {
