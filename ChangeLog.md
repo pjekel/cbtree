@@ -1,4 +1,31 @@
-# cbtree 0.9.3-3 (Oct 2013)
+# cbtree 0.9.3-4 (Nov 2013)
+### Enhancements:
+* The template driven HTML elements with class **_dijitTreeRow_** will now have an additional
+**_branch_** attribute making it easy to distinguish between tree branches and tree leafs.
+The branch attribute value is either "true" or "false"
+```html
+<div class="dijitTreeRow" branch="true" role="presentation" ... >
+```
+As a result you can now use css selectors like:
+```html
+<style type="text/css">
+	.dijitTreeRow[branch="true"] .dijitTreeLabel {
+		background-color: yellow;
+	}
+	.dijitTreeRow[branch="false"] .dijitTreeIcon {
+		border-style: solid;
+		border-width: 2px;
+	}
+</style>
+```
+
+### New Features:
+None
+
+### Bug Fixes:
+None
+
+# cbtree 0.9.3-3
 ### New Features:
 * A new property, **_branchCheckBox_**, has been added to the tree. The **_branchCheckBox_**
 property controls if checkboxes will be displayed for tree branches. The default is `true`.
