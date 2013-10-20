@@ -16,7 +16,6 @@ define(["module",
         "dojo/_base/lang",
         "dojo/aspect",
         "dojo/Deferred",
-        "dojo/dom-attr",
         "dojo/dom-construct",
         "dojo/keys",
         "dojo/on",
@@ -27,7 +26,7 @@ define(["module",
         "./CheckBox",
         "./errors/createError!./errors/CBTErrors.json",
         "./util/shim/Array"                        // ECMA-262 Array shim
-    ], function (module, require, connect, declare, event, lang, aspect, Deferred, domAttr, domConstruct,
+    ], function (module, require, connect, declare, event, lang, aspect, Deferred, domConstruct,
                  keys, on, topic, NodeTemplate, registry, Tree, CheckBox,
                  createError) {
 
@@ -265,7 +264,7 @@ define(["module",
 			//			dojo.query(".dijitTreeRow[isExpandable='true']);
 			// tag:
 			//		Private
-			domAttr.set(this.rowNode, "isExpandable", this.isExpandable.toString());
+			this.rowNode.setAttribute("isExpandable", this.isExpandable.toString());
 			this.inherited(arguments);
 		},
 
