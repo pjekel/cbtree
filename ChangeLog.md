@@ -1,6 +1,6 @@
 # cbtree 0.9.3-4 (Nov 2013)
 ### Enhancements:
-* The DOM tree node elements with class **_dijitTreeRow_** will now expose the tree node
+* The HTML tree node elements with class **_dijitTreeRow_** will now expose the tree node
 property **_isExpandable_** as an attribute making it easy to distinguish between tree
 branches and tree leafs. The isExpandable attribute value is either "true" or "false"
 
