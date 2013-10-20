@@ -4,34 +4,35 @@
 //
 //	The Checkbox Tree (cbtree) is released under to following three licenses:
 //
-//	1 - BSD 2-Clause								(http://thejekels.com/cbtree/LICENSE)
-//	2 - The "New" BSD License				(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
-//	3 - The Academic Free License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
+//	1 - BSD 2-Clause				(http://thejekels.com/cbtree/LICENSE)
+//	2 - The "New" BSD License		(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13)
+//	3 - The Academic Free License	(http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43)
 //
 define(["module",
-		"require",
-		"dojo/_base/connect",
-		"dojo/_base/declare",
-		"dojo/_base/event",
-		"dojo/_base/lang",
-		"dojo/aspect",
-		"dojo/Deferred",
-		"dojo/dom-construct",
-		"dojo/keys",
-		"dojo/on",
-		"dojo/topic",
-		"dojo/text!./templates/cbtreeNode.html",
-		"dijit/registry",
-		"dijit/Tree",
-		"./CheckBox",
-		"./errors/createError!./errors/CBTErrors.json",
-		"./util/shim/Array"						// ECMA-262 Array shim
-	], function (module, require, connect, declare, event, lang, aspect, Deferred, domConstruct,
-				 keys, on, topic, NodeTemplate,	registry, Tree, CheckBox,
-				 createError) {
+        "require",
+        "dojo/_base/connect",
+        "dojo/_base/declare",
+        "dojo/_base/event",
+        "dojo/_base/lang",
+        "dojo/aspect",
+        "dojo/Deferred",
+        "dojo/dom-attr",
+        "dojo/dom-construct",
+        "dojo/keys",
+        "dojo/on",
+        "dojo/topic",
+        "dojo/text!./templates/cbtreeNode.html",
+        "dijit/registry",
+        "dijit/Tree",
+        "./CheckBox",
+        "./errors/createError!./errors/CBTErrors.json",
+        "./util/shim/Array"                        // ECMA-262 Array shim
+    ], function (module, require, connect, declare, event, lang, aspect, Deferred, domAttr, domConstruct,
+                 keys, on, topic, NodeTemplate, registry, Tree, CheckBox,
+                 createError) {
 
 	// module:
-	//		cbtree/Tree 0.9.3-3
+	//		cbtree/Tree 0.9.3-4
 	// note:
 	//		This implementation is compatible with dojo 1.8 and 1.9
 
@@ -44,7 +45,7 @@ define(["module",
 		templateString: NodeTemplate,
 
 		// _checkBox: [private] widget
-		//		Checkbox or custome widget instance.
+		//		Checkbox or custom widget instance.
 		_checkBox: null,
 
 		// _toggle: [private] Boolean
@@ -52,7 +53,7 @@ define(["module",
 		_toggle: true,
 
 		// _widget: [private] Object
-		//		Specifies the widget to be instanciated for the tree node. The default
+		//		Specifies the widget to be instantiated for the tree node. The default
 		//		is the cbtree CheckBox widget.
 		_widget: null,
 
@@ -115,21 +116,6 @@ define(["module",
 			}
 		},
 
-		_setCheckedAttr: function (/*String|Boolean*/ newState) {
-			// summary:
-			//		Set a new state for the tree node checkbox. This method implements
-			//		the set("checked", newState). These requests are recieved from the
-			//		API and therefore we need to inform the model.
-			//	newState:
-			//		The checked state: 'mixed', true or false.
-			// tags:
-			//		private
-
-			if (this._checkBox) {
-				return this.tree.model.setChecked(this.item, newState);
-			}
-		},
-
 		_set_enabled_Attr: function (enabled) {
 			// summary:
 			//		Set the 'Read Only' property of the checkbox. This method handles
@@ -141,6 +127,21 @@ define(["module",
 			//		private
 			if (this._checkBox) {
 				this._checkBox.set("readOnly", !enabled);
+			}
+		},
+
+		_setCheckedAttr: function (/*String|Boolean*/ newState) {
+			// summary:
+			//		Set a new state for the tree node checkbox. This method implements
+			//		the set("checked", newState). These requests are received from the
+			//		API and therefore we need to inform the model.
+			//	newState:
+			//		The checked state: 'mixed', true or false.
+			// tags:
+			//		private
+
+			if (this._checkBox) {
+				return this.tree.model.setChecked(this.item, newState);
 			}
 		},
 
@@ -257,6 +258,17 @@ define(["module",
 			this.destroyRecursive();
 		},
 
+		_setExpando: function () {
+			// summary:
+			//		Expose the "isExpandable" property as an attribute of the rowNode.
+			//		The attribute can be used in selectors, for example:
+			//			dojo.query(".dijitTreeRow[isExpandable='true']);
+			// tag:
+			//		Private
+			domAttr.set(this.rowNode, "isExpandable", this.isExpandable.toString());
+			this.inherited(arguments);
+		},
+
 		_toggleCheckBox: function (){
 			// summary:
 			//		Toggle the current checkbox checked attribute and update the model
@@ -278,7 +290,6 @@ define(["module",
 			return newState;
 		},
 
-
 		// =======================================================================
 		// Node public methods
 
@@ -296,10 +307,10 @@ define(["module",
 		postCreate: function () {
 			// summary:
 			//		Handle the creation of the checkbox and node specific icons after
-			//		the tree node has been instanciated.
+			//		the tree node has been instantiated.
 			// description:
 			//		Handle the creation of the checkbox after the tree node has been
-			//		instanciated. If the item has a custom icon specified, overwrite
+			//		instantiated. If the item has a custom icon specified, overwrite
 			//		the current icon.
 			//
 			var tree	= this.tree,
@@ -416,12 +427,12 @@ define(["module",
 		//		Specifies the minimum and maximum dojo version required to run this
 		//		implementation of the cbtree.
 		//
-		//			vers-required	::= '{' (min-version | max-version | min-version ',' max-version) '}'
-		//			min-version		::= "min:" version
-		//			max-version		::= "max:" version
-		//			version				::= '{' "major" ':' number ',' "minor" ':' number '}'
+		//		vers-required ::= '{' (min-version | max-version | min-version ',' max-version) '}'
+		//		min-version   ::= "min:" version
+		//		max-version   ::= "max:" version
+		//		version       ::= '{' "major" ':' number ',' "minor" ':' number '}'
 		//
-		_dojoRequired: { min: {major:1, minor:8}, max: {major:1, minor:9}},
+		_dojoRequired: { min: {major:1, minor:8}, max: {major:1, minor:99}},
 
 		// _widgetBaseClass:
 		//		The default baseClass
@@ -433,15 +444,15 @@ define(["module",
 			// tag:
 			//		Private
 			if (dojo.version) {
-				var dojoMax = 999, dojoMin = 0;
+				var dojoMax = 199, dojoMin = 0;
 
-				dojoVers = (dojo.version.major * 10) + dojo.version.minor;
+				dojoVers = (dojo.version.major * 100) + dojo.version.minor;
 				if (this._dojoRequired) {
 					if (this._dojoRequired.min !== undefined) {
-						dojoMin = (this._dojoRequired.min.major * 10) + this._dojoRequired.min.minor;
+						dojoMin = (this._dojoRequired.min.major * 100) + this._dojoRequired.min.minor;
 					}
 					if (this._dojoRequired.max !== undefined) {
-						dojoMax = (this._dojoRequired.max.major * 10) + this._dojoRequired.max.minor;
+						dojoMax = (this._dojoRequired.max.major * 100) + this._dojoRequired.max.minor;
 					}
 					if (dojoVers < dojoMin || dojoVers > dojoMax) {
 						throw new CBTError("InvalidVersion", "_assertVersion");
