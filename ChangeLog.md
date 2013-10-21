@@ -1,21 +1,21 @@
 # cbtree 0.9.3-4 (Nov 2013)
 ### Enhancements:
-* The HTML tree node elements with class **_dijitTreeRow_** will now expose the tree node
-property **_isExpandable_** as an attribute making it easy to distinguish between tree
-branches and tree leafs. The isExpandable attribute value is either "true" or "false"
+* The HTML tree node elements with class **_dijitTreeRow_** now have an additional attribute
+**_expandable_** making it easy to distinguish between tree branches and tree leafs.
+The **_expandable_** attribute value is either "true" or "false"
 
 ```html
-<div class="dijitTreeRow" isExpandable="true" role="presentation" ... >
+<div class="dijitTreeRow" expandable="true" role="presentation" ... >
 ```
 
 As a result you can now use css selectors like:
 
 ```html
 <style type="text/css">
-	.dijitTreeRow[isExpandable="true"] .dijitTreeLabel {
+	.dijitTreeRow[expandable="true"] .dijitTreeLabel {
 		background-color: yellow;
 	}
-	.dijitTreeRow[isExpandable="false"] .dijitTreeIcon {
+	.dijitTreeRow[expandable="false"] .dijitTreeIcon {
 		border-style: solid;
 		border-width: 2px;
 	}

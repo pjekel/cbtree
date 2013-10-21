@@ -261,10 +261,10 @@ define(["module",
 			// summary:
 			//		Expose the "isExpandable" property as an attribute of the rowNode.
 			//		The attribute can be used in selectors, for example:
-			//			dojo.query(".dijitTreeRow[isExpandable='true']);
+			//			dojo.query(".dijitTreeRow[expandable='true']);
 			// tag:
 			//		Private
-			this.rowNode.setAttribute("isExpandable", this.isExpandable.toString());
+			this.rowNode.setAttribute("expandable", this.isExpandable.toString());
 			this.inherited(arguments);
 		},
 
