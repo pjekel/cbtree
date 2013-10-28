@@ -26,7 +26,7 @@ define(["module",                  // module.id
 		//		example: CheckBoxes.
 
 	var CBTError = createError( module.id)		// Create the CBTError type
-	
+
 	var undef;
 
 	var CheckedStoreModel = declare([BaseStoreModel], {
@@ -62,16 +62,16 @@ define(["module",                  // module.id
 
 		// checkedStrict: Boolean
 		//		If true, a strict parent-child relation is maintained.	 For example,
-		//		if all children are checked the parent will automatically recieve the
+		//		if all children are checked the parent will automatically receive the
 		//		same checked state or if any of the children are unchecked the parent
-		//		will, depending if multi state is enabled, recieve either a mixed or
+		//		will, depending if multi state is enabled, receive either a mixed or
 		//		unchecked state.
 		checkedStrict: true,
 
 		// enabledAttr: String
 		//		The property name of a store object that holds the 'enabled' state of
 		//		the checkbox or alternative widget.
-		//		Note: Eventhough it is referred to as the 'enabled' state the tree will
+		//		Note: Even though it is referred to as the 'enabled' state the tree will
 		//		only use this property to enable/disable the 'ReadOnly' property of a
 		//		checkbox. This because disabling a widget may exclude it from HTTP POST
 		//		operations.
@@ -123,7 +123,7 @@ define(["module",                  // module.id
 			// Set 'checkedStrict' explicitly so BaseStoreModel.postscript() has the
 			// _loadOptions property set.  This because dojo/Stateful isn't called
 			// until AFTER BaseStoreModel.postscript().
-			
+
 			this.set("checkedStrict", this.checkedStrict);
 			if (this.checkedStrict === true) {
 				this._loadOptions = {all:true};
@@ -151,7 +151,7 @@ define(["module",                  // module.id
 			}
 			return this.checkedAttr;
 		},
-		
+
 		_checkedStrictSetter: function (value) {
 			// summary:
 			//		Hook for the set("checkedStrict",value) calls. See also constructor().
@@ -288,10 +288,11 @@ define(["module",                  // module.id
 			//		Sets the new 'enabled' state of an item.
 			// item:
 			//		Store or root item
+			// return: Boolean | undefined
 			// tag:
 			//		Public
 			if (this.enabledAttr) {
-				this._setValue(object, this.enabledAttr, !!value);
+				return this._setValue(object, this.enabledAttr, !!value);
 			}
 		},
 
@@ -661,7 +662,7 @@ define(["module",                  // module.id
 				this.inherited(arguments);
 			}
 		},
-		
+
 		// =======================================================================
 		// Callbacks
 

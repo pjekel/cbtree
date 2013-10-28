@@ -132,23 +132,23 @@ define(["module",								  // module.id
 			// tags:
 			//		private
 
-      this._childrenCache = {};
-      this._objectCache   = {};
-	  this._obsHandles    = {};
-      this._methods       = {};
+			this._childrenCache = {};
+			this._objectCache   = {};
+			this._obsHandles    = {};
+			this._methods       = {};
 
-      this._eventable     = false;
-      this._forest        = false;
-      this._loadOptions   = null;
-      this._loadRequested = false;
-      this._monitored     = false;
-      this._observable    = false;
-      this._resetPending  = false;
-      this._writeEnabled  = true;           // used in StoreModel-API
+			this._eventable     = false;
+			this._forest        = false;
+			this._loadOptions   = null;
+			this._loadRequested = false;
+			this._monitored     = false;
+			this._observable    = false;
+			this._resetPending  = false;
+			this._writeEnabled  = true;           // used in StoreModel-API
 
-      this._evtHandles    = { remove: function () {} };
-      this._modelReady    = new Deferred();
-      this._storeReady    = new Deferred();
+			this._evtHandles    = { remove: function () {} };
+			this._modelReady    = new Deferred();
+			this._storeReady    = new Deferred();
 
 			declare.safeMixin(this, kwArgs);
 
@@ -289,9 +289,9 @@ define(["module",								  // module.id
 			}
 			this._evtHandles.remove();	// Remove event listeners if any..
 
-      this._childrenCache = {};
-      this._objectCache   = {};
-      this.store          = undef;
+			this._childrenCache = {};
+			this._objectCache   = {};
+			this.store          = undef;
 		},
 
 		getChildren: function (/*Object*/ parent, /*Function*/ onComplete, /*Function*/ onError) {
@@ -427,8 +427,8 @@ define(["module",								  // module.id
 						when(result, function (items) {
 							if (items.length != 1) {
 								throw new CBTError( "InvalidResponse", "getRoot",
-																		 "Root query returned %{0} items, but must return exactly one",
-																		 items.length );
+													"Root query returned %{0} items, but must return exactly one",
+													items.length );
 							}
 							self.root = items[0];
 							// Setup listener to detect if root item changes
@@ -669,16 +669,16 @@ define(["module",								  // module.id
 		},
 
 		pasteItem: function (/*Object*/ childItem, /*Object*/ oldParentItem, /*Object*/ newParentItem,
-												 /*Boolean*/ bCopy, /*int?*/ insertIndex, /*Object*/ before) {
+							 /*Boolean*/ bCopy, /*int?*/ insertIndex, /*Object*/ before) {
 			// summary:
 			//		Move or copy an item from one parent item to another.
 			//		Used in drag & drop
 
-      var parentIds   = new Parents( childItem, this.parentProperty );
-      var newParentId = this.getIdentity(newParentItem);
-      var oldParentId = this.getIdentity(oldParentItem);
-      var updParents  = [newParentItem];
-      var model = this;
+			var parentIds   = new Parents( childItem, this.parentProperty );
+			var newParentId = this.getIdentity(newParentItem);
+			var oldParentId = this.getIdentity(oldParentItem);
+			var updParents  = [newParentItem];
+			var model = this;
 
 			if (oldParentId != newParentId) {
 				var wasRoot = (oldParentItem == this.root);
