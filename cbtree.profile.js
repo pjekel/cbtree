@@ -98,6 +98,7 @@ var profile = {
 				"cbtree/Tree",
 				// extensions
 				"cbtree/extensions/TreeStyling",
+				"cbtree/extensions/TreeOnSubmit",
 				// util
 				"cbtree/util/QueryEngine",
 				"cbtree/util/TOC",

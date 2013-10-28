@@ -1,7 +1,7 @@
 {
 	"name": "cbtree",
 	"author": "Peter Jekel",
-	"version":"0.9.3",
+	"version":"0.9.4",
 	"description": "The CheckBox Tree with Multi State Checkboxes and custom styling",
 	"licenses": [
 		 {
