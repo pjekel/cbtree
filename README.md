@@ -111,6 +111,15 @@ section:
 	</thead>
   <tbody>
     <tr style="vertical-align:top">
+      <td>cbtree-v09.4-0</td>
+      <td>Nov-03 2013</td>
+      <td>1.8 - 1.9</td>
+      <td>
+	New TreeOnSubmit extension adds support for Checkbox Tree in HTML forms.<br/>
+	Updated documentation and [Wiki](https://github.com/pjekel/cbtree/wiki).<br/>
+      </td>
+    </tr>
+    <tr style="vertical-align:top">
       <td>cbtree-v09.3-0</td>
       <td>May-03 2013</td>
       <td>1.8 - 1.9</td>

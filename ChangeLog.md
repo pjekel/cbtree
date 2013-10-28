@@ -1,4 +1,4 @@
-# cbtree 0.9.3-4 (Nov 2013)
+# cbtree 0.9.4
 ### Enhancements:
 * The HTML tree node elements with class **_dijitTreeRow_** now have an additional attribute
 **_expandable_** making it easy to distinguish between tree branches and tree leafs.
@@ -23,10 +23,24 @@ As a result you can now use css selectors like:
 ```
 
 ### New Features:
-None
+* A new tree extension **_TreeOnSubmit_** and associated tree property **_attachToForm_**
+have been added. This new extension and property aid in the submission of HTML forms that
+include a CheckBox Tree. The extension can be found in the `cbtree/extension` directory.
+For a detailed description and examples please refer to the Wiki usage section
+[Checkboxes in HTML forms](https://github.com/pjekel/cbtree/wiki/CheckBox-Tree-Usage#checkboxes-in-html-forms)
+and dedicated Wiki page
+[Checkbox Tree in Forms](https://github.com/pjekel/cbtree/wiki/CheckBox-Tree-in-Forms)
+* A new property, **_leafCheckBox_**, has been added to the tree. The **_leafCheckBox_**
+property controls if checkboxes will be displayed for tree leafs. The default is `true`.
+if set to `false` the leaf checkboxes will be hidden but still available for checking their
+state.
 
 ### Bug Fixes:
 None
+
+### Known issues:
+Please see the Github project page for any [open](https://github.com/pjekel/cbtree/issues?page=1&state=open)
+issues.
 
 # cbtree 0.9.3-3
 ### New Features:
