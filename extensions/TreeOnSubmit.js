@@ -122,7 +122,7 @@ define(["dojo/json", "dojo/when", "../Tree"], function (JSON, when, CBTree) {
 			//		'attachToForm' is set, the checked states of the store items are
 			//		collected and attached to the trees parent form as a hidden element.
 			// formNode: DOMnode
-			//		DOM node associate with the <form ... > element.
+			//		DOM node associated with the <form ... > element.
 			// treeWidget: CBTree
 			// evt: Event (submit)
 			// returns: Boolean
