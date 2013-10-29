@@ -20,9 +20,10 @@ therefore, if the user does not require the functionality they do not need to be
 loaded:
 
 1. [Tree Styling](https://github.com/pjekel/cbtree/wiki/Tree-Styling)
+2. [Tree in HTML forms](https://github.com/pjekel/cbtree/wiki/CheckBox-Tree-in-Forms)
 2. [Store Model extension](https://github.com/pjekel/cbtree/wiki/Model-Extension)
-4. [Store CORS support](https://github.com/pjekel/cbtree/wiki/Store#wiki-cors-support)
-3. [Store Ancestry](https://github.com/pjekel/cbtree/wiki/Ancestry-Extension)
+3. [Store CORS support](https://github.com/pjekel/cbtree/wiki/Store#cors-support)
+4. [Store Ancestry](https://github.com/pjekel/cbtree/wiki/Ancestry-Extension)
 
 ### The CheckBox
 The use of checkboxes is configurable and enabled by default. The CheckBox Tree
@@ -87,7 +88,7 @@ In addition, the CheckBox Tree [wiki](https://github.com/pjekel/cbtree/wiki) has
 several tutorials using, for example, the popular ArcGIS API for JavaScript.
 
 <h2 id="basics">CheckBox Tree Documentation</h2>
-As of release **_cbtree-v09-3.0_** all documentation is available online at the
+As of release **_cbtree-v09-3.0_** all documentation is available online in the
 [cbtree Wiki](https://github.com/pjekel/cbtree/wiki) section and is no longer
 included in the distribution.
 
