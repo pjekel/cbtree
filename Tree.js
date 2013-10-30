@@ -741,6 +741,7 @@ define(["module",
 			// If IE < 9 fabricate a DOM4 style event
 			if (ie && ie < 9) {
 				event = new IE8_Event(this.formNode, "submit", {cancelable: true}, evt);
+				event.defaultPrevented = !!evt.returnValue;
 			}
 			if (!event.defaultPrevented) {
 				if (this.onSubmit(this.formNode, this, event) === false) {
