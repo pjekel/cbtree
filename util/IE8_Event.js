@@ -21,13 +21,10 @@ define(function () {
 		this.bubbles = !!(props && props.bubbles);
 		this.cancelable = !!(props && props.cancelable);
 		this.isTrusted = false;
-		this.defaultPrevented = !!ieEventObject.returnValue;
+		this.defaultPrevented = false;
 		this.ieEventObject = ieEventObject;
 		this.type = type;
-		this.stopImmediatePropagation = function () {
-			ieEventObject.cancelBubble = true;
-		};
-		this.stopPropagation = function () {
+		this.stopPropagation = this.stopImmediatePropagation = function () {
 			ieEventObject.cancelBubble = true;
 		};
 		this.preventDefault = function () {
