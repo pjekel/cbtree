@@ -25,7 +25,7 @@ define(["module",
         "dijit/Tree",
         "./CheckBox",
         "./errors/createError!./errors/CBTErrors.json",
-		"./util/IE8_Event",
+        "./util/IE8_Event",
         "./util/shim/Array"                 // ECMA-262 Array shim
     ], function (module, require, connect, declare, lang, aspect, Deferred, domConstruct,
                  has, keys, on, topic, NodeTemplate, registry, Tree, CheckBox,
@@ -171,7 +171,7 @@ define(["module",
 			//		'checkboxAll' attribute enabled.
 			//
 			// multiState: Boolean
-			//			Indicate of multi state checkboxes are to be used (true/false).
+			//		Indicate of multi state checkboxes are to be used (true/false).
 			// tags:
 			//		private
 
@@ -626,7 +626,7 @@ define(["module",
 			// tag:
 			//		Private
 			var evt = arguments[0];
-			if (dojoVers < 19) {
+			if (dojoVers < 109) {
 				evt = evt.evt;
 			}
 			if (connect.isCopyKey(evt)) {
@@ -1022,7 +1022,7 @@ define(["module",
 				this.inherited(arguments);
 
 				var cbSelector = "." + this._checkboxBaseClass;
-				if (dojoVers < 19) {
+				if (dojoVers < 109) {
 					// dojo 1.8
 					this.own(
 						// Register a dedicated checkbox click event listener.
