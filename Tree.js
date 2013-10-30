@@ -16,6 +16,7 @@ define(["module",
         "dojo/aspect",
         "dojo/Deferred",
         "dojo/dom-construct",
+        "dojo/has",
         "dojo/keys",
         "dojo/on",
         "dojo/topic",
@@ -24,10 +25,11 @@ define(["module",
         "dijit/Tree",
         "./CheckBox",
         "./errors/createError!./errors/CBTErrors.json",
-        "./util/shim/Array"                        // ECMA-262 Array shim
+		"./util/IE8_Event",
+        "./util/shim/Array"                 // ECMA-262 Array shim
     ], function (module, require, connect, declare, lang, aspect, Deferred, domConstruct,
-                 keys, on, topic, NodeTemplate, registry, Tree, CheckBox,
-                 createError) {
+                 has, keys, on, topic, NodeTemplate, registry, Tree, CheckBox,
+                 createError, IE8_Event) {
 
 	// module:
 	//		cbtree/Tree 0.9.4
@@ -35,6 +37,7 @@ define(["module",
 	//		This implementation is compatible with dojo 1.8 and 1.9
 
 	var CBTError = createError(module.id);		// Create the CBTError type.
+	var ie = has("ie");
 	var dojoVers = 0;
 
 	var TreeNode = declare([Tree._TreeNode], {
@@ -733,14 +736,18 @@ define(["module",
 			// return: Boolean
 			// tag:
 			//		EventListener
-			if (!evt.defaultPrevented) {
-				if (dojo.query(("#" + this.id + "." + this.baseClass), evt.target)[0]) {
-					 if (this.onSubmit(evt.target, this, evt) === false) {
-						evt.preventDefault();
-					 }
+			var event = evt;
+
+			// If IE < 9 fabricate a DOM4 style event
+			if (ie && ie < 9) {
+				event = new IE8_Event(this.formNode, "submit", {cancelable: true}, evt);
+			}
+			if (!event.defaultPrevented) {
+				if (this.onSubmit(this.formNode, this, event) === false) {
+					event.preventDefault();
 				}
 			};
-			return !evt.defaultPrevented;
+			return !event.defaultPrevented;
 		},
 
 		_setAttachToFormAttr: function (value) {
@@ -979,8 +986,9 @@ define(["module",
 			// description:
 			//		Whenever checkboxes are requested Validate if we have a model
 			//		capable of updating item attributes.
-			var model = this.model;
-			var self  = this;
+			var target = this.domNode.parentNode;
+			var model  = this.model;
+			var self   = this;
 
 			if (this.model) {
 				if (this.checkBoxes === true) {
@@ -1040,7 +1048,14 @@ define(["module",
 					}
 				});
 				// Listen for submit events in case the tree sits inside a form.
-				document.addEventListener("submit", lang.hitch(this, "_onSubmit"));
+				while (target) {
+					if (target.nodeName === "FORM") {
+						on(target, "submit", lang.hitch(this, "_onSubmit"));
+						break;
+					}
+					target = target.parentNode;
+				}
+				this.formNode = target;
 			} else {
 				throw new CBTError("PropertyMissing", "postCreate", "no model was specified");
 			}
