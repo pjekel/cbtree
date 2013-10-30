@@ -18,6 +18,7 @@ stores.
 * tree16.html - ArcGIS geocoder and geocoder data handler.
 * tree17.html - ArcGIS map layers in a Table Of Content (TOC).
 * tree20.html - Store hierary and Ancestry extension example.
+* tree30.html - Submit HTML form with a Checkbox Tree.
 
 ***NOTE:*** The following examples require PHP support on your server.
 
