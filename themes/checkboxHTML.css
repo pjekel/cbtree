@@ -1,0 +1,7 @@
+/*
+	Use the standard HTML checkbox
+*/
+.dijitCheckBoxInput {
+	margin-top: 2px;
+	opacity: 100;
+}
