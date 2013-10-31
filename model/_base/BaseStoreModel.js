@@ -482,6 +482,17 @@ define(["module",								  // module.id
 			return method.call(this.store, item);
 		},
 
+		query: function (query, options) {
+			// summary:
+			// query: Object?
+			// options: Object?
+			// returns:
+			//		Store.QueryResults
+			// tag:
+			//		public
+			return this.store.query(query, options);
+		},
+
 		// =======================================================================
 		// cbtree/model/Model API extensions
 
