@@ -348,6 +348,20 @@ define(["module",								  // module.id
 			return this.store.getIdentity(item);
 		},
 
+		getItems: function (/*Object*/ query,/*QueryOptions?*/ options) {
+			// summary:
+			//		Queries the model for objects.
+			// query: Object?
+			//		The query to use for retrieving objects from the model.
+			// options: Object?
+			//		The optional arguments to apply to the resultset.
+			// returns: dojo/store/api/Store.QueryResults
+			//		The results of the query, extended with iterative methods.
+			// tag:
+			//		Public
+			return this.store.query(query, options);
+		},
+
 		getLabel: function (/*Object*/ item) {
 			// summary:
 			//		Get the label for an item
@@ -480,17 +494,6 @@ define(["module",								  // module.id
 				return !!result.length;
 			}
 			return method.call(this.store, item);
-		},
-
-		query: function (query, options) {
-			// summary:
-			// query: Object?
-			// options: Object?
-			// returns:
-			//		Store.QueryResults
-			// tag:
-			//		public
-			return this.store.query(query, options);
 		},
 
 		// =======================================================================

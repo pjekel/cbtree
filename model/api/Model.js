@@ -36,6 +36,20 @@ define(["dojo/_base/declare"], function (declare) {
 			throwAbstract();
 		},
 
+		getItems: function (/*Object*/ query,/*QueryOptions?*/ options) {
+			// summary:
+			//		Queries the model for objects.
+			// query: Object?
+			//		The query to use for retrieving objects from the model.
+			// options: Object?
+			//		The optional arguments to apply to the resultset.
+			// returns: dojo/store/api/Store.QueryResults
+			//		The results of the query, extended with iterative methods.
+			// tag:
+			//		Public
+			throwAbstract();
+		},
+
 		getRoot: function (onItem) {
 			// summary:
 			//		Calls onItem with the root item for the tree, possibly a fabricated item.
