@@ -5,7 +5,7 @@
  */
 
 .databaseIcon {
-	background-image: url('images/databaseIcons.gif'); /* Node icons sprite image */
+	background-image: url('images/databaseIcons.png'); /* Node icons sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;

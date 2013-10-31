@@ -1,9 +1,9 @@
 var testResourceRe = /^cbtree\/tests\//;
 var excludePath = [ /^cbtree\/((.*)?\/)?tests\//,
-									  /^cbtree\/((.*)?\/)?demos\//,
-									  /^cbtree\/((.*)?\/)?json\//,
-									  /^cbtree\/((.*)?\/)?csv\//
-									 ];
+					  /^cbtree\/((.*)?\/)?demos\//,
+					  /^cbtree\/((.*)?\/)?json\//,
+					  /^cbtree\/((.*)?\/)?csv\//
+					 ];
 var copyOnly = function(filename, mid) {
 	var list = {
 		"cbtree/cbtree.profile":1,

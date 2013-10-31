@@ -6,7 +6,7 @@
  */
 
 .networkIcon {
-	background-image: url('images/networkIcons.gif'); /* Node icons sprite image */
+	background-image: url('images/networkIcons.png'); /* Node icons sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;

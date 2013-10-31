@@ -6,7 +6,7 @@
  */
 
 .indentIcon {
-	background-image: url('images/indentIcons.gif'); /* Node icons sprite image */
+	background-image: url('images/indentIcons.png'); /* Node icons sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;

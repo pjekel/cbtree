@@ -6,7 +6,7 @@
  */
 
 .calendarIcon {
-	background-image: url('images/calendarIcons.gif'); /* Node icons sprite image */
+	background-image: url('images/calendarIcons.png'); /* Node icons sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;

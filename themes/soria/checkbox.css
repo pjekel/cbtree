@@ -13,7 +13,7 @@
  *							 - mixed
  */
 .soria .cbtreeCheckBox {
-	background-image: url('images/spriteCheckbox.gif'); /* checkbox sprite image */
+	background-image: url('images/spriteCheckbox.png'); /* checkbox sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;

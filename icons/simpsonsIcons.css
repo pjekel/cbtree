@@ -6,7 +6,7 @@
  */
 
 .simpsonsIcons {
-	background-image: url('images/simpsons.gif'); /* Node icons sprite image */
+	background-image: url('images/simpsons.png'); /* Node icons sprite image */
 	background-repeat: no-repeat;
 	width: 32px;
 	height: 32px;
