@@ -32,18 +32,17 @@ define(["dojo/json", "dojo/when", "../Tree"], function (JSON, when, CBTree) {
 		//		private
 		var model = tree.model;
 		var attr  = model.checkedAttr;
-		var store = model.store;
 		var query = {};
 
 		if (attr && checked !== undefined) {
 			query[attr] = checked;
 		}
 
-		return when(store.query(query),
+		return when(model.getItems(query),
 			function (results) {
 				results = results.map(function (item) {
 					return {
-						id: store.getIdentity(item),
+						id: model.getIdentity(item),
 						value: model.getLabel(item),
 						checked: (attr ? (item[attr] || model.checkedState) : undefined)
 					};
