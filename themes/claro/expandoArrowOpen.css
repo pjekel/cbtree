@@ -4,7 +4,7 @@
 */
 
 .claro .dijitTreeExpando {
-	background-image: url('images/spriteExpandoArrow.png'); /* checkbox sprite image */
+	background-image: url('images/spriteExpandoArrowOpen.png'); /* checkbox sprite image */
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 16px;
@@ -32,7 +32,6 @@
 .claro .dijitTreeRowHover .dijitTreeExpandoLeaf {
     background-position: -80px 0;
 }
-
 
 
 
