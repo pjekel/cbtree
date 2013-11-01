@@ -26,18 +26,18 @@ define(["dojo/aspect", "dojo/on"], function(aspect, on){
     this.on = function(type, listener) {
 
       function onMethod( target, type ) {
-				var ctor  = target.constructor;
-				var onMap = ctor._onMap;
-				if(!onMap){
-					onMap = (ctor._onMap = {});
-					for(var attr in ctor.prototype){
-						if(/^on/.test(attr)){
-							onMap[attr.replace(/^on/, "").toLowerCase()] = attr;
-						}
-					}
+		var ctor  = target.constructor;
+		var onMap = ctor._onMap;
+		if(!onMap){
+			onMap = (ctor._onMap = {});
+			for(var attr in ctor.prototype){
+				if(/^on/.test(attr)){
+					onMap[attr.replace(/^on/, "").toLowerCase()] = attr;
 				}
-				var method = onMap[type.toLowerCase()] || "on" + type;
-				return method;
+			}
+		}
+		var method = onMap[type.toLowerCase()] || "on" + type;
+		return method;
       }
 
       return on.parse(this, type, listener, function(target, type){
@@ -46,10 +46,10 @@ define(["dojo/aspect", "dojo/on"], function(aspect, on){
     };
 
     this.emit = function(type, event){
-      var args = [this];
-      if (!event.type) event.type = type;
-      args.push.apply(args, arguments);
-      return on.emit.apply(on, args);
+		var args = [this];
+		if (!event.type) event.type = type;
+		args.push.apply(args, arguments);
+		return on.emit.apply(on, args);
     };
 
   };
