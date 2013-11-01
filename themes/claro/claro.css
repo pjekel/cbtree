@@ -3,8 +3,10 @@
 
 */
 
-@import url("checkbox.css");
 /*
-@import url("expandoIconOpen.css");
-@import url("expandoIcon.css");
+	Custom Expando Icons
+
+@import url("expandoArrow.css");
+@import url("expandoArrow45.css");
 */
+@import url("checkbox.css");
