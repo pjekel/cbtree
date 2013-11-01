@@ -354,8 +354,8 @@ define(["module",								  // module.id
 			// query: Object?
 			//		The query to use for retrieving objects from the model.
 			// options: Object?
-			//		The optional arguments to apply to the resultset.
-			// returns: dojo/store/api/Store.QueryResults
+			//		The optional arguments to apply to the result set.
+			// returns: dojo/store/api/Store.QueryResults | Promise
 			//		The results of the query, extended with iterative methods.
 			// tag:
 			//		Public
