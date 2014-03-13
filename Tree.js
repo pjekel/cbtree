@@ -703,10 +703,18 @@ define(["module",
 					tree._onItemDelete(tree.rootNode.item);
 				}
 				// Next, wait until the model is ready again.
-				model.ready().then(
+				model.ready(
 					function () {
-						tree.expandChildrenDeferred  = new Deferred();
-						tree.pendingCommandsDeferred = tree.expandChildrenDeferred;
+						tree.expandChildrenDeferred = new Deferred();
+						if (tree.pendingCommandsDeferred !== undefined) {
+							// dojo < 1.9
+							tree.pendingCommandsDeferred = tree.expandChildrenDeferred;
+							tree.onLoadDeferred = tree.pendingCommandsDeferred.promise;
+						} else {
+							// dojo > 1.8
+							tree.pendingCommandsPromise = tree.expandChildrenDeferred.promise;
+							tree.onLoadDeferred = tree.pendingCommandsPromise;
+						}
 
 						if (tree.persist) {
 							// restore the expanded paths, if any.
@@ -714,7 +722,6 @@ define(["module",
 						}
 						tree._load();		// Reload the tree
 
-						tree.onLoadDeferred = tree.pendingCommandsPromise;
 						tree.onLoadDeferred.then(lang.hitch(tree, "onLoad"));
 					},
 					function (err) {

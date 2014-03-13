@@ -894,7 +894,7 @@ define(["module",
 				}
 				return obj;
 			}
-			var key, newObj = obj.constructor();
+			var key, newObj = new obj.constructor();
 			for (key in obj) {
 				newObj[key] = this._wcToValue(obj[key], wcValue);
 			}

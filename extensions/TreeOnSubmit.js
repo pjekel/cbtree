@@ -49,7 +49,7 @@ define(["dojo/json", "dojo/when", "../Tree"], function (JSON, when, CBTree) {
 					};
 				});
 				if (model._forest) {
-					results.shift({
+					results.unshift({
 						id: model.root.id,
 						value: model.rootLabel,
 						checked: model.root[attr],
